@@ -135,32 +135,7 @@ runtest(SyncDict(thread.allocate_lock(), {}))
 
 assert(totalremoves + 1 == totalcreates)
 
-
-# the goofydict is designed to act like a weakvaluedictionary,
-# where its values are dereferenced and disposed of 
-# in between a has_key() and a 
-# __getitem__() operation 50% of the time.    
-# the number of creates should be about half of what the 
-# number of gets is.
-class goofydict(dict):
-    def has_key(self, key):
-        if dict.has_key(self, key):
-            if random.random() > 0.5:
-                del self[key]
-            return True
-        else:
-            return False
-
-print "\ntesting with goofy dict"
-runtest(SyncDict(thread.allocate_lock(), goofydict()))
-assert(float(totalcreates) / float(totalgets) < .52
-    and float(totalcreates) / float(totalgets) > .48)
-
-# the weakvaluedictionary test involves newly created items
-# that are instantly disposed since no strong reference exists to them.
-# the number of creates should be equal to the number of gets.
 print "\ntesting with weak dict"
 runtest(SyncDict(thread.allocate_lock(), weakref.WeakValueDictionary()))
-assert(totalcreates == totalgets)
 
 

@@ -22,7 +22,7 @@ except:
     except ImportError:
         has_flock = False
 
-from beaker.util import ThreadLocal, WeakValuedRegistry, encoded_path
+from beaker import util
 from beaker.exceptions import LockError
 
 class NameLock(object):
@@ -33,7 +33,7 @@ class NameLock(object):
     the name alone, and synchronize operations related to that name.
     """
      
-    locks = WeakValuedRegistry()
+    locks = util.WeakValuedRegistry()
 
     class NLContainer:
         """cant put Lock as a weakref"""
@@ -63,48 +63,37 @@ class NameLock(object):
 
 
 
-synchronizers = WeakValuedRegistry()
 
+class Synchronizer(object):
+    """a read-many/single-writer synchronizer which globally synchronizes on a given string name."""
     
-def Synchronizer(identifier = None, use_files = False, lock_dir = None, digest_filenames = True):
-    """
-    returns an object that synchronizes a block against many simultaneous 
-    read operations and several synchronized write operations. 
+    conditions = util.WeakValuedRegistry()
 
-    Write operations
-    are assumed to be much less frequent than read operations,
-    and receive precedence when they request a write lock.
+    def __init__(self, identifier = None, use_files = False, lock_dir = None, digest_filenames = True):
+        if not has_flock:
+            use_files = False
 
-    uses strategies to determine if locking is performed via threading objects
-    or file objects.
-    
-    the identifier identifies a name this Synchronizer is synchronizing against.
-    All synchronizers of the same identifier will lock against each other, within
-    the effective thread/process scope.
-    
-    use_files determines if this synchronizer will lock against thread mutexes
-    or file locks.  this sets the effective scope of the synchronizer, i.e. 
-    it will lock against other synchronizers in the same process, or against
-    other synchronizers referencing the same filesystem referenced by lock_dir.
-    
-    the acquire/relase methods support nested/reentrant operation within a single 
-    thread via a recursion counter, so that only the outermost call to 
-    acquire/release has any effect.  
-    """
+        if use_files:
+            syncs = util.ThreadLocal(creator=lambda: FileSynchronizer(identifier, lock_dir, digest_filenames))
+            self._get_impl = lambda:syncs.get()
+        else:
+            condition = Synchronizer.conditions.sync_get("condition_%s" % identifier, lambda: ConditionSynchronizer(identifier))
+            self._get_impl = lambda:condition
 
-    if not has_flock:
-        use_files = False
+    def release_read_lock(self):
+        self._get_impl().release_read_lock()
+        
+    def acquire_read_lock(self, wait=True):
+        return self._get_impl().acquire_read_lock(wait=wait)
 
-    if use_files:
-        # FileSynchronizer is one per thread
-        return synchronizers.sync_get("file_%s_%s" % (identifier, _thread.get_ident()), lambda: FileSynchronizer(identifier, lock_dir, digest_filenames))
-    else:
-        # ConditionSynchronizer is shared among threads
-        return synchronizers.sync_get("condition_%s" % identifier, lambda: ConditionSynchronizer(identifier))
-
-
+    def acquire_write_lock(self, wait=True):
+        return self._get_impl().acquire_write_lock(wait=wait)
+        
+    def release_write_lock(self):
+        self._get_impl().release_write_lock()
+        
 class SyncState(object):
-    """used to track the current thread's reading/writing state as well as reentrant block counting"""
+    """used to track the current thread's reading/writing state as well as reentrant block counting."""
     
     def __init__(self):
         self.reentrantcount = 0
@@ -112,12 +101,9 @@ class SyncState(object):
         self.reading = False
 
 class SynchronizerImpl(object):
-    """base for the synchronizer implementations.  the acquire/release methods keep track of re-entrant
-    calls within the current thread, and delegate to the do_XXX methods when appropriate."""
+    """base class for synchronizers.  the release/acquire methods may or may not be threadsafe
+    depending on whether the 'state' accessor returns a thread-local instance."""
     
-    def __init__(self, *args, **params):
-        pass
-
     def release_read_lock(self):
         state = self.state
 
@@ -185,10 +171,12 @@ class SynchronizerImpl(object):
         raise NotImplementedError()
     
 class FileSynchronizer(SynchronizerImpl):
-    """a synchronizer using lock files.   as it relies upon flock(), which
-    is not safe to use with the same file descriptor among multiple threads (one file descriptor
-    per thread is OK), 
-    a separate FileSynchronizer must exist in each thread."""
+    """a synchronizer using lock files.   
+    
+    as it relies upon flock, its inherently not threadsafe.  The 
+    Synchronizer container will maintain a unique FileSynchronizer per Synchronizer instance per thread.
+    This works out since the synchronizers are all locking on a file on the filesystem.
+    """
     
     def __init__(self, identifier, lock_dir, digest_filenames):
         self.state = SyncState()
@@ -198,7 +186,7 @@ class FileSynchronizer(SynchronizerImpl):
         else:
             lock_dir = lock_dir
 
-        self.filename = encoded_path(lock_dir, [identifier], extension = '.lock', digest = digest_filenames)
+        self.filename = util.encoded_path(lock_dir, [identifier], extension = '.lock', digest = digest_filenames)
 
         self.opened = False
         self.filedesc = None
@@ -261,11 +249,20 @@ class FileSynchronizer(SynchronizerImpl):
 
 
 class ConditionSynchronizer(SynchronizerImpl):
-    """a synchronizer using a Condition.  this synchronizer is based on threading.Lock() objects and
-    therefore must be shared among threads."""
+    """a synchronizer using a Condition.  
+    
+    this synchronizer is based on threading.Lock() objects and
+    therefore must be shared among threads, so it is also threadsafe.
+    the "state" variable referenced by the base SynchronizerImpl class
+    is turned into a thread local, and all the do_XXXX methods are synchronized
+    on the condition object.
+    
+    The Synchronizer container will maintain a registry of ConditionSynchronizer
+    objects keyed to the name of the synchronizer.
+    """
     
     def __init__(self, identifier):
-        self.tlocalstate = ThreadLocal(creator = lambda: SyncState())
+        self.tlocalstate = util.ThreadLocal(creator = lambda: SyncState())
 
         # counts how many asynchronous methods are executing
         self.async = 0

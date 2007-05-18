@@ -58,14 +58,17 @@ def create(id, delay = 0):
     finally:
         baton = None
         
-def threadtest(cclass, id, statusdict, expiretime, delay, params):
+def threadtest(cclass, id, statusdict, expiretime, delay, threadlocal):
     print "create thread %d starting" % id
     statusdict[id] = True
 
 
     try:
-        container = cclass(context = context, namespace = 'test', key = 'test', createfunc = lambda: create(id, delay), expiretime = expiretime, data_dir='./cache', starttime = starttime, **params)
-
+        if threadlocal:
+            container = cclass(context = context, namespace = 'test', key = 'test', createfunc = lambda: create(id, delay), expiretime = expiretime, data_dir='./cache', starttime = starttime)
+        else:
+            container = global_container
+            
         global running
         global totalgets
         try:
@@ -87,7 +90,7 @@ def threadtest(cclass, id, statusdict, expiretime, delay, params):
         statusdict[id] = False
     
 
-def runtest(cclass, totaltime, expiretime, delay, **params):
+def runtest(cclass, totaltime, expiretime, delay, threadlocal):
 
     statusdict = {}
     global totalcreates
@@ -96,13 +99,14 @@ def runtest(cclass, totaltime, expiretime, delay, **params):
     global totalgets
     totalgets = 0
 
-    container = cclass(context = context, namespace = 'test', key = 'test', createfunc = lambda: create(id, delay), expiretime = expiretime, data_dir='./cache', starttime = starttime, **params)
-    container.clear_value()
+    global global_container
+    global_container = cclass(context = context, namespace = 'test', key = 'test', createfunc = lambda: create(id, delay), expiretime = expiretime, data_dir='./cache', starttime = starttime)
+    global_container.clear_value()
 
     global running
     running = True    
     for t in range(1, 20):
-        thread.start_new_thread(threadtest, (cclass, t, statusdict, expiretime, delay, params))
+        thread.start_new_thread(threadtest, (cclass, t, statusdict, expiretime, delay, threadlocal))
         
     time.sleep(totaltime)
     
@@ -126,11 +130,11 @@ def runtest(cclass, totaltime, expiretime, delay, **params):
     print "total object gets %d" % totalgets
 
 class ContainerTest(test_base.MyghtyTest):
-    def _runtest(self, cclass, totaltime, expiretime, delay, **params):
+    def _runtest(self, cclass, totaltime, expiretime, delay):
         print "\ntesting %s for %d secs with expiretime %s delay %d" % (
             cclass, totaltime, expiretime, delay)
         
-        runtest(cclass, totaltime, expiretime, delay, **params)
+        runtest(cclass, totaltime, expiretime, delay, threadlocal=False)
 
         if expiretime is None:
             self.assert_(totalcreates == 1)
@@ -156,3 +160,4 @@ class ContainerTest(test_base.MyghtyTest):
 
     def testDbmContainer3(self):
         self.testDbmContainer(expiretime=5, delay=2)
+

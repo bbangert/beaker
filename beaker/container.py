@@ -207,7 +207,6 @@ class ContainerContext(object):
     def __init__(self):
         self.registry = {}
 
-
     def get_namespace_manager(self, namespace, container_class, **kwargs):
         """return a NamespaceManager corresponding to the given namespace name and container class.
         
@@ -223,14 +222,15 @@ class ContainerContext(object):
                 additional keyword arguments will be used as constructor arguments for the
                 Namespace, in the case that one does not exist already.
         """
-        key = str(_thread.get_ident()) + "|" + container_class.__name__ + "|" + namespace
+        key = container_class.__name__ + "|" + namespace
         try:
             return self.registry[key]
         except KeyError:
             return self.registry.setdefault(key, container_class.create_namespace(namespace, **kwargs))
     
-
-
+    def clear(self):
+        self.registry.clear()
+        
 class Container(object):
     """represents a value, its stored time, and a value creation function corresponding to 
     a particular key in a particular namespace.
@@ -451,7 +451,7 @@ class Container(object):
             self.release_write_lock()
         
 class CreationAbortedError(Exception):
-    """a special exception that allows a creation function to abort what its doing"""
+    """an exception that allows a creation function to abort what its doing"""
     
     pass
 
