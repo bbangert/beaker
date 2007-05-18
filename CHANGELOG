@@ -1,0 +1,33 @@
+Beaker Changelog
+=================
+
+0.7 (05/18/07)
+* WARNING: Cleaned up Cache object based on Mako cache object, this changes
+  the call interface slightly for creating a Cache object directly. The
+  middleware cache object is unaffected from an end-user view. This change
+  also avoids duplicate creations of Cache objects.
+* Adding database backend and unit tests.
+* Added memcached test, fixed memcached namespace arg passing.
+* Fixed session and cache tests, still failing syncdict test. Added doctests
+  for Cache and Session middleware.
+* Cleanup of container/cache/container_test
+* Namespaces no longer require a context, removed NamespaceContext?
+* Logging in container.py uses logging module
+* Cleanup of argument passing, use name **kwargs instead of **params for 
+  generic kwargs
+* Container classes contain a static create_namespace() method, namespaces are 
+  accessed from the ContainerContext? via string name + container class alone
+* Implemented (but not yet tested) clear() method on Cache, locates all 
+  Namespaces used thus far and clears each one based on its keys() collection
+* Fixed Cache.clear() method to actually clear the Cache namespace.
+* Updated memcached backend to split servers on ';' for multiple memcached
+  backends.
+* Merging MyghtyUtils code into Beaker.
+
+0.6.3 (03/18/2007)
+* Added api with customized Session that doesn't require a Myghty request 
+  object, just a dict. Updated session to use the new version.
+* Removing unicode keys as some dbm backends can't handle unicode keys.
+* Adding core files that should've been here.
+* More stringent checking for existence of a session.
+* Avoid recreating the session object when it's empty.
