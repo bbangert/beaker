@@ -96,7 +96,7 @@ Source
 ======
 
 The latest developer version is available in a `Subversion repository
-<http://beaker.groovie.org/svn/trunk/Beaker#egg=Beaker-dev>`_.
+<http://beaker.groovie.org/svn/trunk#egg=Beaker-dev>`_.
 """,
       classifiers=[
       'Development Status :: 5 - Production/Stable',

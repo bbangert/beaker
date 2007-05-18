@@ -1,6 +1,8 @@
 Beaker Changelog
 =================
 
+0.7.1 (**svn**)
+
 0.7 (05/18/07)
 * WARNING: Cleaned up Cache object based on Mako cache object, this changes
   the call interface slightly for creating a Cache object directly. The
