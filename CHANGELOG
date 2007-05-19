@@ -1,6 +1,8 @@
 Beaker Changelog
 =================
 
+0.7.2 (**svn**)
+
 0.7.1 05/18/07)
 * adjusted synchronization logic to account for Mako/new Cache object's 
   multithreaded usage of Container.
