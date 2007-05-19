@@ -1,7 +1,11 @@
 import beaker.container as container
 from beaker.exceptions import InvalidCacheBackendError
+from beaker.util import coerce_cache_params
 import beaker.util as util
 
+import warnings
+warnings.warn('CacheMiddleware is moving to beaker.middleware in '
+              '0.8', DeprecationWarning, 2)
 clsmap = {
           'memory':container.MemoryContainer,
           'dbm':container.DBMContainer,
@@ -105,3 +109,56 @@ class CacheManager(object):
         kw = self.kwargs.copy()
         kw.update(kwargs)
         return self.caches.setdefault(name + str(kw), Cache(name, **kw))
+
+class CacheMiddleware(object):
+    def __init__(self, app, config=None, environ_key='beaker.cache', **kwargs):
+        """Initialize the Cache Middleware
+        
+        The Cache middleware will make a Cache instance available every request
+        under the ``environ['beaker.cache']`` key by default. The location in
+        environ can be changed by setting ``environ_key``.
+        
+        ``config``
+            dict  All settings should be prefixed by 'cache.'. This method of
+            passing variables is intended for Paste and other setups that
+            accumulate multiple component settings in a single dictionary. If
+            config contains *no cache. prefixed args*, then *all* of the config
+            options will be used to intialize the Cache objects.
+        
+        ``environ_key``
+            Location where the Cache instance will keyed in the WSGI environ
+        
+        ``**kwargs``
+            All keyword arguments are assumed to be cache settings and will
+            override any settings found in ``config``
+        """
+        self.app = app
+        config = config or {}
+
+        # Load up the default params
+        self.options= dict(type='memory', data_dir=None, timeout=None, 
+                           log_file=None)
+        
+        # Pull out any config args starting with beaker cache. if there are any
+        for key, val in config.iteritems():
+            if key.startswith('beaker.cache.'):
+                self.options[key[13:]] = val
+            if key.startswith('cache.'):
+                self.options[key[6:]] = val
+        
+        # Coerce and validate cache params
+        coerce_cache_params(self.options)
+        
+        # Assume all keys are intended for cache if none are prefixed with 'cache.'
+        if not self.options and not config:
+            self.options = config
+        
+        self.options.update(kwargs)
+        self.cache_manager = CacheManager(**self.options)
+        self.environ_key = environ_key
+    
+    def __call__(self, environ, start_response):
+        if environ.get('paste.registry'):
+            environ['paste.registry'].register(beaker_cache, self.cache_manager)
+        environ[self.environ_key] = self.cache_manager
+        return self.app(environ, start_response)

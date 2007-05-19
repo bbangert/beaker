@@ -6,7 +6,8 @@ try:
 except ImportError:
     import dummy_thread as _thread
     import dummy_threading as _threading
-    
+
+from datetime import datetime, timedelta
 import os
 import sha
 import string
@@ -175,6 +176,48 @@ def encoded_path(root, identifiers, extension = ".enc", depth = 3, digest = True
     
     return os.path.join(dir, ident + extension)
 
+def verify_options(opt, types, error):
+    if not isinstance(opt, types):
+        if not isinstance(types, tuple):
+            types = (types,)
+        coerced = False
+        for typ in types:
+            try:
+                if typ == bool:
+                    typ = asbool
+                opt = typ(opt)
+                coerced = True
+            except:
+                pass
+            if coerced:
+                break
+        if not coerced:
+            raise Exception(error)
+    return opt
 
+def verify_rules(params, ruleset):
+    for key, types, message in ruleset:
+        if key in params:
+            params[key] = verify_options(params[key], types, message)
+    return params
 
-        
+def coerce_session_params(params):
+    rules = [
+        ('data_dir', (str,), "data_dir must be a string referring to a directory."),
+        ('lock_dir', (str,), "lock_dir must be a string referring to a directory."),
+        ('type', (str,), "Session type must be a string."),
+        ('cookie_expires', (bool, datetime, timedelta), "Cookie expires was not a boolean, datetime, or timedelta instance."),
+        ('id', (str,), "Session id must be a string."),
+        ('key', (str,), "Session key must be a string."),
+        ('secret', (str,), "Session secret must be a string."),
+        ('timeout', (int,), "Session timeout must be an integer."),
+    ]
+    return verify_rules(params, rules)
+
+def coerce_cache_params(params):
+    rules = [
+        ('data_dir', (str,), "data_dir must be a string referring to a directory."),
+        ('lock_dir', (str,), "lock_dir must be a string referring to a directory."),
+        ('type', (str,), "Session type must be a string."),
+    ]
+    return verify_rules(params, rules)
