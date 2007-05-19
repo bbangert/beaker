@@ -54,18 +54,18 @@ class NamespaceManager(object):
     the implementation for setting and retrieving the namespace data is handled
     by subclasses.
     
-    acts as a service for a Container, which stores and retreives a particular
-    key from the namespace, coupled with a "stored time" setting.
-
-    NamespaceManager may be used alone, or may be privately managed by
+    NamespaceManager may be used alone, or may be privately accessed by
     one or more Container objects.  Container objects provide per-key services
-    like automatic expiration and recreation of individual keys and can manange
-    many types of NamespaceManagers for one or more particular 
-    namespaces simultaneously.  
+    like expiration times and automatic recreation of values.  
     
-    the class supports locking relative to its name.  many namespacemanagers within
-    multiple threads or across multiple processes must read/write synchronize their 
-    access to the actual dictionary of data referenced by the name.     
+    multiple NamespaceManagers created with a particular name will all share
+    access to the same underlying datasource and will attempt to synchronize
+    against a common mutex object.  The scope of this sharing may be within 
+    a single process or across multiple processes, depending on the type of
+    NamespaceManager used.
+    
+    The NamespaceManager itself is generally threadsafe, except in the case
+    of the DBMNamespaceManager in conjunction with the gdbm dbm implementation.
     """
     
     def __init__(self, namespace, **kwargs):
@@ -199,9 +199,6 @@ class ContainerContext(object):
     """initial context supplied to Containers. 
     
     Keeps track of namespacemangers keyed off of namespace names and container types.
-
-    also keeps namespacemanagers thread local for nsm instances that arent threadsafe
-    (i.e. gdbm)
     """
     
     def __init__(self):
@@ -241,12 +238,11 @@ class Container(object):
     
     the Container performs locking operations on the NamespaceManager, including a
     pretty intricate one for get_value with a creation function, so its best not
-    to pass a NamespaceManager that has been externally locked or open, as it stands
-    currently (i hope to improve on this).
+    to pass a NamespaceManager that is in a locked or opened state.
     
-    Managing multiple Containers for a set of keys within a certain namespace allows 
-    management of multiple namespace implementations, expiration properties, 
-    and thread/process synchronization, on a per-key basis.
+    Managing a set of Containers for a given set of keys allows each key to be
+    stored with a distinct namespace implementation (i.e. memory for one, DBM for another), 
+    expiration attribute and value-creation function.
     """
     
     def __init__(self, key, context, namespace, createfunc=None, expiretime=None, starttime=None, **kwargs):
