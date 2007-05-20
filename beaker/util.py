@@ -18,6 +18,8 @@ try:
 except ImportError:
     from sets import Set
 
+from beaker.converters import asbool
+
 def verify_directory(dir):
     """verifies and creates a directory.  tries to
     ignore collisions with other threads and processes."""
