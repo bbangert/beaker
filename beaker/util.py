@@ -15,7 +15,7 @@ import weakref
 
 try:
     Set = set
-except ImportError:
+except NameError:
     from sets import Set
 
 from beaker.converters import asbool
