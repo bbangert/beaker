@@ -8,8 +8,12 @@ import re
 import time
 import UserDict
 import warnings
-warnings.warn('SessionMiddleware is moving to beaker.middleware in '
-              '0.8', DeprecationWarning, 2)
+
+try:
+    from paste.registry import StackedObjectProxy
+    beaker_session = StackedObjectProxy(name="Beaker Session")
+except:
+    beaker_session = None
 
 from beaker.container import namespace_registry
 from beaker.util import coerce_session_params
@@ -304,6 +308,9 @@ class SessionObject(object):
         return self._session().has_key(key)
 
 class SessionMiddleware(object):
+    deprecated = True
+    session = beaker_session
+    
     def __init__(self, wrap_app, config=None, environ_key='beaker.session', **kwargs):
         """Initialize the Session Middleware
         
@@ -325,6 +332,10 @@ class SessionMiddleware(object):
             All keyword arguments are assumed to be cache settings and will
             override any settings found in ``config``
         """
+        if self.deprecated:
+            warnings.warn('SessionMiddleware is moving to beaker.middleware in '
+              '0.8', DeprecationWarning, 2)
+        
         config = config or {}
         
         # Load up the default params
@@ -352,7 +363,7 @@ class SessionMiddleware(object):
     def __call__(self, environ, start_response):
         session = SessionObject(environ, **self.options)
         if environ.get('paste.registry'):
-            environ['paste.registry'].register(beaker_session, session)
+            environ['paste.registry'].register(self.session, session)
         environ[self.environ_key] = session
         
         def session_start_response(status, headers, exc_info = None):

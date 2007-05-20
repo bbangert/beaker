@@ -5,15 +5,20 @@ try:
     beaker_session = StackedObjectProxy(name="Beaker Session")
     beaker_cache = StackedObjectProxy(name="Cache Manager")
 except:
-    pass
+    beaker_cache = None
+    beaker_session = None
 
+from beaker.cache import CacheMiddleware as DeprecatedCacheMiddleware
 from beaker.converters import asbool
+from beaker.session import SessionMiddleware as DeprecatedSessionMiddleware
 
-import warnings
-warnings.simplefilter('ignore', DeprecationWarning)
-from beaker.cache import CacheMiddleware
-from beaker.session import SessionMiddleware
-warnings.simplefilter('default', DeprecationWarning)
+class CacheMiddleware(DeprecatedCacheMiddleware):
+    deprecated = False
+    cache = beaker_cache
+
+class SessionMiddleware(DeprecatedSessionMiddleware):
+    deprecated = False
+    session = beaker_session
 
 def session_filter_factory(global_conf, **kwargs):
     def filter(app):

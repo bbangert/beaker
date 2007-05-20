@@ -1,11 +1,15 @@
+import warnings
 import beaker.container as container
 from beaker.exceptions import InvalidCacheBackendError
 from beaker.util import coerce_cache_params
 import beaker.util as util
 
-import warnings
-warnings.warn('CacheMiddleware is moving to beaker.middleware in '
-              '0.8', DeprecationWarning, 2)
+try:
+    from paste.registry import StackedObjectProxy
+    beaker_cache = StackedObjectProxy(name="Cache Manager")
+except:
+    beaker_cache = None
+
 clsmap = {
           'memory':container.MemoryContainer,
           'dbm':container.DBMContainer,
@@ -111,6 +115,9 @@ class CacheManager(object):
         return self.caches.setdefault(name + str(kw), Cache(name, **kw))
 
 class CacheMiddleware(object):
+    deprecated = True
+    cache = beaker_cache
+    
     def __init__(self, app, config=None, environ_key='beaker.cache', **kwargs):
         """Initialize the Cache Middleware
         
@@ -132,6 +139,10 @@ class CacheMiddleware(object):
             All keyword arguments are assumed to be cache settings and will
             override any settings found in ``config``
         """
+        if self.deprecated:
+            warnings.warn('CacheMiddleware is moving to beaker.middleware in '
+                          '0.8', DeprecationWarning, 2)
+        
         self.app = app
         config = config or {}
 
@@ -159,6 +170,6 @@ class CacheMiddleware(object):
     
     def __call__(self, environ, start_response):
         if environ.get('paste.registry'):
-            environ['paste.registry'].register(beaker_cache, self.cache_manager)
+            environ['paste.registry'].register(self.cache, self.cache_manager)
         environ[self.environ_key] = self.cache_manager
         return self.app(environ, start_response)
