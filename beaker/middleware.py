@@ -1,5 +1,3 @@
-import sys
-
 try:
     from paste.registry import StackedObjectProxy
     beaker_session = StackedObjectProxy(name="Beaker Session")
@@ -9,7 +7,6 @@ except:
     beaker_session = None
 
 from beaker.cache import CacheMiddleware as DeprecatedCacheMiddleware
-from beaker.converters import asbool
 from beaker.session import SessionMiddleware as DeprecatedSessionMiddleware
 
 class CacheMiddleware(DeprecatedCacheMiddleware):
