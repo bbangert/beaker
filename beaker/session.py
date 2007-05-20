@@ -340,7 +340,7 @@ class SessionMiddleware(object):
         config = config or {}
         
         # Load up the default params
-        self.options= dict(invalidate_corrupt=False, type=None, 
+        self.options = dict(invalidate_corrupt=False, type=None, 
                            data_dir=None, key='beaker.session.id', 
                            timeout=None, secret=None, log_file=None)
 
