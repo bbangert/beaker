@@ -240,6 +240,9 @@ class FileSynchronizer(SynchronizerImpl):
             self.opened = False
 
     def __del__(self):
+        if not os:
+            # os module has already been GCed
+            return
         if os.access(self.filename, os.F_OK):
             try:
                 os.remove(self.filename)
