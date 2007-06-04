@@ -145,7 +145,7 @@ class CacheMiddleware(object):
         
         self.app = app
         config = config or {}
-
+        
         # Load up the default params
         self.options= dict(type='memory', data_dir=None, timeout=None, 
                            log_file=None)

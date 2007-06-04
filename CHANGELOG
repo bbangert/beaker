@@ -1,6 +1,11 @@
 Beaker Changelog
 =================
 
+0.7.3 (**svn**)
+* Changed session to only send the cookie header if its a new session and
+  save() was called. Also only creates the session file under these 
+  conditions.
+
 0.7.2 (05/19/07)
 * Added deprecation warning for middleware move, relocated middleware to cache
   and session modules for backwards compatibility.

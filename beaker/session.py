@@ -95,14 +95,17 @@ class Session(UserDict.DictMixin):
             self._create_id()
         else:
             self.is_new = False
-
-        try:
-            self.load()
-        except:
-            if invalidate_corrupt:
-                self.invalidate()
-            else:
-                raise
+        
+        if not self.is_new:
+            try:
+                self.load()
+            except:
+                if invalidate_corrupt:
+                    self.invalidate()
+                else:
+                    raise
+        else:
+            self.dict = {}
         
     def _create_id(self):
         self.id = md5.new(
@@ -125,8 +128,8 @@ class Session(UserDict.DictMixin):
                 self.cookie[self.key]['expires'] = \
                     expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
             self.request['cookie_out'] = self.cookie[self.key].output(header='')
-		
-
+            self.request['set_cookie'] = False
+    
     created = property(lambda self: self.dict['_creation_time'])
 
     def delete(self):
@@ -180,6 +183,7 @@ class Session(UserDict.DictMixin):
                                               digest_filenames=False, **self.kwargs)
         
         namespace = self.namespace
+        self.request['set_cookie'] = True
         
         namespace.acquire_write_lock()
         try:
@@ -207,6 +211,10 @@ class Session(UserDict.DictMixin):
     
     def save(self):
         "saves the data for this session to persistent storage"
+        if not hasattr(self, 'namespace'):
+            curdict = self.dict
+            self.load()
+            self.dict = curdict
         
         self.namespace.acquire_write_lock()
         try:
@@ -225,8 +233,9 @@ class Session(UserDict.DictMixin):
             self.namespace['_accessed_time'] = time.time()
         finally:
             self.namespace.release_write_lock()
+        if self.is_new:
+            self.request['set_cookie'] = True
     
-
     def lock(self):
         """locks this session against other processes/threads.  this is 
         automatic when load/save is called.
@@ -369,9 +378,10 @@ class SessionMiddleware(object):
         
         def session_start_response(status, headers, exc_info = None):
             if session.__dict__['_sess'] is not None:
-                cookie = session.__dict__['_headers']['cookie_out']
-                if cookie:
-                    headers.append(('Set-cookie', cookie))
+                if session.__dict__['_headers']['set_cookie']:
+                    cookie = session.__dict__['_headers']['cookie_out']
+                    if cookie:
+                        headers.append(('Set-cookie', cookie))
             return start_response(status, headers, exc_info)
         try:
             response = self.wrap_app(environ, session_start_response)
