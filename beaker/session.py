@@ -361,12 +361,13 @@ class SessionMiddleware(object):
                 self.options[key[8:]] = val
         
         # Coerce and validate session params
-        coerce_session_params(config)
+        coerce_session_params(self.options)
         
-        # Update the params with the ones passed in
-        self.options.update(config)
+        # Assume all keys are intended for cache if none are prefixed with 'cache.'
+        if not self.options and not config:
+            self.options = config
+        
         self.options.update(kwargs)
-        
         self.wrap_app = wrap_app
         self.environ_key = environ_key
         

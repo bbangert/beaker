@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 import os
 import sha
 import string
+import types
 import weakref
 
 try:
@@ -207,12 +208,12 @@ def coerce_session_params(params):
     rules = [
         ('data_dir', (str,), "data_dir must be a string referring to a directory."),
         ('lock_dir', (str,), "lock_dir must be a string referring to a directory."),
-        ('type', (str,), "Session type must be a string."),
+        ('type', (str, types.NoneType), "Session type must be a string."),
         ('cookie_expires', (bool, datetime, timedelta), "Cookie expires was not a boolean, datetime, or timedelta instance."),
         ('id', (str,), "Session id must be a string."),
         ('key', (str,), "Session key must be a string."),
-        ('secret', (str,), "Session secret must be a string."),
-        ('timeout', (int,), "Session timeout must be an integer."),
+        ('secret', (str, types.NoneType), "Session secret must be a string."),
+        ('timeout', (int, types.NoneType), "Session timeout must be an integer."),
     ]
     return verify_rules(params, rules)
 

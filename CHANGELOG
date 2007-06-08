@@ -2,6 +2,8 @@ Beaker Changelog
 =================
 
 0.7.3 (**svn**)
+* Beaker was not properly parsing input options to session middleware. Thanks
+  to Yannick Gingras for spotting the issue.
 * Changed session to only send the cookie header if its a new session and
   save() was called. Also only creates the session file under these 
   conditions.
