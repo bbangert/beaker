@@ -161,7 +161,7 @@ class CacheMiddleware(object):
         coerce_cache_params(self.options)
         
         # Assume all keys are intended for cache if none are prefixed with 'cache.'
-        if not self.options and not config:
+        if not self.options and config:
             self.options = config
         
         self.options.update(kwargs)
