@@ -74,7 +74,7 @@ class Synchronizer(object):
             use_files = False
 
         if use_files:
-            syncs = util.ThreadLocal(creator=lambda: FileSynchronizer(identifier, lock_dir, digest_filenames))
+            syncs = Synchronizer.conditions.sync_get("file_%s" % identifier, lambda:util.ThreadLocal(creator=lambda: FileSynchronizer(identifier, lock_dir, digest_filenames)))
             self._get_impl = lambda:syncs.get()
         else:
             condition = Synchronizer.conditions.sync_get("condition_%s" % identifier, lambda: ConditionSynchronizer(identifier))
