@@ -2,6 +2,8 @@ Beaker Changelog
 =================
 * fixed another bug in synchronization, this one involving reentrant
 conditions with file synchronization
+* if a file open fails due to pickling errors, locks just opened
+are released unconditionally
 
 0.7.3 (06/08/07)
 * Beaker was not properly parsing input options to session middleware. Thanks

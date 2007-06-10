@@ -114,8 +114,12 @@ class NamespaceManager(object):
         acquire/release supports reentrant/nested operation."""
         
         self.do_acquire_read_lock()
-        self.open('r', checkcount = True)
-        
+        try:
+            self.open('r', checkcount = True)
+        except:
+            self.do_release_read_lock()
+            raise
+            
     def release_read_lock(self):
         """releases the read lock for this namespace, and possibly
         closes the datasource, if it was opened as a product of
@@ -123,8 +127,10 @@ class NamespaceManager(object):
 
         acquire/release supports reentrant/nested operation."""
     
-        self.close(checkcount = True)
-        self.do_release_read_lock()
+        try:
+            self.close(checkcount = True)
+        finally:
+            self.do_release_read_lock()
         
     def acquire_write_lock(self, wait = True): 
         """acquires a write lock for this namespace, and 
@@ -134,9 +140,13 @@ class NamespaceManager(object):
         acquire/release supports reentrant/nested operation."""
         
         r = self.do_acquire_write_lock(wait)
-        if (wait or r): self.open('c', checkcount = True)
-        return r
-        
+        try:
+            if (wait or r): self.open('c', checkcount = True)
+            return r
+        except:
+            self.do_release_write_lock()
+            raise
+            
     def release_write_lock(self): 
         """releases the write lock for this namespace, and possibly
         closes the datasource, if it was opened as a product of
@@ -144,8 +154,10 @@ class NamespaceManager(object):
 
         acquire/release supports reentrant/nested operation."""
 
-        self.close(checkcount = True)
-        self.do_release_write_lock()
+        try:
+            self.close(checkcount = True)
+        finally:
+            self.do_release_write_lock()
 
     def open(self, flags, checkcount = False):
         """opens the datasource for this namespace.

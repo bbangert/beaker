@@ -93,6 +93,9 @@ class SyncDict(object):
         self.mutex = mutex
         self.dict = dictionary
         
+    def clear(self):
+        self.dict.clear()
+        
     def get(self, key, createfunc, isvalidfunc = None):
         """regular get method.  returns the object asynchronously, if present
         and also passes the optional isvalidfunc,

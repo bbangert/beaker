@@ -1,7 +1,8 @@
 from beaker.container import *
+from beaker.synchronization import Synchronizer
 import random, time, weakref, sys
 import test_base
-import sys
+import sys, os, gc
 
 
 # container test -
@@ -161,3 +162,39 @@ class ContainerTest(test_base.MyghtyTest):
     def testDbmContainer3(self):
         self.testDbmContainer(expiretime=5, delay=2)
 
+    
+    def test_file_open_bug(self):
+        # 1. create container
+        container = container_registry('file')(context=context, namespace='reentrant_test', key='test', data_dir='./cache')
+        
+        # 2. ensure its file doesnt exist.
+        os.remove(container.namespacemanager.file)
+        
+        # 3. set a value.
+        container.set_value("x")
+
+        # 4. open the file and corrupt its pickled data
+        f = open(container.namespacemanager.file, 'w')
+        f.write("BLAH BLAH BLAH")
+        f.close()
+        
+        # 5. set another value.  namespace.acquire_lock() opens the file, the pickle raises an exception, the lock stays open (that was the bug)
+        # comment out line 147 of container.py, self.do_release_write_lock() inside of acquire_write_lock(), to illustrate
+        try:
+            container.set_value("y")
+            assert False
+        except:
+            pass
+            
+        # 6. clear file synchronziers, rebuild the namespace / context etc. so a new Synchchronizer gets built (alternatively, just
+        # access the same container from a different thread)
+        Synchronizer.conditions.clear()
+        context.clear()
+        container = container_registry('file')(context=context, namespace='reentrant_test', key='test', data_dir='./cache')
+        
+        # 7. acquire write lock hangs !
+        try:
+            container.set_value("z")
+            assert False
+        except:
+            pass
