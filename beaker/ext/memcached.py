@@ -10,7 +10,7 @@ try:
 except ImportError:
     try:
         import memcache
-    except:
+    except ImportError:
         raise InvalidCacheBackendError("Memcached cache backend requires either the 'memcache' or 'cmemcache' library")
 
 class MemcachedNamespaceManager(NamespaceManager):
