@@ -1,7 +1,7 @@
 Beaker Changelog
 =================
 
-0.7.4 (06/10/07)
+0.7.4 (07/09/07)
 * Fixed issue with Beaker not properly handling arguments as Pylons may pass
   them in.
 * Fixed unit test to catch file removal exception.
