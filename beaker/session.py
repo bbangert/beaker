@@ -354,11 +354,16 @@ class SessionMiddleware(object):
                            timeout=None, secret=None, log_file=None)
 
         # Pull out any config args meant for beaker session. if there are any
-        for key, val in config.iteritems():
-            if key.startswith('beaker.session.'):
-                self.options[key[15:]] = val
-            if key.startswith('session.'):
-                self.options[key[8:]] = val
+        for dct in [config, kwargs]:
+            for key, val in config.iteritems():
+                if key.startswith('beaker.session.'):
+                    self.options[key[15:]] = val
+                if key.startswith('session.'):
+                    self.options[key[8:]] = val
+                if key.startswith('session_'):
+                    warnings.warn('Session options should start with session. '
+                                  'instead of session_.', DeprecationWarning, 2)
+                    self.options[key[8:]] = val
         
         # Coerce and validate session params
         coerce_session_params(self.options)

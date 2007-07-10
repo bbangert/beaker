@@ -151,11 +151,16 @@ class CacheMiddleware(object):
                            log_file=None)
         
         # Pull out any config args starting with beaker cache. if there are any
-        for key, val in config.iteritems():
-            if key.startswith('beaker.cache.'):
-                self.options[key[13:]] = val
-            if key.startswith('cache.'):
-                self.options[key[6:]] = val
+        for dct in [config, kwargs]:
+            for key, val in dct.iteritems():
+                if key.startswith('beaker.cache.'):
+                    self.options[key[13:]] = val
+                if key.startswith('cache.'):
+                    self.options[key[6:]] = val
+                if key.startswith('cache_'):
+                    warnings.warn('Cache options should start with cache. '
+                                  'instead of cache_', DeprecationWarning, 2)
+                    self.options[key[6:]] = val
         
         # Coerce and validate cache params
         coerce_cache_params(self.options)

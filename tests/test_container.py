@@ -168,7 +168,10 @@ class ContainerTest(test_base.MyghtyTest):
         container = container_registry('file')(context=context, namespace='reentrant_test', key='test', data_dir='./cache')
         
         # 2. ensure its file doesnt exist.
-        os.remove(container.namespacemanager.file)
+        try:
+            os.remove(container.namespacemanager.file)
+        except OSError:
+            pass
         
         # 3. set a value.
         container.set_value("x")
