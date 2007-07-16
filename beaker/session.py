@@ -143,8 +143,7 @@ class Session(UserDict.DictMixin):
             self.namespace['_accessed_time'] = time.time()
         finally:
             self.namespace.release_write_lock()
-        
-            
+    
     def __getitem__(self, key):
         return self.dict.__getitem__(key)
     def __setitem__(self, key, value):
@@ -187,13 +186,13 @@ class Session(UserDict.DictMixin):
         
         namespace.acquire_write_lock()
         try:
-        
             self.debug("session loading keys")
             self.dict = {}
             now = time.time()
             
             if not namespace.has_key('_creation_time'):
                 namespace['_creation_time'] = now
+                self.is_new = True
             try:
                 self.accessed = namespace['_accessed_time']
                 namespace['_accessed_time'] = now
@@ -316,6 +315,15 @@ class SessionObject(object):
     
     def __contains__(self, key):
         return self._session().has_key(key)
+    
+    def get_by_id(self, id):
+        params = self.__dict__['_params']
+        session = Session({}, use_cookies=False, id=id, **params)
+        if session.is_new:
+            session.namespace.remove()
+            return None
+        return session
+
 
 class SessionMiddleware(object):
     deprecated = True
@@ -349,7 +357,7 @@ class SessionMiddleware(object):
         config = config or {}
         
         # Load up the default params
-        self.options = dict(invalidate_corrupt=False, type=None, 
+        self.options = dict(invalidate_corrupt=True, type=None, 
                            data_dir=None, key='beaker.session.id', 
                            timeout=None, secret=None, log_file=None)
 
@@ -381,6 +389,7 @@ class SessionMiddleware(object):
         if environ.get('paste.registry'):
             environ['paste.registry'].register(self.session, session)
         environ[self.environ_key] = session
+        environ['beaker.get_session'] = self._get_session
         
         def session_start_response(status, headers, exc_info = None):
             if session.__dict__['_sess'] is not None:
@@ -403,3 +412,6 @@ class SessionMiddleware(object):
             raise ty, val, sys.exc_info()[2]
         else:
             return response
+    
+    def _get_session(self):
+        return Session({}, use_cookies=False, **self.options)
