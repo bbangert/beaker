@@ -2,6 +2,10 @@ Beaker Changelog
 =================
 
 0.7.5 (**svn**)
+* Fixed data_dir parsing for session string coercions, no longer picks up None
+  as a data_dir.
+* Fixed session.get_by_id to lookup recently saved sessions properly, also
+  updates session with creation/access time upon save.
 * Add unit tests for get_by_id function. Updated get_by_id to not result in
   additional session files.
 * Added session.get_by_id function to retrieve a session of the given id.

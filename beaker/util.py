@@ -209,7 +209,7 @@ def verify_rules(params, ruleset):
 
 def coerce_session_params(params):
     rules = [
-        ('data_dir', (str,), "data_dir must be a string referring to a directory."),
+        ('data_dir', (str, types.NoneType), "data_dir must be a string referring to a directory."),
         ('lock_dir', (str,), "lock_dir must be a string referring to a directory."),
         ('type', (str, types.NoneType), "Session type must be a string."),
         ('cookie_expires', (bool, datetime, timedelta), "Cookie expires was not a boolean, datetime, or timedelta instance."),
@@ -222,7 +222,7 @@ def coerce_session_params(params):
 
 def coerce_cache_params(params):
     rules = [
-        ('data_dir', (str,), "data_dir must be a string referring to a directory."),
+        ('data_dir', (str, types.NoneType), "data_dir must be a string referring to a directory."),
         ('lock_dir', (str,), "lock_dir must be a string referring to a directory."),
         ('type', (str,), "Session type must be a string."),
     ]

@@ -1,7 +1,10 @@
 import re
+import os
 
 from paste.fixture import TestApp
 from beaker.middleware import SessionMiddleware
+
+loc = os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), 'sessions'])
 
 def simple_app(environ, start_response):
     session = environ['beaker.session']
@@ -59,7 +62,8 @@ def test_nosave():
     assert 'current value is: 2' in res
 
 def test_load_session_by_id():
-    app = TestApp(SessionMiddleware(simple_app))
+    options = {'session.data_dir':loc, 'session.secret':'blah'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -68,7 +72,7 @@ def test_load_session_by_id():
     old_id = re.sub(r'^.*?session id is (\S+)$', r'\1', res.body, re.M)
     
     # Clear the cookies and do a new request
-    app = TestApp(SessionMiddleware(simple_app))
+    app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     

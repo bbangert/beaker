@@ -198,7 +198,7 @@ class Session(UserDict.DictMixin):
                 namespace['_accessed_time'] = now
             except KeyError:
                 namespace['_accessed_time'] = self.accessed = now
-    
+            
             if self.timeout is not None and now - self.accessed > self.timeout:
                 self.invalidate()
             else:
@@ -229,7 +229,10 @@ class Session(UserDict.DictMixin):
             for k in self.dict.keys():
                 self.namespace[k] = self.dict[k]
                 
-            self.namespace['_accessed_time'] = time.time()
+            self.namespace['_accessed_time'] = self.dict['_accessed_time'] \
+                = time.time()
+            self.namespace['_creation_time'] = self.dict['_creation_time'] \
+                = time.time()
         finally:
             self.namespace.release_write_lock()
         if self.is_new:
