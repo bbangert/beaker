@@ -711,7 +711,10 @@ class FileNamespaceManager(NamespaceManager):
     def do_open(self, flags):
         if self.file_exists(self.file):
             fh = open(self.file, 'rb')
-            self.hash = cPickle.load(fh)
+            try:
+                self.hash = cPickle.load(fh)
+            except (IOError, OSError, EOFError, cPickle.PickleError):
+                pass
             fh.close()
         self.flags = flags
         
