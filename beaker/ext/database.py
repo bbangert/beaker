@@ -11,6 +11,9 @@ try:
 except ImportError:
     raise InvalidCacheBackendError("Database cache backend requires the 'sqlalchemy' library")
 
+if not hasattr(sa, 'BoundMetaData'):
+    raise InvalidCacheBackendError("SQLAlchemy 0.4 and later are not currently supported.")
+
 class DatabaseNamespaceManager(NamespaceManager):
     metadatas = SyncDict(_threading.Lock(), {})
     tables = SyncDict(_threading.Lock(), {})
