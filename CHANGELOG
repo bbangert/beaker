@@ -1,7 +1,7 @@
 Beaker Changelog
 =================
 
-0.7.5 (**svn**)
+0.7.5 (08/18/07)
 * Fixed data_dir parsing for session string coercions, no longer picks up None
   as a data_dir.
 * Fixed session.get_by_id to lookup recently saved sessions properly, also
