@@ -1,6 +1,8 @@
 Beaker Changelog
 =================
 
+0.7.6 (**svn**)
+
 0.7.5 (08/18/07)
 * Fixed data_dir parsing for session string coercions, no longer picks up None
   as a data_dir.
