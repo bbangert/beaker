@@ -2,6 +2,9 @@ Beaker Changelog
 =================
 
 0.7.6 (**svn**)
+* Streamline ext:database backend to avoid unnecessary database selects for
+  repeat data.
+* Added SQLAlchemy 0.4 support to ext:database backend.
 
 0.7.5 (08/18/07)
 * Fixed data_dir parsing for session string coercions, no longer picks up None

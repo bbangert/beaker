@@ -5,26 +5,29 @@ from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import Synchronizer, _threading
 from beaker.util import verify_directory, SyncDict
 
+sa_version = None
+
 try:
     import sqlalchemy as sa
+    import sqlalchemy as types
     import sqlalchemy.pool as pool
+    sa_version = '0.3'
 except ImportError:
+    from sqlalchemy import types
     raise InvalidCacheBackendError("Database cache backend requires the 'sqlalchemy' library")
 
 if not hasattr(sa, 'BoundMetaData'):
-    raise InvalidCacheBackendError("SQLAlchemy 0.4 and later are not currently supported.")
+    sa_version = '0.4'
 
 class DatabaseNamespaceManager(NamespaceManager):
     metadatas = SyncDict(_threading.Lock(), {})
     tables = SyncDict(_threading.Lock(), {})
     
-    def __init__(self, namespace, url, sa_opts=None, optimistic=False, 
+    def __init__(self, namespace, url=None, sa_opts=None, optimistic=False,
                  table_name='beaker_cache', data_dir=None, lock_dir=None,
                  **params):
         """Creates a database namespace manager
         
-        ``url``
-            A SQLAlchemy database URL
         ``sa_opts``
             A dictionary of SQLAlchemy keyword options to initialize the engine
             with.
@@ -38,7 +41,7 @@ class DatabaseNamespaceManager(NamespaceManager):
         NamespaceManager.__init__(self, namespace, **params)
         
         if sa_opts is None:
-            sa_opts = {}
+            sa_opts = params
         
         if lock_dir is not None:
             self.lock_dir = lock_dir
@@ -50,27 +53,34 @@ class DatabaseNamespaceManager(NamespaceManager):
         verify_directory(self.lock_dir)
         
         # Check to see if the table's been created before
-        table_key = url + str(sa_opts) + table_name
+        url = url or sa_opts['sa.url']
+        table_key = url + table_name
         def make_cache():
             # Check to see if we have a connection pool open already
-            meta_key = url + str(sa_opts)
+            meta_key = url + table_name
             def make_meta():
-                if url.startswith('mysql') and not sa_opts:
-                    sa_opts['poolclass'] = pool.QueuePool
-                engine = sa.create_engine(url, **sa_opts)
-                meta = sa.BoundMetaData(engine)
+                if sa_version == '0.3':
+                    if url.startswith('mysql') and not sa_opts:
+                        sa_opts['poolclass'] = pool.QueuePool
+                    engine = sa.create_engine(url, **sa_opts)
+                    meta = sa.BoundMetaData(engine)
+                else:
+                    engine = sa.engine_from_config(sa_opts, 'sa.')
+                    meta = sa.MetaData()
+                    meta.bind = engine
                 return meta
             meta = DatabaseNamespaceManager.metadatas.get(meta_key, make_meta)
             # Create the table object and cache it now
             cache = sa.Table(table_name, meta,
-                             sa.Column('id', sa.Integer, primary_key=True),
-                             sa.Column('namespace', sa.String(255), nullable=False),
-                             sa.Column('key', sa.String(255), nullable=False),
-                             sa.Column('value', sa.BLOB(), nullable=False),
-                             sa.UniqueConstraint('namespace', 'key')
+                             sa.Column('id', types.Integer, primary_key=True),
+                             sa.Column('namespace', types.String(255), nullable=False),
+                             sa.Column('key', types.String(255), nullable=False),
+                             sa.Column('value', types.BLOB(), nullable=False),
+                             #sa.UniqueConstraint('namespace', 'key')
             )
             cache.create(checkfirst=True)
             return cache
+        self._dict = None
         self.cache = DatabaseNamespaceManager.tables.get(table_key, make_cache)
     
     # The database does its own locking.  override our own stuff
@@ -83,59 +93,70 @@ class DatabaseNamespaceManager(NamespaceManager):
     # as possible
     def open(self, *args, **params):pass
     def close(self, *args, **params):pass
-
-    def __getitem__(self, key):
+    
+    def _load_data(self):
         cache = self.cache
-        result = sa.select([cache.c.value], 
-                           sa.and_(cache.c.namespace==self.namespace, 
-                                   cache.c.key==key)).execute()
-        rows = result.fetchall()
-        if len(rows) > 0:
-            return cPickle.loads(str(rows[0]['value']))
+        self._dict = {}
+        result = sa.select([cache.c.key, cache.c.value, cache.c.id], 
+                           cache.c.namespace==self.namespace
+                          ).execute()
+        for row in result:
+            self._dict[row['key']] = (row['value'], row['id'])
+    
+    def __getitem__(self, key):
+        if self._dict is None:
+            self._load_data()
+        if key in self._dict:
+            try:
+                return cPickle.loads(str(self._dict[key][0]))
+            except cPickle.UnpicklingError:
+                return KeyError(key)
         else:
             raise KeyError(key)
-    
+        
     def __contains__(self, key):
-        cache = self.cache
-        rows = sa.select([cache.c.id],
-                         sa.and_(cache.c.namespace==self.namespace, 
-                                 cache.c.key==key)).execute().fetchall()
-        return len(rows) > 0
+        if self._dict is None:
+            self._load_data()
+        return key in self._dict
 
     def has_key(self, key):
-        cache = self.cache
-        rows = sa.select([cache.c.id],
-                         sa.and_(cache.c.namespace==self.namespace, 
-                                 cache.c.key==key)).execute().fetchall()
-        return len(rows) > 0
+        if self._dict is None:
+            self._load_data()
+        return key in self._dict
 
     def __setitem__(self, key, value):
+        if self._dict is None:
+            self._load_data()
         cache = self.cache
-        rows = sa.select([cache.c.id],
-                         sa.and_(cache.c.namespace==self.namespace, 
-                                 cache.c.key==key)).execute().fetchall()
+        
+        if key in self._dict:
+            id = self._dict[key][1]
+        else:
+            id = None
+        
         value = cPickle.dumps(value)
-        if len(rows) > 0:
-            id = rows[0]['id']
+        if id:
             cache.update(cache.c.id==id).execute(value=value)
         else:
             cache.insert().execute(namespace=self.namespace, key=key,
                                     value=value)
+        self._dict[key] = value
     
     def __delitem__(self, key):
         cache = self.cache
         cache.delete(sa.and_(cache.c.namespace==self.namespace, 
                              cache.c.key==key)).execute()
+        del self._dict[key]
 
     def do_remove(self):
         cache = self.cache
         cache.delete(cache.c.namespace==self.namespace).execute()
+        self._dict = None
 
     def keys(self):
-        cache = self.cache
-        rows = sa.select([cache.c.key],
-                         cache.c.namespace==self.namespace).execute().fetchall()
-        return [x['key'] for x in rows]
+        if self._dict is None:
+            self._load_data()
+        return self._dict.keys()
 
 class DatabaseContainer(Container):
 
@@ -156,4 +177,3 @@ use_files = True, lock_dir = self.namespacemanager.lock_dir)
 
     def unlock_createfunc(self):
         self.funclock.release_write_lock()
-
