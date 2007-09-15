@@ -4,7 +4,8 @@ Beaker Changelog
 0.7.6 (**svn**)
 * WARNING: Major change to ext:database to use a single row per namespace.
   Additionally, there's an accessed and created column present to support 
-  easier deletion of old cache/session data.
+  easier deletion of old cache/session data. You *will* need to drop any
+  existing tables being used by the ext:database backend.
 * Streamline ext:database backend to avoid unnecessary database selects for
   repeat data.
 * Added SQLAlchemy 0.4 support to ext:database backend.
