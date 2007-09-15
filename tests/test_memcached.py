@@ -68,7 +68,25 @@ def test_unicode_keys():
     assert u'hŏa' not in cache
     cache.remove_value(u'hiŏ')
     assert u'hiŏ' not in cache
-    
+
+def test_spaces_in_unicode_keys():    
+    cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
+    o = object()
+    cache.set_value(u'hi ŏ', o)
+    assert u'hi ŏ' in cache
+    assert u'hŏa' not in cache
+    cache.remove_value(u'hi ŏ')
+    assert u'hi ŏ' not in cache
+
+def test_spaces_in_keys():
+    cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
+    cache.set_value("has space", 24)
+    assert cache.has_key("has space")
+    assert 24 == cache.get_value("has space")
+    cache.set_value("hasspace", 42)
+    assert cache.has_key("hasspace")
+    assert 42 == cache.get_value("hasspace")
+
 def test_increment():
     app = TestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})

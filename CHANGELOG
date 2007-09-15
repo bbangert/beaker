@@ -2,6 +2,7 @@ Beaker Changelog
 =================
 
 0.7.6 (**svn**)
+* Fixed memcached key error with keys containing spaces. Thanks Jim Musil.
 * WARNING: Major change to ext:database to use a single row per namespace.
   Additionally, there's an accessed and created column present to support 
   easier deletion of old cache/session data. You *will* need to drop any
