@@ -1,4 +1,5 @@
 import cPickle
+from datetime import datetime
 
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
@@ -65,6 +66,9 @@ class DatabaseNamespaceManager(NamespaceManager):
                     engine = sa.create_engine(url, **sa_opts)
                     meta = sa.BoundMetaData(engine)
                 else:
+                    # SQLAlchemy pops the url, this ensures it sticks around
+                    # later
+                    sa_opts['sa.url'] = url
                     engine = sa.engine_from_config(sa_opts, 'sa.')
                     meta = sa.MetaData()
                     meta.bind = engine
@@ -74,13 +78,15 @@ class DatabaseNamespaceManager(NamespaceManager):
             cache = sa.Table(table_name, meta,
                              sa.Column('id', types.Integer, primary_key=True),
                              sa.Column('namespace', types.String(255), nullable=False),
-                             sa.Column('key', types.String(255), nullable=False),
-                             sa.Column('value', types.BLOB(), nullable=False),
-                             #sa.UniqueConstraint('namespace', 'key')
+                             sa.Column('accessed', types.DateTime, nullable=False),
+                             sa.Column('created', types.DateTime, nullable=False),
+                             sa.Column('data', types.BLOB(), nullable=False),
+                             sa.UniqueConstraint('namespace')
             )
             cache.create(checkfirst=True)
             return cache
-        self._dict = None
+        self.hash = {}
+        self._is_new = False
         self.cache = DatabaseNamespaceManager.tables.get(table_key, make_cache)
     
     # The database does its own locking.  override our own stuff
@@ -88,75 +94,59 @@ class DatabaseNamespaceManager(NamespaceManager):
     def do_release_read_lock(self): pass
     def do_acquire_write_lock(self, wait = True): return True
     def do_release_write_lock(self): pass
+            
 
-    # override open/close to do nothing, keep the connection open as long
-    # as possible
-    def open(self, *args, **params):pass
-    def close(self, *args, **params):pass
-    
-    def _load_data(self):
+    def do_open(self, flags):
         cache = self.cache
-        self._dict = {}
-        result = sa.select([cache.c.key, cache.c.value, cache.c.id], 
+        result = sa.select([cache.c.data], 
                            cache.c.namespace==self.namespace
-                          ).execute()
-        for row in result:
-            self._dict[row['key']] = (row['value'], row['id'])
-    
-    def __getitem__(self, key):
-        if self._dict is None:
-            self._load_data()
-        if key in self._dict:
+                          ).execute().fetchone()
+        if not result:
+            self._is_new = True
+            self.hash = {}
+        else:
+            self._is_new = False
             try:
-                return cPickle.loads(str(self._dict[key][0]))
-            except cPickle.UnpicklingError:
-                return KeyError(key)
-        else:
-            raise KeyError(key)
+                self.hash = cPickle.loads(str(result['data']))
+            except (IOError, OSError, EOFError, cPickle.PickleError):
+                self.hash = {}
+                self._is_new = True
+        self.flags = flags
         
-    def __contains__(self, key):
-        if self._dict is None:
-            self._load_data()
-        return key in self._dict
-
-    def has_key(self, key):
-        if self._dict is None:
-            self._load_data()
-        return key in self._dict
-
-    def __setitem__(self, key, value):
-        if self._dict is None:
-            self._load_data()
+    def do_close(self):
         cache = self.cache
+        if self.flags is not None and (self.flags == 'c' or self.flags == 'w'):
+            if self._is_new:
+                cache.insert().execute(namespace=self.namespace, 
+                                       data=cPickle.dumps(self.hash),
+                                       accessed=datetime.now(), 
+                                       created=datetime.now())
+            else:
+                cache.update(cache.c.namespace==self.namespace).execute(
+                    data=cPickle.dumps(self.hash), accessed=datetime.now())
         
-        if key in self._dict:
-            id = self._dict[key][1]
-        else:
-            id = None
-        
-        value = cPickle.dumps(value)
-        if id:
-            cache.update(cache.c.id==id).execute(value=value)
-        else:
-            cache.insert().execute(namespace=self.namespace, key=key,
-                                    value=value)
-        self._dict[key] = value
-    
-    def __delitem__(self, key):
-        cache = self.cache
-        cache.delete(sa.and_(cache.c.namespace==self.namespace, 
-                             cache.c.key==key)).execute()
-        del self._dict[key]
-
+        self.flags = None
+                
     def do_remove(self):
         cache = self.cache
         cache.delete(cache.c.namespace==self.namespace).execute()
-        self._dict = None
+        self.hash = {}
+
+    def __getitem__(self, key): 
+        return self.hash[key]
+
+    def __contains__(self, key): 
+        return self.hash.has_key(key)
+        
+    def __setitem__(self, key, value):
+        self.hash[key] = value
+
+    def __delitem__(self, key):
+        del self.hash[key]
 
     def keys(self):
-        if self._dict is None:
-            self._load_data()
-        return self._dict.keys()
+        return self.hash.keys()
+        
 
 class DatabaseContainer(Container):
 
