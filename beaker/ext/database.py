@@ -87,6 +87,7 @@ class DatabaseNamespaceManager(NamespaceManager):
             return cache
         self.hash = {}
         self._is_new = False
+        self.loaded = False
         self.cache = DatabaseNamespaceManager.tables.get(table_key, make_cache)
     
     # The database does its own locking.  override our own stuff
@@ -98,6 +99,9 @@ class DatabaseNamespaceManager(NamespaceManager):
 
     def do_open(self, flags):
         cache = self.cache
+        if self.loaded:
+            return
+        
         result = sa.select([cache.c.data], 
                            cache.c.namespace==self.namespace
                           ).execute().fetchone()
@@ -112,6 +116,7 @@ class DatabaseNamespaceManager(NamespaceManager):
                 self.hash = {}
                 self._is_new = True
         self.flags = flags
+        self.loaded = True
         
     def do_close(self):
         cache = self.cache
