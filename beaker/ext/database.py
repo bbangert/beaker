@@ -32,6 +32,8 @@ class DatabaseNamespaceManager(NamespaceManager):
                  **params):
         """Creates a database namespace manager
         
+        ``url``
+            SQLAlchemy compliant db url
         ``sa_opts``
             A dictionary of SQLAlchemy keyword options to initialize the engine
             with.
