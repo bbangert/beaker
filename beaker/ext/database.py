@@ -1,4 +1,5 @@
 import cPickle
+import logging
 from datetime import datetime
 
 from beaker.container import NamespaceManager, Container
@@ -7,6 +8,8 @@ from beaker.synchronization import Synchronizer, _threading
 from beaker.util import verify_directory, SyncDict
 
 sa_version = None
+
+log = logging.getLogger(__name__)
 
 try:
     import sqlalchemy as sa
@@ -113,24 +116,21 @@ class DatabaseNamespaceManager(NamespaceManager):
             try:
                 self.hash = cPickle.loads(str(result['data']))
             except (IOError, OSError, EOFError, cPickle.PickleError):
+                log.debug("Couln't load pickle data, creating new storage")
                 self.hash = {}
                 self._is_new = True
-        self.flags = flags
         self.loaded = True
         
     def do_close(self):
         cache = self.cache
-        if self.flags is not None and (self.flags == 'c' or self.flags == 'w'):
-            if self._is_new:
-                cache.insert().execute(namespace=self.namespace, 
-                                       data=cPickle.dumps(self.hash),
-                                       accessed=datetime.now(), 
-                                       created=datetime.now())
-            else:
-                cache.update(cache.c.namespace==self.namespace).execute(
-                    data=cPickle.dumps(self.hash), accessed=datetime.now())
-        
-        self.flags = None
+        if self._is_new:
+            cache.insert().execute(namespace=self.namespace, 
+                                   data=cPickle.dumps(self.hash),
+                                   accessed=datetime.now(), 
+                                   created=datetime.now())
+        else:
+            cache.update(cache.c.namespace==self.namespace).execute(
+                data=cPickle.dumps(self.hash), accessed=datetime.now())
                 
     def do_remove(self):
         cache = self.cache
