@@ -1,7 +1,7 @@
 Beaker Changelog
 =================
 
-0.7.6 (**svn**)
+0.8 (**tip**)
 * Fixed bug in prior db update causing session to occasionally not be written
   back to the db.
 * Fixed memcached key error with keys containing spaces. Thanks Jim Musil.
