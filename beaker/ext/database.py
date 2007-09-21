@@ -102,9 +102,9 @@ class DatabaseNamespaceManager(NamespaceManager):
     def do_release_write_lock(self): pass
     
     def do_open(self, flags):
+        # If we already loaded the data, don't bother loading it again
         if self.loaded:
             self.flags = flags
-            self._is_new = False
             return
         
         cache = self.cache
@@ -133,6 +133,7 @@ class DatabaseNamespaceManager(NamespaceManager):
                                        data=cPickle.dumps(self.hash),
                                        accessed=datetime.now(), 
                                        created=datetime.now())
+                self._is_new = False
             else:
                 cache.update(cache.c.namespace==self.namespace).execute(
                     data=cPickle.dumps(self.hash), accessed=datetime.now())
@@ -142,7 +143,10 @@ class DatabaseNamespaceManager(NamespaceManager):
         cache = self.cache
         cache.delete(cache.c.namespace==self.namespace).execute()
         self.hash = {}
-        self.loaded = False
+        
+        # We can retain the fact that we did a load attempt, but since the
+        # file is gone this will be a new namespace should it be saved.
+        self._is_new = True
 
     def __getitem__(self, key): 
         return self.hash[key]
