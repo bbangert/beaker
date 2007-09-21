@@ -100,13 +100,14 @@ class DatabaseNamespaceManager(NamespaceManager):
     def do_release_read_lock(self): pass
     def do_acquire_write_lock(self, wait = True): return True
     def do_release_write_lock(self): pass
-            
-
+    
     def do_open(self, flags):
-        cache = self.cache
         if self.loaded:
+            self.flags = flags
+            self._is_new = False
             return
         
+        cache = self.cache
         result = sa.select([cache.c.data], 
                            cache.c.namespace==self.namespace
                           ).execute().fetchone()
@@ -121,23 +122,27 @@ class DatabaseNamespaceManager(NamespaceManager):
                 log.debug("Couln't load pickle data, creating new storage")
                 self.hash = {}
                 self._is_new = True
+        self.flags = flags
         self.loaded = True
-        
+    
     def do_close(self):
-        cache = self.cache
-        if self._is_new:
-            cache.insert().execute(namespace=self.namespace, 
-                                   data=cPickle.dumps(self.hash),
-                                   accessed=datetime.now(), 
-                                   created=datetime.now())
-        else:
-            cache.update(cache.c.namespace==self.namespace).execute(
-                data=cPickle.dumps(self.hash), accessed=datetime.now())
-                
+        if self.flags is not None and (self.flags == 'c' or self.flags == 'w'):
+            cache = self.cache
+            if self._is_new:
+                cache.insert().execute(namespace=self.namespace, 
+                                       data=cPickle.dumps(self.hash),
+                                       accessed=datetime.now(), 
+                                       created=datetime.now())
+            else:
+                cache.update(cache.c.namespace==self.namespace).execute(
+                    data=cPickle.dumps(self.hash), accessed=datetime.now())
+        self.flags = None
+    
     def do_remove(self):
         cache = self.cache
         cache.delete(cache.c.namespace==self.namespace).execute()
         self.hash = {}
+        self.loaded = False
 
     def __getitem__(self, key): 
         return self.hash[key]
