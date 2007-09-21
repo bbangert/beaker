@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.7.6'
+version = '0.8'
 
 setup(name='Beaker',
       version=version,
@@ -12,7 +12,7 @@ Cache and Session Library
 About
 =====
 
-Beaker 0.7 is a new and refactored update to Beaker built on code from the
+Beaker 0.7 was a new and refactored update to Beaker built on code from the
 package MyghtyUtils, originally used in the Myghty project. It implements a
 full set of cache functionality along with sessions that can utilize the 
 caches.
