@@ -4,3 +4,5 @@ syntax:glob
 .svn
 *.pyc
 *.egg-info
+container_file
+container_dbm
