@@ -136,9 +136,9 @@ class Session(UserDict.DictMixin):
         """deletes the persistent storage for this session, but remains valid. """
         self.namespace.acquire_write_lock()
         try:
-            namespace.remove()
+            self.namespace.remove()
         finally:
-            namespace.release_write_lock()
+            self.namespace.release_write_lock()
     
     def __getitem__(self, key):
         return self.dict.__getitem__(key)
