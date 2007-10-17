@@ -12,16 +12,15 @@ Cache and Session Library
 About
 =====
 
-Beaker 0.8 has updated support for database backed sessions to provide easier
-methods for pruning the database and more efficient access.
+Beaker is a web session and general caching library that includes WSGI 
+middleware for use in web applications.
 
-0.7
----
+As a general caching library, Beaker can handle storing for various times
+any Python object that can be pickled with optional back-ends on a 
+fine-grained basis.
 
-Beaker 0.7 was a new and refactored update to Beaker built on code from the
-package MyghtyUtils, originally used in the Myghty project. It implements a
-full set of cache functionality along with sessions that can utilize the 
-caches.
+Beaker was built largely on the code from MyghtyUtils, then refactored and
+extended with database support.
 
 Beaker includes Cache and Session WSGI middleware to ease integration with
 WSGI capable frameworks, and is automatically used by `Pylons 
