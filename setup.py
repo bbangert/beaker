@@ -12,6 +12,12 @@ Cache and Session Library
 About
 =====
 
+Beaker 0.8 has updated support for database backed sessions to provide easier
+methods for pruning the database and more efficient access.
+
+0.7
+---
+
 Beaker 0.7 was a new and refactored update to Beaker built on code from the
 package MyghtyUtils, originally used in the Myghty project. It implements a
 full set of cache functionality along with sessions that can utilize the 
@@ -95,8 +101,8 @@ Using WSGI::
 Source
 ======
 
-The latest developer version is available in a `Subversion repository
-<http://beaker.groovie.org/svn/trunk#egg=Beaker-dev>`_.
+The latest developer version is available in a `Mercurial repository
+<https://www.knowledgetap.com/hg/beaker/archive/tip.tar.gz#egg=Beaker-dev>`_.
 """,
       classifiers=[
       'Development Status :: 5 - Production/Stable',
