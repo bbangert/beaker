@@ -1,3 +1,4 @@
+import anydbm
 import cPickle
 import logging
 import os.path
@@ -541,7 +542,6 @@ class DBMNamespaceManager(NamespaceManager):
             self.lock_dir = data_dir + "/container_dbm_lock"
 
         if dbmmodule is None:
-            import anydbm
             self.dbmmodule = anydbm
         else:
             self.dbmmodule = dbmmodule
