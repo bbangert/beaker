@@ -13,11 +13,10 @@ log = logging.getLogger(__name__)
 
 try:
     import sqlalchemy as sa
-    import sqlalchemy as types
     import sqlalchemy.pool as pool
+    from sqlalchemy import types
     sa_version = '0.3'
 except ImportError:
-    from sqlalchemy import types
     raise InvalidCacheBackendError("Database cache backend requires the 'sqlalchemy' library")
 
 if not hasattr(sa, 'BoundMetaData'):

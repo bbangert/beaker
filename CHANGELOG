@@ -1,6 +1,9 @@
 Beaker Changelog
 =================
 
+0.8.1 (**tip**)
+* Fixed bug in database.py not properly handling missing sqlalchemy library.
+
 0.8 (10/17/07)
 * Fixed bug in prior db update causing session to occasionally not be written
   back to the db.
