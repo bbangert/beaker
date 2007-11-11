@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.8'
+version = '0.8.1'
 
 setup(name='Beaker',
       version=version,
