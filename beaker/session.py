@@ -46,7 +46,8 @@ class Session(UserDict.DictMixin):
     def __init__(self, request, id=None, invalidate_corrupt=False, 
                  use_cookies=True, type=None, data_dir=None, 
                  key='beaker.session.id', timeout=None, cookie_expires=True,
-                 secret=None, log_file=None, namespace_class=None, **kwargs):
+                 cookie_domain=None, secret=None, log_file=None, 
+                 namespace_class=None, **kwargs):
         if type is None:
             if data_dir is None:
                 self.type = 'memory'
@@ -68,6 +69,7 @@ class Session(UserDict.DictMixin):
         self.timeout = timeout
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
+        self.cookie_domain = cookie_domain
         self.log_file = log_file
         self.was_invalidated = False
         self.secret = secret
@@ -114,6 +116,8 @@ class Session(UserDict.DictMixin):
         self.is_new = True
         if self.use_cookies:
             self.cookie[self.key] = self.id
+            if self.cookie_domain:
+                self.cookie[self.key]['domain'] = self.cookie_domain
             self.cookie[self.key]['path'] = '/'
             if self.cookie_expires is not True:
                 if self.cookie_expires is False:

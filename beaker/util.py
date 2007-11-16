@@ -213,6 +213,7 @@ def coerce_session_params(params):
         ('lock_dir', (str,), "lock_dir must be a string referring to a directory."),
         ('type', (str, types.NoneType), "Session type must be a string."),
         ('cookie_expires', (bool, datetime, timedelta), "Cookie expires was not a boolean, datetime, or timedelta instance."),
+        ('cookie_domain', (str, types.NoneType), "Cookie domain must be a string."),
         ('id', (str,), "Session id must be a string."),
         ('key', (str,), "Session key must be a string."),
         ('secret', (str, types.NoneType), "Session secret must be a string."),

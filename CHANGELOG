@@ -1,6 +1,9 @@
 Beaker Changelog
 =================
 
+0.8.2 (**tip**)
+* Add the ability to specify the cookie's domain for sessions.
+
 0.8.1 (11/15/07)
 * Fixed bug in database.py not properly handling missing sqlalchemy library.
 
