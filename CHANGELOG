@@ -1,7 +1,7 @@
 Beaker Changelog
 =================
 
-0.8.1 (**tip**)
+0.8.1 (11/15/07)
 * Fixed bug in database.py not properly handling missing sqlalchemy library.
 
 0.8 (10/17/07)
