@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.8.2'
+version = '0.9'
 
 setup(name='Beaker',
       version=version,
@@ -35,6 +35,8 @@ Features
 * Cache back-ends include dbm, file, memory, memcached, and database (Using
   SQLAlchemy for multiple-db vendor support)
 * Signed cookie's to prevent session hijacking/spoofing
+* Cookie-only sessions to remove the need for a db or file backend (ideal 
+  for clustered systems)
 * Extensible Container object to support new back-ends
 * Cache's can be divided into namespaces (to represent templates, objects, 
   etc.) then keyed for different copies
