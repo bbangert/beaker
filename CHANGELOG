@@ -1,7 +1,10 @@
 Beaker Changelog
 =================
 
-0.8.2 (**tip**)
+0.9 (**tip**)
+* WARNING: Moved session and cache middleware to middleware, as per the old
+  deprecation warnings had said was going to happen for 0.8.
+* Added cookie-only session storage with RC4 ciphered encryption.
 * Add the ability to specify the cookie's domain for sessions.
 
 0.8.1 (11/15/07)

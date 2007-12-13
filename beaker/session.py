@@ -1,14 +1,17 @@
+import cgi
 import Cookie
-from datetime import datetime, timedelta
+import base64
 import hmac
 import md5
 import os
+import pickle
 import random
 import re
 import sys
 import time
 import UserDict
 import warnings
+from datetime import datetime, timedelta
 
 try:
     from paste.registry import StackedObjectProxy
@@ -16,7 +19,9 @@ try:
 except:
     beaker_session = None
 
+from beaker.ciphersaber2 import encipher, decipher
 from beaker.container import namespace_registry
+from beaker.exceptions import BeakerException
 from beaker.util import coerce_session_params
 
 __all__ = ['SignedCookie', 'Session']
@@ -266,6 +271,111 @@ class Session(UserDict.DictMixin):
         if self.log_file is not None:
             self.log_file.write(message)
 
+
+class CookieSession(Session):
+    """Pure cookie-based session using encryption
+    
+    Note that for RC4 encryption security, key's should not exceed 54 
+    characters in lenght. The key used for encryption is specified as
+    the session secret and should be no longer than 54 characters.
+    
+    """
+    def __init__(self, request, key='beaker.session.id', timeout=None,
+                 cookie_expires=True, cookie_domain=None, secret=None, 
+                 **kwargs):
+        self.request = request
+        self.key = key
+        self.timeout = timeout
+        self.cookie_expires = cookie_expires
+        self.cookie_domain = cookie_domain
+        self.secret = secret
+        self.request['set_cookie'] = False
+        
+        try:
+            cookieheader = request['cookie']
+        except KeyError:
+            cookieheader = ''
+        
+        if secret is None:
+            raise BeakerException("No secret specified for Cookie only Session.")
+        
+        self.cookie = Cookie.SimpleCookie(input=cookieheader)
+        
+        self.dict = {}
+        self.is_new = True
+        
+        # If we have a cookie, load it
+        if self.key in self.cookie:
+            self.is_new = False
+            try:
+                self.dict = self._decrypt_data(self.cookie[self.key].value)
+            except:
+                self.dict = {}
+            if self.timeout is not None and time.time() - self.dict['_accessed_time'] > self.timeout:
+                self.dict = {}
+            self._create_cookie()
+    
+    created = property(lambda self: self.dict['_creation_time'])
+
+    def _encrypt_data(self):
+        """Pickle, encipher, and base64 the session dict"""
+        return base64.b64encode(
+            encipher(pickle.dumps(self.dict, protocol=2), self.secret))
+    
+    def _decrypt_data(self, data):
+        """Bas64, decipher, then un-pickle the data for the session dict"""
+        return pickle.loads(decipher(base64.b64decode(data), self.secret))
+    
+    def delete(self):
+        """Provided for generic usage of the Session
+        
+        With cookie-based sessions, there is no back-end session, so 
+        this method has no effect.
+        
+        """
+        pass
+    
+    def invalidate(self):
+        """Invalidates the session, creates a new session ID and 
+        removes the data, returns to the is_new state"""
+        self.dict = {}
+        now = time.time()
+        self.dict['_accessed_time'] = now
+        self.dict['_creation_time'] = now
+        self.request['set_cookie'] = True
+    
+    def save(self):
+        "saves the data for this session to persistent storage"
+        self._create_cookie()
+    
+    def _create_cookie(self):
+        if '_creation_time' not in self.dict:
+            self.dict['_creation_time'] = time.time()
+        self.dict['_accessed_time'] = time.time()
+        val = self._encrypt_data()
+        if len(val) > 4084:
+            raise BeakerException("Cookie value is too long to store")
+        
+        self.cookie[self.key] = val
+        if self.cookie_domain:
+            self.cookie[self.key]['domain'] = self.cookie_domain
+        self.cookie[self.key]['path'] = '/'
+        if self.cookie_expires is not True:
+            if self.cookie_expires is False:
+                expires = datetime.fromtimestamp( 0x7FFFFFFF )
+            elif isinstance(self.cookie_expires, timedelta):
+                expires = datetime.today() + self.cookie_expires
+            elif isinstance(self.cookie_expires, datetime):
+                expires = self.cookie_expires
+            else:
+                raise ValueError("Invalid argument for cookie_expires: %s"
+                                 % repr(self.cookie_expires))
+            self.cookie[self.key]['expires'] = \
+                expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
+        self.request['cookie_out'] = self.cookie[self.key].output(header='')
+        self.request['set_cookie'] = True
+
+
 class SessionObject(object):
     """Session proxy/lazy creator
     
@@ -288,7 +398,10 @@ class SessionObject(object):
             environ = self.__dict__['_environ']
             self.__dict__['_headers'] = req = {'cookie_out':None}
             req['cookie'] = environ.get('HTTP_COOKIE')
-            self.__dict__['_sess'] = Session(req, use_cookies=True, **params)
+            if params.get('type') == 'cookie':
+                self.__dict__['_sess'] = CookieSession(req, **params)
+            else:
+                self.__dict__['_sess'] = Session(req, use_cookies=True, **params)
         return self.__dict__['_sess']
     
     def __getattr__(self, attr):
@@ -326,95 +439,3 @@ class SessionObject(object):
             session.namespace.remove()
             return None
         return session
-
-
-class SessionMiddleware(object):
-    deprecated = True
-    session = beaker_session
-    
-    def __init__(self, wrap_app, config=None, environ_key='beaker.session', **kwargs):
-        """Initialize the Session Middleware
-        
-        The Session middleware will make a lazy session instance available 
-        every request under the ``environ['beaker.cache']`` key by default. The location in
-        environ can be changed by setting ``environ_key``.
-        
-        ``config``
-            dict  All settings should be prefixed by 'cache.'. This method of
-            passing variables is intended for Paste and other setups that
-            accumulate multiple component settings in a single dictionary. If
-            config contains *no cache. prefixed args*, then *all* of the config
-            options will be used to intialize the Cache objects.
-        
-        ``environ_key``
-            Location where the Session instance will keyed in the WSGI environ
-        
-        ``**kwargs``
-            All keyword arguments are assumed to be cache settings and will
-            override any settings found in ``config``
-        """
-        if self.deprecated:
-            warnings.warn('SessionMiddleware is moving to beaker.middleware in '
-              '0.8', DeprecationWarning, 2)
-        
-        config = config or {}
-        
-        # Load up the default params
-        self.options = dict(invalidate_corrupt=True, type=None, 
-                           data_dir=None, key='beaker.session.id', 
-                           timeout=None, secret=None, log_file=None)
-
-        # Pull out any config args meant for beaker session. if there are any
-        for dct in [config, kwargs]:
-            for key, val in dct.iteritems():
-                if key.startswith('beaker.session.'):
-                    self.options[key[15:]] = val
-                if key.startswith('session.'):
-                    self.options[key[8:]] = val
-                if key.startswith('session_'):
-                    warnings.warn('Session options should start with session. '
-                                  'instead of session_.', DeprecationWarning, 2)
-                    self.options[key[8:]] = val
-        
-        # Coerce and validate session params
-        coerce_session_params(self.options)
-        
-        # Assume all keys are intended for cache if none are prefixed with 'cache.'
-        if not self.options and config:
-            self.options = config
-        
-        self.options.update(kwargs)
-        self.wrap_app = wrap_app
-        self.environ_key = environ_key
-        
-    def __call__(self, environ, start_response):
-        session = SessionObject(environ, **self.options)
-        if environ.get('paste.registry'):
-            environ['paste.registry'].register(self.session, session)
-        environ[self.environ_key] = session
-        environ['beaker.get_session'] = self._get_session
-        
-        def session_start_response(status, headers, exc_info = None):
-            if session.__dict__['_sess'] is not None:
-                if session.__dict__['_headers']['set_cookie']:
-                    cookie = session.__dict__['_headers']['cookie_out']
-                    if cookie:
-                        headers.append(('Set-cookie', cookie))
-            return start_response(status, headers, exc_info)
-        try:
-            response = self.wrap_app(environ, session_start_response)
-        except:
-            ty, val = sys.exc_info()[:2]
-            if isinstance(ty, str):
-                raise ty, val, sys.exc_info()[2]
-            if ty.__name__ == 'HTTPFound' and \
-                    session.__dict__['_sess'] is not None:
-                cookie = session.__dict__['_headers']['cookie_out']
-                if cookie:
-                    val.headers.append(('Set-cookie', cookie))
-            raise ty, val, sys.exc_info()[2]
-        else:
-            return response
-    
-    def _get_session(self):
-        return Session({}, use_cookies=False, **self.options)
