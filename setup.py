@@ -44,8 +44,14 @@ Features
   expiration
 * Fine-grained toggling of back-ends, keys, and expiration per Cache object
 
-Usage
-=====
+Documentation
+=============
+
+Documentation can be found on the `Official Beaker Docs site
+<http://wiki.pylonshq.com/display/beaker/Home>`_.
+
+Examples
+========
 
 Caching
 -------
