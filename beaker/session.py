@@ -1,10 +1,8 @@
-import cgi
 import Cookie
 import base64
 import hmac
 import md5
 import os
-import pickle
 import random
 import re
 import sys
@@ -19,6 +17,7 @@ try:
 except:
     beaker_session = None
 
+import beaker.cerealizer as cerealizer
 from beaker.ciphersaber2 import encipher, decipher
 from beaker.container import namespace_registry
 from beaker.exceptions import BeakerException
@@ -273,11 +272,26 @@ class Session(UserDict.DictMixin):
 
 
 class CookieSession(Session):
-    """Pure cookie-based session using encryption
+    """Pure cookie-based session using RC4 encryption
     
-    Note that for RC4 encryption security, key's should not exceed 54 
-    characters in lenght. The key used for encryption is specified as
-    the session secret and should be no longer than 54 characters.
+    Options recognized when using cookie-based sessions are slightly
+    more restricted than general sessions.
+    
+    ``key``
+        The name the cookie should be set to.
+    ``timeout``
+        How long session data is considered valid. This is used 
+        regardless of the cookie being present or not to determine
+        whether session data is still valid.
+    ``secret``
+        The secret key to use for the session encryption.
+    ``cookie_domain``
+        Domain to use for the cookie.
+    
+    .. note ::
+        For RC4 encryption security, key's should not exceed 54 
+        characters in lenght. The key used for encryption is specified
+        as the session secret.
     
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
@@ -318,31 +332,13 @@ class CookieSession(Session):
     created = property(lambda self: self.dict['_creation_time'])
 
     def _encrypt_data(self):
-        """Pickle, encipher, and base64 the session dict"""
+        """Cerealize, encipher, and base64 the session dict"""
         return base64.b64encode(
-            encipher(pickle.dumps(self.dict, protocol=2), self.secret))
+            encipher(cerealizer.dumps(self.dict), self.secret))
     
     def _decrypt_data(self, data):
-        """Bas64, decipher, then un-pickle the data for the session dict"""
-        return pickle.loads(decipher(base64.b64decode(data), self.secret))
-    
-    def delete(self):
-        """Provided for generic usage of the Session
-        
-        With cookie-based sessions, there is no back-end session, so 
-        this method has no effect.
-        
-        """
-        pass
-    
-    def invalidate(self):
-        """Invalidates the session, creates a new session ID and 
-        removes the data, returns to the is_new state"""
-        self.dict = {}
-        now = time.time()
-        self.dict['_accessed_time'] = now
-        self.dict['_creation_time'] = now
-        self.request['set_cookie'] = True
+        """Bas64, decipher, then un-cerealize the data for the session dict"""
+        return cerealizer.loads(decipher(base64.b64decode(data), self.secret))
     
     def save(self):
         "saves the data for this session to persistent storage"
