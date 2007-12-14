@@ -17,7 +17,12 @@ try:
 except:
     beaker_session = None
 
-import beaker.cerealizer as cerealizer
+# Wrapped in case we're pre-Python 2.4
+try:
+    import beaker.cerealizer as cerealizer
+except:
+    pass
+
 from beaker.ciphersaber2 import encipher, decipher
 from beaker.container import namespace_registry
 from beaker.exceptions import BeakerException
