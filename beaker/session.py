@@ -347,9 +347,8 @@ class CookieSession(Session):
             self.is_new = False
             try:
                 self.dict = self._decrypt_data()
-            except BeakerException:
+            except:
                 self.dict = {}
-                log.debug("Unable to decrypt!")
             if self.timeout is not None and time.time() - self.dict['_accessed_time'] > self.timeout:
                 self.dict = {}
             self._create_cookie()
