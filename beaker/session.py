@@ -5,11 +5,9 @@ import md5
 import os
 import cPickle
 import random
-import re
 import sys
 import time
 import UserDict
-import warnings
 from datetime import datetime, timedelta
 
 try:
@@ -20,14 +18,24 @@ except:
 
 # Determine if PyCrypto is available
 crypto_ok = False
+strong_hash = None
 try:
     from Crypto.Cipher import AES
-    from Crypto.Hash import SHA256
+    from Crypto.Hash import SHA, SHA256
     import Crypto
     if Crypto.__version__ >= '2.0.1':
         crypto_ok = True
+        strong_hash = SHA.new
 except:
     pass
+
+# Attempt to use a stronger hash function if we're in Python 2.5
+if not strong_hash:
+    try:
+        import hashlib
+        strong_hash = hashlib.sha1
+    except:
+        pass
 
 from beaker.crypto import generateCryptoKeys
 from beaker.crypto.CTRCipher import CTRCipher
@@ -45,16 +53,24 @@ class SignedCookie(Cookie.BaseCookie):
         Cookie.BaseCookie.__init__(self, input)
     
     def value_decode(self, val):
-        sig = val[0:32]
-        value = val[32:]
-    
-        if hmac.new(self.secret, value).hexdigest() != sig:
-            return None, val
-        
-        return val[32:], val
+        if strong_hash:
+            sig = val[0:40]
+            value = val[40:]
+            if strong_hash(self.secret + value).hexdigest() != sig:
+                return None, val
+            return val[40:], val
+        else:
+            sig = val[0:32]
+            value = val[32:]
+            if hmac.new(self.secret, value).hexdigest() != sig:
+                return None, val
+            return val[32:], val
     
     def value_encode(self, val):
-        return val, ("%s%s" % (hmac.new(self.secret, val).hexdigest(), val))
+        if strong_hash:
+            return val, ("%s%s" % (strong_hash(self.secret + val).hexdigest(), val))
+        else:
+            return val, ("%s%s" % (hmac.new(self.secret, val).hexdigest(), val))
 
                 
 class Session(UserDict.DictMixin):
