@@ -3,6 +3,7 @@ import base64
 import hmac
 import md5
 import os
+import cPickle
 import random
 import re
 import sys
@@ -17,13 +18,20 @@ try:
 except:
     beaker_session = None
 
-# Wrapped in case we're pre-Python 2.4
+# Determine if PyCrypto is available
+crypto_ok = False
 try:
-    import beaker.cerealizer as cerealizer
+    from Crypto.Cipher import AES
+    from Crypto.Hash import SHA256
+    import Crypto
+    if Crypto.__version__ >= '2.0.1':
+        crypto_ok = True
 except:
     pass
 
-from beaker.ciphersaber2 import encipher, decipher
+from beaker.crypto import generateCryptoKeys
+from beaker.crypto.CTRCipher import CTRCipher
+from beaker.crypto.PBKDF2 import strxor
 from beaker.container import namespace_registry
 from beaker.exceptions import BeakerException
 from beaker.util import coerce_session_params
@@ -288,8 +296,10 @@ class CookieSession(Session):
         How long session data is considered valid. This is used 
         regardless of the cookie being present or not to determine
         whether session data is still valid.
-    ``secret``
-        The secret key to use for the session encryption.
+    ``encrypt_key``
+        The key to use for the session encryption.
+    ``validate_key``
+        The key used to sign the encrypted session
     ``cookie_domain``
         Domain to use for the cookie.
     
@@ -300,14 +310,18 @@ class CookieSession(Session):
     
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
-                 cookie_expires=True, cookie_domain=None, secret=None, 
-                 **kwargs):
+                 cookie_expires=True, cookie_domain=None, encrypt_key=None,
+                 validate_key=None, **kwargs):
+        if not crypto_ok:
+            raise BeakerException("PyCrypto is not installed, can't use cookie-only Session.")
+        
         self.request = request
         self.key = key
         self.timeout = timeout
         self.cookie_expires = cookie_expires
         self.cookie_domain = cookie_domain
-        self.secret = secret
+        self.encrypt_key = encrypt_key
+        self.validate_key = validate_key
         self.request['set_cookie'] = False
         
         try:
@@ -315,35 +329,49 @@ class CookieSession(Session):
         except KeyError:
             cookieheader = ''
         
-        if secret is None:
-            raise BeakerException("No secret specified for Cookie only Session.")
+        if encrypt_key is None:
+            raise BeakerException("No encrypt_key specified for Cookie only Session.")
+        if validate_key is None:
+            raise BeakerException("No validate_key specified for Cookie only Session.")
         
-        self.cookie = Cookie.SimpleCookie(input=cookieheader)
+        try:
+            self.cookie = SignedCookie(validate_key, input=cookieheader)
+        except Cookie.CookieError:
+            self.cookie = SignedCookie(validate_key, input=None)
         
         self.dict = {}
         self.is_new = True
         
         # If we have a cookie, load it
-        if self.key in self.cookie:
+        if self.key in self.cookie and self.cookie[self.key].value is not None:
             self.is_new = False
             try:
-                self.dict = self._decrypt_data(self.cookie[self.key].value)
-            except:
+                self.dict = self._decrypt_data()
+            except BeakerException:
                 self.dict = {}
+                log.debug("Unable to decrypt!")
             if self.timeout is not None and time.time() - self.dict['_accessed_time'] > self.timeout:
                 self.dict = {}
             self._create_cookie()
     
     created = property(lambda self: self.dict['_creation_time'])
-
+    
     def _encrypt_data(self):
         """Cerealize, encipher, and base64 the session dict"""
-        return base64.b64encode(
-            encipher(cerealizer.dumps(self.dict), self.secret))
+        encrypt_key, nonce = generateCryptoKeys(self.encrypt_key, self.validate_key, 1)
+        nonce = base64.b64encode(nonce)[:8]
+        ctrcipher = CTRCipher(encrypt_key, nonce, AES)
+        data = cPickle.dumps(self.dict, protocol=2)
+        return nonce + base64.b64encode(ctrcipher.encrypt(data))
     
-    def _decrypt_data(self, data):
+    def _decrypt_data(self):
         """Bas64, decipher, then un-cerealize the data for the session dict"""
-        return cerealizer.loads(decipher(base64.b64decode(data), self.secret))
+        nonce = self.cookie[self.key].value[:8]
+        encrypt_key, salt = generateCryptoKeys(self.encrypt_key, self.validate_key, 1)
+        ctrcipher = CTRCipher(encrypt_key, nonce, AES)
+        payload = base64.b64decode(self.cookie[self.key].value[8:])
+        data = ctrcipher.decrypt(payload)
+        return cPickle.loads(data.strip('\0'))
     
     def save(self):
         "saves the data for this session to persistent storage"
@@ -354,7 +382,7 @@ class CookieSession(Session):
             self.dict['_creation_time'] = time.time()
         self.dict['_accessed_time'] = time.time()
         val = self._encrypt_data()
-        if len(val) > 4084:
+        if len(val) > 4064:
             raise BeakerException("Cookie value is too long to store")
         
         self.cookie[self.key] = val

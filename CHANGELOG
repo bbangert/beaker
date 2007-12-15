@@ -2,6 +2,8 @@ Beaker Changelog
 =================
 
 0.9 (**tip**)
+* Updated cookie-based session storage to use 256-bit AES-CTR mode with a
+  256-bit HMAC signature. Now requires PyCrypto to use for AES scheme.
 * WARNING: Moved session and cache middleware to middleware, as per the old
   deprecation warnings had said was going to happen for 0.8.
 * Added cookie-only session storage with RC4 ciphered encryption, requires 

@@ -1,3 +1,5 @@
+import sys
+
 try:
     from paste.registry import StackedObjectProxy
     beaker_session = StackedObjectProxy(name="Beaker Session")

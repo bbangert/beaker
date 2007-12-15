@@ -217,6 +217,8 @@ def coerce_session_params(params):
         ('id', (str,), "Session id must be a string."),
         ('key', (str,), "Session key must be a string."),
         ('secret', (str, types.NoneType), "Session secret must be a string."),
+        ('validate_key', (str, types.NoneType), "Session encrypt_key must be a string."),
+        ('encrypt_key', (str, types.NoneType), "Session validate_key must be a string."),
         ('timeout', (int, types.NoneType), "Session timeout must be an integer."),
     ]
     return verify_rules(params, rules)

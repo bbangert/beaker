@@ -15,7 +15,8 @@ def simple_app(environ, start_response):
     return ['The current value is: %d' % session['value']]
 
 def test_increment():
-    options = {'session.secret':'blah', 'session.type':'cookie'}
+    options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
+               'session.type':'cookie'}
     app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
@@ -25,7 +26,8 @@ def test_increment():
     assert 'current value is: 3' in res
 
 def test_different_sessions():
-    options = {'session.secret':'blah', 'session.type':'cookie'}
+    options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
+               'session.type':'cookie'}
     app = TestApp(SessionMiddleware(simple_app, **options))
     app2 = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
@@ -40,7 +42,8 @@ def test_different_sessions():
     assert 'current value is: 4' in res
 
 def test_nosave():
-    options = {'session.secret':'blah', 'session.type':'cookie'}
+    options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
+               'session.type':'cookie'}
     app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/nosave')
     assert 'current value is: 1' in res
