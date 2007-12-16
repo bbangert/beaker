@@ -2,6 +2,7 @@ Beaker Changelog
 =================
 
 0.9 (**tip**)
+* Fixed bug in memcached replace to actually replace spaces properly.
 * Fixed md5 cookie signature to use SHA-1 when available.
 * Updated cookie-based session storage to use 256-bit AES-CTR mode with a
   256-bit HMAC signature. Now requires PyCrypto to use for AES scheme.

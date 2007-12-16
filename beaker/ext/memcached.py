@@ -87,7 +87,7 @@ class MemcachedNamespaceManager(NamespaceManager):
         if keys is None:
             return []
         else:
-            return [x.replace('\302\267') for x in keys.keys()]
+            return [x.replace('\302\267', ' ') for x in keys.keys()]
 
 class MemcachedContainer(Container):
 
