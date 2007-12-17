@@ -53,6 +53,7 @@ class SignedCookie(Cookie.BaseCookie):
         Cookie.BaseCookie.__init__(self, input)
     
     def value_decode(self, val):
+        val = val.strip('"')
         if strong_hash:
             sig = val[0:40]
             value = val[40:]
@@ -68,9 +69,9 @@ class SignedCookie(Cookie.BaseCookie):
     
     def value_encode(self, val):
         if strong_hash:
-            return val, ("%s%s" % (strong_hash(self.secret + val).hexdigest(), val))
+            return str(val), ("%s%s" % (strong_hash(self.secret + val).hexdigest(), val))
         else:
-            return val, ("%s%s" % (hmac.new(self.secret, val).hexdigest(), val))
+            return str(val), ("%s%s" % (hmac.new(self.secret, val).hexdigest(), val))
 
                 
 class Session(UserDict.DictMixin):
