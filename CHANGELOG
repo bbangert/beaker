@@ -1,7 +1,7 @@
 Beaker Changelog
-=================
+================
 
-0.9 (**tip**)
+0.9 (12/17/07)
 * Fixed bug in memcached replace to actually replace spaces properly.
 * Fixed md5 cookie signature to use SHA-1 when available.
 * Updated cookie-based session storage to use 256-bit AES-CTR mode with a
