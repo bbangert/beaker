@@ -26,6 +26,9 @@ try:
     if Crypto.__version__ >= '2.0.1':
         crypto_ok = True
         strong_hash = SHA.new
+    from beaker.crypto import generateCryptoKeys
+    from beaker.crypto.CTRCipher import CTRCipher
+    from beaker.crypto.PBKDF2 import strxor
 except:
     pass
 
@@ -37,9 +40,6 @@ if not strong_hash:
     except:
         pass
 
-from beaker.crypto import generateCryptoKeys
-from beaker.crypto.CTRCipher import CTRCipher
-from beaker.crypto.PBKDF2 import strxor
 from beaker.container import namespace_registry
 from beaker.exceptions import BeakerException
 from beaker.util import coerce_session_params
