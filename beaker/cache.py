@@ -4,12 +4,6 @@ from beaker.exceptions import InvalidCacheBackendError
 from beaker.util import coerce_cache_params
 import beaker.util as util
 
-try:
-    from paste.registry import StackedObjectProxy
-    beaker_cache = StackedObjectProxy(name="Cache Manager")
-except:
-    beaker_cache = None
-
 clsmap = {
           'memory':container.MemoryContainer,
           'dbm':container.DBMContainer,
