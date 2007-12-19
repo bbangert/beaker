@@ -2,7 +2,7 @@ Beaker Changelog
 ================
 
 0.9.1 (**tip**)
-* 
+* Fixed bug in middleware using module that wasn't imported.
 
 0.9 (12/17/07)
 * Fixed bug in memcached replace to actually replace spaces properly.

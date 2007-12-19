@@ -1,4 +1,5 @@
 import sys
+import warnings
 
 try:
     from paste.registry import StackedObjectProxy
