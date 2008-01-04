@@ -10,35 +10,26 @@ import time
 import UserDict
 from datetime import datetime, timedelta
 
-try:
-    from paste.registry import StackedObjectProxy
-    beaker_session = StackedObjectProxy(name="Beaker Session")
-except:
-    beaker_session = None
-
-# Determine if PyCrypto is available
+# Determine if strong crypto is available
 crypto_ok = False
 strong_hash = None
+
+# Check to see if hashlib is available for sha256's
 try:
-    from Crypto.Cipher import AES
-    from Crypto.Hash import SHA, SHA256
-    import Crypto
-    if Crypto.__version__ >= '2.0.1':
-        crypto_ok = True
-        strong_hash = SHA.new
-    from beaker.crypto import generateCryptoKeys
-    from beaker.crypto.CTRCipher import CTRCipher
-    from beaker.crypto.PBKDF2 import strxor
-except:
+    from hashlib import sha256
+    strong_hash = sha256
+except ImportError:
     pass
 
-# Attempt to use a stronger hash function if we're in Python 2.5
-if not strong_hash:
-    try:
-        import hashlib
-        strong_hash = hashlib.sha1
-    except:
-        pass
+# Check for pycryptopp encryption for AES
+try:
+    from pycryptopp.cipher import aes
+    from pycryptopp.hash import sha256
+    from beaker.crypto import generateCryptoKeys
+    crypto_ok = True
+    strong_hash = sha256.SHA256
+except:
+    pass
 
 from beaker.container import namespace_registry
 from beaker.exceptions import BeakerException
@@ -55,11 +46,10 @@ class SignedCookie(Cookie.BaseCookie):
     def value_decode(self, val):
         val = val.strip('"')
         if strong_hash:
-            sig = val[0:40]
-            value = val[40:]
-            if strong_hash(self.secret + value).hexdigest() != sig:
+            sig = strong_hash(self.secret + val[44:]).digest()
+            if base64.b64encode(sig) != val[:44]:
                 return None, val
-            return val[40:], val
+            return val[44:], val
         else:
             sig = val[0:32]
             value = val[32:]
@@ -69,11 +59,12 @@ class SignedCookie(Cookie.BaseCookie):
     
     def value_encode(self, val):
         if strong_hash:
-            return str(val), ("%s%s" % (strong_hash(self.secret + val).hexdigest(), val))
+            sig = base64.b64encode(strong_hash(self.secret + val).digest())
+            return str(val), ("%s%s" % (sig, val))
         else:
             return str(val), ("%s%s" % (hmac.new(self.secret, val).hexdigest(), val))
 
-                
+
 class Session(UserDict.DictMixin):
     "session object that uses container package for storage"
 
@@ -302,7 +293,7 @@ class Session(UserDict.DictMixin):
 
 
 class CookieSession(Session):
-    """Pure cookie-based session using RC4 encryption
+    """Pure cookie-based session
     
     Options recognized when using cookie-based sessions are slightly
     more restricted than general sessions.
@@ -314,17 +305,14 @@ class CookieSession(Session):
         regardless of the cookie being present or not to determine
         whether session data is still valid.
     ``encrypt_key``
-        The key to use for the session encryption.
+        The key to use for the session encryption, if not provided the session
+        will not be encrypted. This will only work if a strong hash scheme is
+        available, such as pycryptopp's or Python 2.5's hashlib.sha256.
     ``validate_key``
         The key used to sign the encrypted session
     ``cookie_domain``
         Domain to use for the cookie.
-    
-    .. note ::
-        For RC4 encryption security, key's should not exceed 54 
-        characters in lenght. The key used for encryption is specified
-        as the session secret.
-    
+        
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  cookie_expires=True, cookie_domain=None, encrypt_key=None,
@@ -346,8 +334,10 @@ class CookieSession(Session):
         except KeyError:
             cookieheader = ''
         
-        if encrypt_key is None:
-            raise BeakerException("No encrypt_key specified for Cookie only Session.")
+        if encrypt_key is None and not strong_hash:
+            raise BeakerException("No encryption can only be used when a strong"
+                " hash function is available, such as the pycryptopp library "
+                " or Python 2.5's hashlib.sha256 method.")
         if validate_key is None:
             raise BeakerException("No validate_key specified for Cookie only Session.")
         
@@ -374,20 +364,28 @@ class CookieSession(Session):
     
     def _encrypt_data(self):
         """Cerealize, encipher, and base64 the session dict"""
-        encrypt_key, nonce = generateCryptoKeys(self.encrypt_key, self.validate_key, 1)
-        nonce = base64.b64encode(nonce)[:8]
-        ctrcipher = CTRCipher(encrypt_key, nonce, AES)
-        data = cPickle.dumps(self.dict, protocol=2)
-        return nonce + base64.b64encode(ctrcipher.encrypt(data))
+        if self.encrypt_key:
+            salt = base64.b64encode(os.urandom(40))[:8]
+            encrypt_key = generateCryptoKeys(self.encrypt_key, self.validate_key + salt, 1)
+            ctrcipher = aes.AES(encrypt_key)
+            data = cPickle.dumps(self.dict, protocol=2)
+            return salt + base64.b64encode(ctrcipher.process(data))
+        else:
+            data = cPickle.dumps(self.dict, protocol=2)
+            return base64.b64encode(data)
     
     def _decrypt_data(self):
         """Bas64, decipher, then un-cerealize the data for the session dict"""
-        nonce = self.cookie[self.key].value[:8]
-        encrypt_key, salt = generateCryptoKeys(self.encrypt_key, self.validate_key, 1)
-        ctrcipher = CTRCipher(encrypt_key, nonce, AES)
-        payload = base64.b64decode(self.cookie[self.key].value[8:])
-        data = ctrcipher.decrypt(payload)
-        return cPickle.loads(data.strip('\0'))
+        if self.encrypt_key:
+            salt = self.cookie[self.key].value[:8]
+            encrypt_key = generateCryptoKeys(self.encrypt_key, self.validate_key + salt, 1)
+            ctrcipher = aes.AES(encrypt_key)
+            payload = base64.b64decode(self.cookie[self.key].value[8:])
+            data = ctrcipher.process(payload)
+            return cPickle.loads(data)
+        else:
+            data = base64.b64decode(self.cookie[self.key].value)
+            return cPickle.loads(data)
     
     def save(self):
         "saves the data for this session to persistent storage"

@@ -2,6 +2,10 @@ Beaker Changelog
 ================
 
 0.9.1 (**tip**)
+* Added option to use just cookie-based sessions without requiring
+  encryption.
+* Switched encryption requirement from PyCrypto to pycryptopp which uses a 
+  proper AES in Counter Mode.
 * Fixed bug in middleware using module that wasn't imported.
 
 0.9 (12/17/07)
