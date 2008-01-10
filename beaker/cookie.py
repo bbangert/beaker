@@ -16,11 +16,9 @@ permissions and limitations under the License.
 
 Originally developed by Gregory Trubetskoy.
 """
-import time
-import re
 import hmac
-import marshal
-import base64
+import re
+import time
 
 class CookieError(Exception):
     pass
