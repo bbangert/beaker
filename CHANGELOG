@@ -2,6 +2,8 @@ Beaker Changelog
 ================
 
 0.9.1 (**tip**)
+* Removing cookie.py and signed cookie middleware, as the environ_key option
+  for session middleware provides a close enough setting.
 * Added option to use just cookie-based sessions without requiring
   encryption.
 * Switched encryption requirement from PyCrypto to pycryptopp which uses a 
