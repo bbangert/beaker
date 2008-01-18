@@ -24,6 +24,26 @@ def simple_app(environ, start_response):
     start_response('200 OK', [('Content-type', 'text/plain')])
     return ['The current value is: %s' % cache.get_value('value')]
 
+def using_none_app(environ, start_response):
+    extra_args = {}
+    clear = False
+    if environ.get('beaker.clear'):
+        clear = True
+    extra_args['type'] = 'ext:memcached'
+    extra_args['url'] = mc_url
+    extra_args['data_dir'] = './cache'
+    cache = environ['beaker.cache'].get_cache('testcache', **extra_args)
+    if clear:
+        cache.clear()
+    try:
+        value = cache.get_value('value')
+    except:
+        value = 10
+    cache.set_value('value', None)
+    start_response('200 OK', [('Content-type', 'text/plain')])
+    return ['The current value is: %s' % value]
+
+
 def cache_manager_app(environ, start_response):
     cm = environ['beaker.cache']
     cm.get_cache('test')['test_key'] = 'test value'
@@ -109,4 +129,10 @@ def test_cache_manager():
     res = app.get('/')
     assert 'test_key is: test value' in res
     assert 'test_key cleared' in res
-    
+
+def test_store_none():
+    app = TestApp(CacheMiddleware(using_none_app))
+    res = app.get('/', extra_environ={'beaker.clear':True})
+    assert 'current value is: 10' in res
+    res = app.get('/')
+    assert 'current value is: None' in res

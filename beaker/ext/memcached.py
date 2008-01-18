@@ -42,19 +42,18 @@ class MemcachedNamespaceManager(NamespaceManager):
     def close(self, *args, **params):pass
 
     def __getitem__(self, key):
-        key = key.replace(' ', '\302\267')
-        value = self.mc.get(self.namespace + "_" + key)
-        if value is None:
+        if not self.has_key(key):
             raise KeyError(key)
-        return value
+        key = key.replace(' ', '\302\267')
+        return self.mc.get(self.namespace + "_" + key)
 
     def __contains__(self, key):
-        key = key.replace(' ', '\302\267')
-        return self.mc.get(self.namespace + "_" + key) is not None
+        return self.has_key(key)
 
     def has_key(self, key):
         key = key.replace(' ', '\302\267')
-        return self.mc.get(self.namespace + "_" + key) is not None
+        keys = self.mc.get(self.namespace + ':keys') or {}
+        return key in keys
 
     def __setitem__(self, key, value):
         key = key.replace(' ', '\302\267')
@@ -78,9 +77,9 @@ class MemcachedNamespaceManager(NamespaceManager):
     def do_remove(self):
         keys = self.mc.get(self.namespace + ':keys')
         if keys is not None:
-            for key in keys:
-                self.mc.delete(self.namespace + '_' + key)
-            self.mc.delete(self.namespace + ':keys')
+            delete_keys = [self.namespace + '_' + x for x in keys]
+            delete_keys.append(self.namespace + ':keys')
+            self.mc.delete_multi(delete_keys)
     
     def keys(self):
         keys = self.mc.get(self.namespace + ':keys')
