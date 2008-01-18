@@ -42,10 +42,12 @@ class MemcachedNamespaceManager(NamespaceManager):
     def close(self, *args, **params):pass
 
     def __getitem__(self, key):
-        if not self.has_key(key):
+        cache_key = key.replace(' ', '\302\267')
+        keys = [self.namespace + '_' + cache_key, self.namespace + ':keys']
+        key_dict = self.mc.get_multi(keys)
+        if cache_key not in key_dict.get(self.namespace+':keys', {}):
             raise KeyError(key)
-        key = key.replace(' ', '\302\267')
-        return self.mc.get(self.namespace + "_" + key)
+        return key_dict[self.namespace + '_' + cache_key]
 
     def __contains__(self, key):
         return self.has_key(key)
