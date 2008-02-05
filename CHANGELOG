@@ -1,7 +1,7 @@
 Beaker Changelog
 ================
 
-0.9.1 (**tip**)
+0.9.2 (**tip**)
 * Fixed memcached code to use delete_multi on clearing the keys for efficiency
   and updated key retrieval to properly store and retrieve None values.
 * Removing cookie.py and signed cookie middleware, as the environ_key option
@@ -10,6 +10,8 @@ Beaker Changelog
   encryption.
 * Switched encryption requirement from PyCrypto to pycryptopp which uses a 
   proper AES in Counter Mode.
+
+0.9.1 (2/4/2008)
 * Fixed bug in middleware using module that wasn't imported.
 
 0.9 (12/17/07)
