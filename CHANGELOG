@@ -2,6 +2,7 @@ Beaker Changelog
 ================
 
 0.9.2 (**tip**)
+* Fixed signing code to use hmac with sha for better signing security.
 * Fixed memcached code to use delete_multi on clearing the keys for efficiency
   and updated key retrieval to properly store and retrieve None values.
 * Removing cookie.py and signed cookie middleware, as the environ_key option

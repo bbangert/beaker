@@ -1,10 +1,11 @@
-import Cookie
 import base64
+import cPickle
+import Cookie
 import hmac
 import md5
 import os
-import cPickle
 import random
+import sha
 import sys
 import time
 import UserDict
@@ -12,22 +13,12 @@ from datetime import datetime, timedelta
 
 # Determine if strong crypto is available
 crypto_ok = False
-strong_hash = None
-
-# Check to see if hashlib is available for sha256's
-try:
-    from hashlib import sha256
-    strong_hash = sha256
-except ImportError:
-    pass
 
 # Check for pycryptopp encryption for AES
 try:
     from pycryptopp.cipher import aes
-    from pycryptopp.hash import sha256
     from beaker.crypto import generateCryptoKeys
     crypto_ok = True
-    strong_hash = sha256.SHA256
 except:
     pass
 
@@ -45,24 +36,15 @@ class SignedCookie(Cookie.BaseCookie):
     
     def value_decode(self, val):
         val = val.strip('"')
-        if strong_hash:
-            sig = strong_hash(self.secret + val[44:]).digest()
-            if base64.b64encode(sig) != val[:44]:
-                return None, val
-            return val[44:], val
+        sig = hmac.new(self.secret, val[40:], sha.sha).hexdigest()
+        if sig != val[:40]:
+            return None, val
         else:
-            sig = val[0:32]
-            value = val[32:]
-            if hmac.new(self.secret, value).hexdigest() != sig:
-                return None, val
-            return val[32:], val
+            return val[40:], val
     
     def value_encode(self, val):
-        if strong_hash:
-            sig = base64.b64encode(strong_hash(self.secret + val).digest())
-            return str(val), ("%s%s" % (sig, val))
-        else:
-            return str(val), ("%s%s" % (hmac.new(self.secret, val).hexdigest(), val))
+        sig = hmac.new(self.secret, val, sha.sha).hexdigest()
+        return str(val), ("%s%s" % (sig, val))
 
 
 class Session(UserDict.DictMixin):
@@ -334,10 +316,6 @@ class CookieSession(Session):
         except KeyError:
             cookieheader = ''
         
-        if encrypt_key is None and not strong_hash:
-            raise BeakerException("No encryption can only be used when a strong"
-                " hash function is available, such as the pycryptopp library "
-                " or Python 2.5's hashlib.sha256 method.")
         if validate_key is None:
             raise BeakerException("No validate_key specified for Cookie only Session.")
         
