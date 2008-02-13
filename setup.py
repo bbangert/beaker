@@ -127,6 +127,9 @@ The latest developer version is available in a `Mercurial repository
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       zip_safe=False,
       install_requires=[],
+      extras_require = {
+          'crypto':["pycryptopp>=0.3.0"]
+      },
       entry_points="""
           [paste.filter_factory]
           beaker_session = beaker.middleware:session_filter_factory
