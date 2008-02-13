@@ -8,5 +8,5 @@ def generateCryptoKeys(master_key, salt, iterations):
     # os.urandom() returns truly random data, this will have no effect on the
     # overall security.
     keystream = PBKDF2(master_key, salt, iterations=iterations)
-    cipher_key = keystream.read(16)     # 128-bit AES key (for the payload)
+    cipher_key = keystream.read(32)     # 256-bit AES key (for the payload)
     return cipher_key
