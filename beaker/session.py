@@ -53,7 +53,7 @@ class Session(UserDict.DictMixin):
     def __init__(self, request, id=None, invalidate_corrupt=False, 
                  use_cookies=True, type=None, data_dir=None, 
                  key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, secret=None, log_file=None, 
+                 cookie_domain=None, secret=None, secure=False, log_file=None, 
                  namespace_class=None, **kwargs):
         if type is None:
             if data_dir is None:
@@ -80,6 +80,7 @@ class Session(UserDict.DictMixin):
         self.log_file = log_file
         self.was_invalidated = False
         self.secret = secret
+        self.secure = secure
         
         self.id = id
             
@@ -125,6 +126,8 @@ class Session(UserDict.DictMixin):
             self.cookie[self.key] = self.id
             if self.cookie_domain:
                 self.cookie[self.key]['domain'] = self.cookie_domain
+            if self.secure:
+                self.cookie[self.key]['secure'] = True
             self.cookie[self.key]['path'] = '/'
             if self.cookie_expires is not True:
                 if self.cookie_expires is False:
@@ -288,17 +291,18 @@ class CookieSession(Session):
         whether session data is still valid.
     ``encrypt_key``
         The key to use for the session encryption, if not provided the session
-        will not be encrypted. This will only work if a strong hash scheme is
-        available, such as pycryptopp's or Python 2.5's hashlib.sha256.
+        will not be encrypted.
     ``validate_key``
         The key used to sign the encrypted session
     ``cookie_domain``
         Domain to use for the cookie.
-        
+    ``secure``
+        Whether or not the cookie should only be sent over SSL.
+    
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  cookie_expires=True, cookie_domain=None, encrypt_key=None,
-                 validate_key=None, **kwargs):
+                 validate_key=None, secure=False, **kwargs):
         if not crypto_ok:
             raise BeakerException("PyCrypto is not installed, can't use cookie-only Session.")
         
@@ -310,6 +314,7 @@ class CookieSession(Session):
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
         self.request['set_cookie'] = False
+        self.secure = secure
         
         try:
             cookieheader = request['cookie']
@@ -380,6 +385,9 @@ class CookieSession(Session):
         self.cookie[self.key] = val
         if self.cookie_domain:
             self.cookie[self.key]['domain'] = self.cookie_domain
+        if self.secure:
+            self.cookie[self.key]['secure'] = True
+        
         self.cookie[self.key]['path'] = '/'
         if self.cookie_expires is not True:
             if self.cookie_expires is False:

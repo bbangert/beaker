@@ -2,6 +2,7 @@ Beaker Changelog
 ================
 
 0.9.2 (**tip**)
+* Added option to make Beaker use a secure cookie.
 * Removed CTRCipher as pycryptopp doesn't need it.
 * Changed AES to use 256 bit.
 * Fixed signing code to use hmac with sha for better signing security.
