@@ -2,8 +2,8 @@ Beaker Changelog
 ================
 
 0.9.2.1 (**tip**)
-* Fixed key lookup on cache object to only use the settings for the key
-  lookup.
+* Fixed key lookup bug on cache object to only use the settings for the key
+  lookup. Found by Andrew Stromnov.
 
 0.9.2 (2/13/2008)
 * Added option to make Beaker use a secure cookie.
