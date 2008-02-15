@@ -39,7 +39,7 @@ class Cache(object):
     set_value = put
     
     def get(self, key, **kwargs):
-        kw = self.kwargs
+        kw = self.kwargs.copy()
         kw.update(kwargs)
         kwargs.setdefault('type', 'memory')
         return self._get_container(key, **kw).get_value()

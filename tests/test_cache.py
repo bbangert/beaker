@@ -62,7 +62,42 @@ def test_unicode_keys():
     assert u'hŏa' not in cache
     cache.remove_value(u'hiŏ')
     assert u'hiŏ' not in cache
+
+def test_multi_keys():
+    cache = Cache('newtests', data_dir='./cache', type='dbm')
+    cache.clear()
+    called = {}
+    def create_func():
+        called['here'] = True
+        return 'howdy'
     
+    try:
+        cache.get_value('key1')
+    except KeyError:
+        pass
+    else:
+        raise Exception("Failed to keyerror on nonexistent key")
+
+    assert 'howdy' == cache.get_value('key2', createfunc=create_func)
+    assert called['here'] == True
+    del called['here']
+
+    try:
+        cache.get_value('key3')
+    except KeyError:
+        pass
+    else:
+        raise Exception("Failed to keyerror on nonexistent key")
+    try:
+        cache.get_value('key1')
+    except KeyError:
+        pass
+    else:
+        raise Exception("Failed to keyerror on nonexistent key")
+    
+    assert 'howdy' == cache.get_value('key2', createfunc=create_func)
+    assert called == {}
+
 def test_increment():
     app = TestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.type':type, 'beaker.clear':True})
