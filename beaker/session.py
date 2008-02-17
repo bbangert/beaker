@@ -36,14 +36,14 @@ class SignedCookie(Cookie.BaseCookie):
     
     def value_decode(self, val):
         val = val.strip('"')
-        sig = hmac.new(self.secret, val[40:], sha.sha).hexdigest()
+        sig = hmac.new(self.secret, val[40:], sha).hexdigest()
         if sig != val[:40]:
             return None, val
         else:
             return val[40:], val
     
     def value_encode(self, val):
-        sig = hmac.new(self.secret, val, sha.sha).hexdigest()
+        sig = hmac.new(self.secret, val, sha).hexdigest()
         return str(val), ("%s%s" % (sig, val))
 
 
