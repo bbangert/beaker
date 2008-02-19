@@ -142,20 +142,7 @@ class SessionMiddleware(object):
                     if cookie:
                         headers.append(('Set-cookie', cookie))
             return start_response(status, headers, exc_info)
-        try:
-            response = self.wrap_app(environ, session_start_response)
-        except:
-            ty, val = sys.exc_info()[:2]
-            if isinstance(ty, str):
-                raise ty, val, sys.exc_info()[2]
-            if ty.__name__ == 'HTTPFound' and \
-                    session.__dict__['_sess'] is not None:
-                cookie = session.__dict__['_headers']['cookie_out']
-                if cookie:
-                    val.headers.append(('Set-cookie', cookie))
-            raise ty, val, sys.exc_info()[2]
-        else:
-            return response
+        return self.wrap_app(environ, session_start_response)
     
     def _get_session(self):
         return Session({}, use_cookies=False, **self.options)

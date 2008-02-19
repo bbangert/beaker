@@ -1,7 +1,9 @@
 Beaker Changelog
 ================
 
-0.9.2.1 (**tip**)
+0.9.3 (**tip**)
+* WARNING: Session middleware no longer catches Paste HTTP Exceptions, apps
+  are now expected to capture and handle Paste HTTP Exceptions themselves.
 * Fixed Python 2.4 compatibility bug in hmac.
 * Fixed key lookup bug on cache object to only use the settings for the key
   lookup. Found by Andrew Stromnov.
