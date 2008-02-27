@@ -1,9 +1,11 @@
+import os
+import random
+import time
+import sys
+import weakref
+import test_base
 from beaker.container import *
 from beaker.synchronization import Synchronizer
-import random, time, weakref, sys
-import test_base
-import sys, os, gc
-
 
 # container test -
 # tests the container's get_value() function mostly, to insure
