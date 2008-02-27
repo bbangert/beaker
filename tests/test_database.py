@@ -1,7 +1,12 @@
 # coding: utf-8
-from paste.fixture import *
+from beaker.cache import clsmap, Cache
 from beaker.middleware import CacheMiddleware
-from beaker.cache import Cache
+from nose import SkipTest
+from webtest import TestApp
+
+if 'ext:database' not in clsmap:
+    raise SkipTest("'sqlalchemy' is not installed, can't test database "
+                   "backend")
 
 db_url = 'sqlite:///test.db'
 

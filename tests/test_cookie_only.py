@@ -1,8 +1,14 @@
 import re
 import os
 
-from paste.fixture import TestApp
+import beaker.session
 from beaker.middleware import SessionMiddleware
+from nose import SkipTest
+from webtest import TestApp
+
+if not beaker.session.crypto_ok:
+    raise SkipTest("PyCrypto is not installed, can't test cookie-only "
+                   "Sessions")
 
 def simple_app(environ, start_response):
     session = environ['beaker.session']
@@ -44,13 +50,13 @@ def test_nosave():
     app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/nosave')
     assert 'current value is: 1' in res
-    assert [] == res.all_headers('Set-Cookie')
+    assert [] == res.headers.getall('Set-Cookie')
     res = app.get('/nosave')
     assert 'current value is: 1' in res
     
     res = app.get('/')
     assert 'current value is: 1' in res
-    assert len(res.all_headers('Set-Cookie')) > 0
+    assert len(res.headers.getall('Set-Cookie')) > 0
     res = app.get('/')
     assert 'current value is: 2' in res
 
@@ -87,18 +93,12 @@ def test_nosave_with_encryption():
     app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/nosave')
     assert 'current value is: 1' in res
-    assert [] == res.all_headers('Set-Cookie')
+    assert [] == res.headers.getall('Set-Cookie')
     res = app.get('/nosave')
     assert 'current value is: 1' in res
     
     res = app.get('/')
     assert 'current value is: 1' in res
-    assert len(res.all_headers('Set-Cookie')) > 0
+    assert len(res.headers.getall('Set-Cookie')) > 0
     res = app.get('/')
     assert 'current value is: 2' in res
-
-
-if __name__ == '__main__':
-    from paste import httpserver
-    wsgi_app = SessionMiddleware(simple_app, {})
-    httpserver.serve(wsgi_app, host='127.0.0.1', port=8080)
