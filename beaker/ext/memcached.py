@@ -28,7 +28,8 @@ class MemcachedNamespaceManager(NamespaceManager):
         
         verify_directory(self.lock_dir)            
         
-        self.mc = MemcachedNamespaceManager.clients.get(url, lambda: memcache.Client(url.split(';'), debug=0))
+        self.mc = MemcachedNamespaceManager.clients.get(url, 
+            lambda: memcache.Client(url.split(';'), debug=0))
 
     # memcached does its own locking.  override our own stuff
     def do_acquire_read_lock(self): pass

@@ -303,8 +303,9 @@ class CookieSession(Session):
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  cookie_expires=True, cookie_domain=None, encrypt_key=None,
                  validate_key=None, secure=False, **kwargs):
-        if not crypto_ok:
-            raise BeakerException("PyCrypto is not installed, can't use cookie-only Session.")
+        if not crypto_ok and encrypt_key:
+            raise BeakerException("pycryptopp is not installed, can't use "
+                                  "encrypted cookie-only Session.")
         
         self.request = request
         self.key = key
