@@ -1,8 +1,8 @@
 import re
 import os
 
-from paste.fixture import TestApp
 from beaker.middleware import SessionMiddleware
+from webtest import TestApp
 
 loc = os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), 'sessions'])
 
@@ -50,15 +50,15 @@ def test_nosave():
     app = TestApp(SessionMiddleware(simple_app))
     res = app.get('/nosave')
     assert 'current value is: 1' in res
-    assert [] == res.all_headers('Set-Cookie')
+    assert [] == res.headers.getall('Set-Cookie')
     res = app.get('/nosave')
     assert 'current value is: 1' in res
     
     res = app.get('/')
     assert 'current value is: 1' in res
-    assert len(res.all_headers('Set-Cookie')) > 0
+    assert len(res.headers.getall('Set-Cookie')) > 0
     res = app.get('/')
-    assert [] == res.all_headers('Set-Cookie')
+    assert [] == res.headers.getall('Set-Cookie')
     assert 'current value is: 2' in res
 
 def test_load_session_by_id():

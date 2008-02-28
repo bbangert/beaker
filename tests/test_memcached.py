@@ -1,7 +1,12 @@
 # coding: utf-8
-from paste.fixture import *
+from beaker.cache import clsmap, Cache
 from beaker.middleware import CacheMiddleware
-from beaker.cache import Cache
+from nose import SkipTest
+from webtest import TestApp
+
+if 'ext:memcached' not in clsmap:
+    raise SkipTest("'memcache' or 'cmemcache' is not installed, can't test "
+                   "memcached backend")
 
 mc_url = '127.0.0.1'
 

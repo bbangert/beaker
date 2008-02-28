@@ -1,7 +1,7 @@
 # coding: utf-8
-from paste.fixture import *
 from beaker.middleware import CacheMiddleware
 from beaker.cache import Cache
+from webtest import TestApp
 
 def simple_app(environ, start_response):
     clear = False
