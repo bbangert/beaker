@@ -1,6 +1,6 @@
 import os
 
-from PBKDF2 import PBKDF2, strxor
+from beaker.crypto.pbkdf2 import PBKDF2, strxor
 
 def generateCryptoKeys(master_key, salt, iterations):
     # NB: We XOR parts of the keystream into the randomly-generated parts, just
