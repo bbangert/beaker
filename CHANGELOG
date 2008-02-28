@@ -2,6 +2,7 @@ Beaker Changelog
 ================
 
 0.9.3 (2/28/2008)
+* Adding 'id' to cookie-based sessions for better compatibility.
 * Fixed error with exception still raised for PyCrypto missing.
 * WARNING: Session middleware no longer catches Paste HTTP Exceptions, apps
   are now expected to capture and handle Paste HTTP Exceptions themselves.

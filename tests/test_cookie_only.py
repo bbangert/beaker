@@ -12,7 +12,7 @@ def simple_app(environ, start_response):
     if not environ['PATH_INFO'].startswith('/nosave'):
         session.save()
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %d' % session['value']]
+    return ['The current value is: %d and cookie is %s' % (session['value'], session)]
 
 def test_increment():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
@@ -97,6 +97,16 @@ def test_nosave_with_encryption():
     res = app.get('/')
     assert 'current value is: 2' in res
 
+def test_cookie_id():
+    options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
+               'session.type':'cookie'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    res = app.get('/')
+    assert "_id':" in res
+    sess_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body)
+    res = app.get('/')
+    new_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body)
+    assert new_id == sess_id
 
 if __name__ == '__main__':
     from paste import httpserver
