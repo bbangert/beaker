@@ -118,8 +118,13 @@ class Session(UserDict.DictMixin):
             self.dict = {}
         
     def _create_id(self):
+        if hasattr(os, 'getpid'):
+            pid = os.getpid()
+        else:
+            pid = ''
+        
         self.id = md5.new(
-            md5.new("%f%s%f%d" % (time.time(), id({}), random.random(), os.getpid()) ).hexdigest(), 
+            md5.new("%f%s%f%s" % (time.time(), id({}), random.random(), pid) ).hexdigest(), 
         ).hexdigest()
         self.is_new = True
         if self.use_cookies:
