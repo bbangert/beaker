@@ -69,7 +69,8 @@ class CacheMiddleware(object):
     
     def __call__(self, environ, start_response):
         if environ.get('paste.registry'):
-            environ['paste.registry'].register(self.cache, self.cache_manager)
+            if environ['paste.registry'].reglist:
+                environ['paste.registry'].register(self.cache, self.cache_manager)
         environ[self.environ_key] = self.cache_manager
         return self.app(environ, start_response)
 
@@ -131,7 +132,8 @@ class SessionMiddleware(object):
     def __call__(self, environ, start_response):
         session = SessionObject(environ, **self.options)
         if environ.get('paste.registry'):
-            environ['paste.registry'].register(self.session, session)
+            if environ['paste.registry'].reglist:
+                environ['paste.registry'].register(self.session, session)
         environ[self.environ_key] = session
         environ['beaker.get_session'] = self._get_session
         

@@ -1,6 +1,10 @@
 Beaker Changelog
 ================
 
+0.9.4 (**tip**)
+* Fixed bug with Beaker not playing well with Registry when its placed above
+  it in the stack. Thanks Wichert Akkerman.
+
 0.9.3 (2/28/2008)
 * Adding 'id' to cookie-based sessions for better compatibility.
 * Fixed error with exception still raised for PyCrypto missing.
