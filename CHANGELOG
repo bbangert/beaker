@@ -2,6 +2,9 @@ Beaker Changelog
 ================
 
 0.9.4 (**tip**)
+* SECURITY BUG: Fixed security issue with Beaker not properly removing
+  directory escaping characters from the session ID when un-signed sessions
+  are used. Reported with patch by Felix Schwarz.
 * Fixed bug with Beaker not playing well with Registry when its placed above
   it in the stack. Thanks Wichert Akkerman.
 
