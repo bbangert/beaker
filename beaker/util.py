@@ -172,7 +172,8 @@ def encoded_path(root, identifiers, extension = ".enc", depth = 3, digest = True
 
     if digest:
         ident = sha.new(ident).hexdigest()
-        ident = os.path.basename(ident)
+    
+    ident = os.path.basename(ident)
 
     tokens = []
     for d in range(1, depth):
