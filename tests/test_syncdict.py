@@ -140,17 +140,18 @@ def runtest(s):
     print "total object removes %d" % totalremoves
 
     
-# normal dictionary test, where we will remove the value
-# periodically. the number of creates should be equal to
-# the number of removes plus one.    
-collect()
-print "\ntesting with normal dict"
-runtest(SyncDict(thread.allocate_lock(), {}))
+def test_dict():
+    # normal dictionary test, where we will remove the value
+    # periodically. the number of creates should be equal to
+    # the number of removes plus one.    
+    collect()
+    print "\ntesting with normal dict"
+    runtest(SyncDict(thread.allocate_lock(), {}))
 
-assert(totalremoves + 1 == totalcreates)
-
-collect()
-print "\ntesting with weak dict"
-runtest(SyncDict(thread.allocate_lock(), weakref.WeakValueDictionary()))
+    assert(totalremoves + 1 == totalcreates)
 
 
+def test_weakdict():
+    collect()
+    print "\ntesting with weak dict"
+    runtest(SyncDict(thread.allocate_lock(), weakref.WeakValueDictionary()))
