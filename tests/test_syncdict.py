@@ -116,7 +116,7 @@ def runtest(s):
         except KeyError: 
             pass
         # Give Jython more time on the final create for Java GC
-        sleeptime = (jython and x == 9) and 2 or random.random() * .89
+        sleeptime = (jython and x == 9) and 4 or random.random() * .89
         time.sleep(sleeptime)
 
     failed = not running
