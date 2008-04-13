@@ -1,6 +1,9 @@
 Beaker Changelog
 ================
 
+0.9.5 (**tip**)
+
+
 0.9.4 (4/13/2008)
 * Adding 'google' backend datastore, available by specifying 'google' as the
   cache/session type. Note that this takes an optional table_name used to name
