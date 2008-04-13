@@ -1,5 +1,5 @@
 from beaker.util import SyncDict
-import random, time, weakref, sys
+import gc, random, sys, time, weakref
 
 # this script tests SyncDict for its thread safety, 
 # ability to always return a value even for a dictionary 
@@ -12,6 +12,16 @@ try:
 except:
     raise "this test requires a thread-enabled python"
     
+jython = sys.platform.startswith('java')
+
+def collect():
+    """The tests assume CPython GC behavior in regard to weakrefs, but
+    we can coerce Jython into passing by triggering GC when we expect
+    it to have happened on CPython
+    """
+    if jython:
+        gc.collect()
+
 
 class item:
     
@@ -40,6 +50,7 @@ def create(id):
     baton = True
     try:    
         global theitem
+        collect()
         
         if theitem() is not None:
             raise "create %d old item is still referenced" % id
@@ -99,12 +110,13 @@ def runtest(s):
         if not running:
             break
         print "Removing item"
-        totalremoves += 1
         try: 
             del s['test']
-        except KeyError: 
+            totalremoves += 1
+        except KeyError:
             pass
-        time.sleep(random.random() * .89)
+        sleeptime = random.random() * .89
+        time.sleep(sleeptime)
 
     failed = not running
 
@@ -127,15 +139,18 @@ def runtest(s):
     print "total object removes %d" % totalremoves
 
     
-# normal dictionary test, where we will remove the value
-# periodically. the number of creates should be equal to
-# the number of removes plus one.    
-print "\ntesting with normal dict"
-runtest(SyncDict(thread.allocate_lock(), {}))
+def test_dict():
+    # normal dictionary test, where we will remove the value
+    # periodically. the number of creates should be equal to
+    # the number of removes plus one.    
+    collect()
+    print "\ntesting with normal dict"
+    runtest(SyncDict(thread.allocate_lock(), {}))
 
-assert(totalremoves + 1 == totalcreates)
-
-print "\ntesting with weak dict"
-runtest(SyncDict(thread.allocate_lock(), weakref.WeakValueDictionary()))
+    assert(totalremoves + 1 == totalcreates)
 
 
+def test_weakdict():
+    collect()
+    print "\ntesting with weak dict"
+    runtest(SyncDict(thread.allocate_lock(), weakref.WeakValueDictionary()))
