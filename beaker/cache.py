@@ -25,9 +25,7 @@ except InvalidCacheBackendError:
 try:
     import beaker.ext.google as google
     clsmap['ext:google'] = google.GoogleContainer
-except InvalidCacheBackendError:
-    pass
-except ImportError:
+except (InvalidCacheBackendError, SyntaxError):
     pass
 
 class Cache(object):
