@@ -110,13 +110,12 @@ def runtest(s):
         if not running:
             break
         print "Removing item"
-        totalremoves += 1
         try: 
             del s['test']
-        except KeyError: 
+            totalremoves += 1
+        except KeyError:
             pass
-        # Give Jython more time on the final create for Java GC
-        sleeptime = (jython and x == 9) and 4 or random.random() * .89
+        sleeptime = random.random() * .89
         time.sleep(sleeptime)
 
     failed = not running
