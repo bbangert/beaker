@@ -36,9 +36,9 @@ class GoogleNamespaceManager(NamespaceManager):
         self.loaded = False
         self.log_debug = logging.DEBUG >= log.getEffectiveLevel()
         
-        # Google is a whiney little brat, change the namespace to start with
-        # a letter
-        self.namespace = 'pft%s' % self.namespace
+        # Google wants namespaces to start with letters, change the namespace
+        # to start with a letter
+        self.namespace = 'p%s' % self.namespace
     
     # datastore does its own locking (or does it? who knows).  override our
     # own stuff
