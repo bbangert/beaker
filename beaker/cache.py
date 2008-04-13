@@ -22,6 +22,14 @@ try:
 except InvalidCacheBackendError:
     pass
 
+try:
+    import beaker.ext.google as google
+    clsmap['ext:google'] = google.GoogleContainer
+except InvalidCacheBackendError:
+    pass
+except ImportError:
+    pass
+
 class Cache(object):
     """Front-end to the containment API implementing a data cache."""
     def __init__(self, namespace, **kwargs):

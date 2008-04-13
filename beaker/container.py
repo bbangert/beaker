@@ -27,10 +27,10 @@ def container_registry(name):
     return _cls_registry(name, 'Container')
 
 def _cls_registry(name, clsname):
-    if name.startswith('ext:') or name in ['memcached', 'database']:
+    if name.startswith('ext:') or name in ['memcached', 'database', 'google']:
         if name.startswith('ext:'):
             name = name[4:]
-        modname = "beaker.ext." + name 
+        modname = "beaker.ext." + name
         mod = getattr(__import__(modname).ext, name)
     else:
         mod = sys.modules[__name__]

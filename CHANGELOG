@@ -2,6 +2,9 @@ Beaker Changelog
 ================
 
 0.9.4 (**tip**)
+* Adding 'google' backend datastore, available by specifying 'google' as the
+  cache/session type. Note that this takes an optional table_name used to name
+  the model class used.
 * SECURITY BUG: Fixed security issue with Beaker not properly removing
   directory escaping characters from the session ID when un-signed sessions
   are used. Reported with patch by Felix Schwarz.
