@@ -68,8 +68,9 @@ __version__ = "1.1"
 
 from struct import pack
 from binascii import b2a_hex
-from base64 import b64encode
 from random import randint
+
+from beaker.util import b64encode
 
 try:
     # Use PyCrypto (if available)
