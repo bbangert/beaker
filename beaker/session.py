@@ -1,4 +1,3 @@
-import base64
 import cPickle
 import Cookie
 import hmac
@@ -24,7 +23,7 @@ except:
 
 from beaker.container import namespace_registry
 from beaker.exceptions import BeakerException
-from beaker.util import coerce_session_params
+from beaker.util import b64decode, b64encode, coerce_session_params
 
 __all__ = ['SignedCookie', 'Session']
 
@@ -356,14 +355,14 @@ class CookieSession(Session):
     def _encrypt_data(self):
         """Cerealize, encipher, and base64 the session dict"""
         if self.encrypt_key:
-            nonce = base64.b64encode(os.urandom(40))[:8]
+            nonce = b64encode(os.urandom(40))[:8]
             encrypt_key = generateCryptoKeys(self.encrypt_key, self.validate_key + nonce, 1)
             ctrcipher = aes.AES(encrypt_key)
             data = cPickle.dumps(self.dict, protocol=2)
-            return nonce + base64.b64encode(ctrcipher.process(data))
+            return nonce + b64encode(ctrcipher.process(data))
         else:
             data = cPickle.dumps(self.dict, protocol=2)
-            return base64.b64encode(data)
+            return b64encode(data)
     
     def _decrypt_data(self):
         """Bas64, decipher, then un-cerealize the data for the session dict"""
@@ -371,11 +370,11 @@ class CookieSession(Session):
             nonce = self.cookie[self.key].value[:8]
             encrypt_key = generateCryptoKeys(self.encrypt_key, self.validate_key + nonce, 1)
             ctrcipher = aes.AES(encrypt_key)
-            payload = base64.b64decode(self.cookie[self.key].value[8:])
+            payload = b64decode(self.cookie[self.key].value[8:])
             data = ctrcipher.process(payload)
             return cPickle.loads(data)
         else:
-            data = base64.b64decode(self.cookie[self.key].value)
+            data = b64decode(self.cookie[self.key].value)
             return cPickle.loads(data)
     
     def _make_id(self):
