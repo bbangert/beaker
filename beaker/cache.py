@@ -23,6 +23,12 @@ except InvalidCacheBackendError:
     pass
 
 try:
+    import beaker.ext.sqla as sqla
+    clsmap['ext:sqla'] = sqla.SQLAlchemyContainer
+except InvalidCacheBackendError:
+    pass
+
+try:
     import beaker.ext.google as google
     clsmap['ext:google'] = google.GoogleContainer
 except (InvalidCacheBackendError, SyntaxError):

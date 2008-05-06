@@ -27,7 +27,8 @@ def container_registry(name):
     return _cls_registry(name, 'Container')
 
 def _cls_registry(name, clsname):
-    if name.startswith('ext:') or name in ['memcached', 'database', 'google']:
+    if name.startswith('ext:') \
+            or name in ['memcached', 'database', 'sqla', 'google']:
         if name.startswith('ext:'):
             name = name[4:]
         modname = "beaker.ext." + name
