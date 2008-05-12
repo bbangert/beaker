@@ -123,7 +123,7 @@ The latest developer version is available in a `Mercurial repository
       author='Ben Bangart, Mike Bayer, Philip Jenvey',
       author_email='ben@groovie.org, pjenvey@groovie.org',
       url='http://beaker.groovie.org',
-      license='MIT',
+      license='BSD',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       zip_safe=False,
       install_requires=[],
