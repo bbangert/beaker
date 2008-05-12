@@ -115,7 +115,7 @@ The latest developer version is available in a `Mercurial repository
       'Development Status :: 5 - Production/Stable',
       'Environment :: Web Environment',
       'Intended Audience :: Developers',
-      'License :: OSI Approved :: MIT License',
+      'License :: OSI Approved :: BSD License',
       'Programming Language :: Python',
       'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
       ],
