@@ -8,7 +8,7 @@ if 'ext:memcached' not in clsmap:
     raise SkipTest("'memcache' or 'cmemcache' is not installed, can't test "
                    "memcached backend")
 
-mc_url = '127.0.0.1'
+mc_url = '127.0.0.1:11211'
 
 def simple_app(environ, start_response):
     extra_args = {}
