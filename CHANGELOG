@@ -1,8 +1,9 @@
 Beaker Changelog
 ================
 
-0.9.5 (**tip**)
-
+0.9.5 (6/19/2008)
+* Fixed the cache functionality to actually work, previously set_value was
+  ignored if there was already a value set.
 
 0.9.4 (4/13/2008)
 * Adding 'google' backend datastore, available by specifying 'google' as the

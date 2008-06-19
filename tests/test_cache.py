@@ -1,4 +1,5 @@
 # coding: utf-8
+import time
 from beaker.middleware import CacheMiddleware
 from beaker.cache import Cache
 from webtest import TestApp
@@ -44,6 +45,34 @@ def test_has_key():
     assert "foo" not in cache
     cache.remove_value("test")
     assert not cache.has_key("test")
+
+def test_expire_changes():
+    cache = Cache('test', data_dir='./cache', type='dbm')
+    cache.set_value('test', 10)
+    assert cache.has_key('test')
+    assert cache['test'] == 10
+    assert cache._containers['test'].expiretime is None
+    
+    # ensure that we can change a never-expiring value
+    cache.set_value('test', 20, expiretime=1)
+    assert cache.has_key('test')
+    assert cache['test'] == 20
+    assert cache._containers['test'].expiretime == 1
+    time.sleep(1)
+    assert not cache.has_key('test')
+    
+    # test that we can change it before its expired
+    cache.set_value('test', 30, expiretime=50)
+    assert cache.has_key('test')
+    assert cache['test'] == 30
+    assert cache._containers['test'].expiretime == 50
+    
+    cache.set_value('test', 40, expiretime=3)
+    assert cache.has_key('test')
+    assert cache['test'] == 40
+    assert cache._containers['test'].expiretime == 3
+    time.sleep(3)
+    assert not cache.has_key('test')
 
 def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', type='dbm')

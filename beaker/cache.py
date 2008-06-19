@@ -44,16 +44,15 @@ class Cache(object):
         self.kwargs.setdefault('type', 'memory')
     
     def put(self, key, value, **kwargs):
-        kw = self.kwargs
+        kw = self.kwargs.copy()
         kw.update(kwargs)
-        kw.setdefault('type', 'memory')
+        self._containers.pop(key, None)
         self._get_container(key, **kw).set_value(value)
     set_value = put
     
     def get(self, key, **kwargs):
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        kwargs.setdefault('type', 'memory')
         return self._get_container(key, **kw).get_value()
     get_value = get
     
