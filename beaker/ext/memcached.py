@@ -43,20 +43,23 @@ class MemcachedNamespaceManager(NamespaceManager):
     def close(self, *args, **params):pass
 
     def __getitem__(self, key):
-        cache_key = key.replace(' ', '\302\267')
-        keys = [self.namespace + '_' + cache_key, self.namespace + ':keys']
+        ns_key = self.namespace + '_' + key.replace(' ', '\302\267')
+        all_key = self.namespace + ':keys'
+        keys = [ns_key, all_key]
         key_dict = self.mc.get_multi(keys)
-        if cache_key not in key_dict.get(self.namespace+':keys', {}):
+        if ns_key not in key_dict:
             raise KeyError(key)
-        return key_dict[self.namespace + '_' + cache_key]
+        return key_dict[ns_key]
 
     def __contains__(self, key):
         return self.has_key(key)
 
     def has_key(self, key):
-        key = key.replace(' ', '\302\267')
-        keys = self.mc.get(self.namespace + ':keys') or {}
-        return key in keys
+        ns_key = self.namespace + '_' + key.replace(' ', '\302\267')
+        all_key = self.namespace + ':keys'
+        keys = [ns_key, all_key]
+        key_dict = self.mc.get_multi(keys)
+        return ns_key in key_dict
 
     def __setitem__(self, key, value):
         key = key.replace(' ', '\302\267')

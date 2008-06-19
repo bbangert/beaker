@@ -2,6 +2,8 @@ Beaker Changelog
 ================
 
 0.9.5 (6/19/2008)
+* Fixed bug in memcached to be tolerant of keys disappearing when memcached
+  expires them.
 * Fixed the cache functionality to actually work, previously set_value was
   ignored if there was already a value set.
 
