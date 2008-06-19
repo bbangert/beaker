@@ -71,14 +71,19 @@ class MemcachedNamespaceManager(NamespaceManager):
         self.mc.set(self.namespace + "_" + key, value)
 
     def __delitem__(self, key):
-        key = key.replace(' ', '\302\267')
-        keys = self.mc.get(self.namespace + ':keys')
-        try:
-            del keys[key]
-            self.mc.delete(self.namespace + "_" + key)
-            self.mc.set(self.namespace + ':keys', keys)
-        except KeyError:
-            raise
+        cache_key = key.replace(' ', '\302\267')
+        ns_key = self.namespace + '_' + cache_key
+        all_key = self.namespace + ':keys'
+        keys = [ns_key, all_key]
+        key_dict = self.mc.get_multi(keys)
+        if ns_key in key_dict:
+            self.mc.delete(ns_key)
+            mem_keys = key_dict.get(all_key, {})
+            if cache_key in mem_keys:
+                del mem_keys[cache_key]
+                self.mc.set(all_key, mem_keys)
+        else:
+            raise KeyError
 
     def do_remove(self):
         keys = self.mc.get(self.namespace + ':keys')

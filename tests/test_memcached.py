@@ -76,7 +76,7 @@ def test_has_key():
     cache.remove_value("test")
     assert not cache.has_key("test")
 
-def test_memcache_dropping_keys():
+def test_dropping_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     cache.set_value('test', 20)
     cache.set_value('fred', 10)
@@ -90,11 +90,25 @@ def test_memcache_dropping_keys():
     assert cache.has_key('fred')
     
     # Nuke the keys dict, it might die, who knows
-    cache._containers['test'].namespacemanager.mc.delete('test:keys')
+    cache._containers['fred'].namespacemanager.mc.delete('test:keys')
     assert cache.has_key('fred')
     
     # And we still need clear to work, even if it won't work well
     cache.clear()
+
+def test_deleting_keys():
+    cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
+    cache.set_value('test', 20)
+    
+    # Nuke the keys dict, it might die, who knows
+    cache._containers['test'].namespacemanager.mc.delete('test:keys')
+    
+    assert cache.has_key('test')
+    
+    # make sure we can still delete keys even though our keys dict got nuked
+    del cache['test']
+    
+    assert not cache.has_key('test')
 
 def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
