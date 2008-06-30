@@ -151,13 +151,30 @@ class Session(UserDict.DictMixin):
     created = property(lambda self: self.dict['_creation_time'])
 
     def delete(self):
-        """deletes the persistent storage for this session, but remains valid. """
+        """Deletes the session from the persistent storage, and sends
+        an expired cookie out"""
         self.namespace.acquire_write_lock()
         try:
             self.namespace.remove()
         finally:
             self.namespace.release_write_lock()
-    
+        if self.use_cookies:
+            self._delete_cookie()
+
+    def _delete_cookie(self):
+        self.request['set_cookie'] = True
+        self.cookie[self.key] = self.id
+        if self.cookie_domain:
+            self.cookie[self.key]['domain'] = self.cookie_domain
+        if self.secure:
+            self.cookie[self.key]['secure'] = True
+        self.cookie[self.key]['path'] = '/'
+        expires = datetime.today().replace(year=2003)
+        self.cookie[session.key]['expires'] = \
+            expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
+        self.request['cookie_out'] = session.cookie[session.key].output(header='')
+        self.request['set_cookie'] = True
+
     def __getitem__(self, key):
         return self.dict.__getitem__(key)
     def __setitem__(self, key, value):
@@ -420,9 +437,9 @@ class CookieSession(Session):
         self.request['set_cookie'] = True
     
     def delete(self):
-        # Clear out the cookie contents, best we can do
+        # Send a delete cookie request
         self.dict = {}
-        self._create_cookie()
+        self._delete_cookie()
     
     # Alias invalidate to delete
     invalidate = delete
