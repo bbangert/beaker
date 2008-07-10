@@ -267,93 +267,89 @@ class ConditionSynchronizer(SynchronizerImpl):
 
     def do_acquire_read_lock(self, wait = True):    
         self.condition.acquire()
+        try:
+            # see if a synchronous operation is waiting to start
+            # or is already running, in which case we wait (or just
+            # give up and return)
+            if wait:
+                while self.current_sync_operation is not None:
+                    self.condition.wait()
+            else:
+                if self.current_sync_operation is not None:
+                    return False
 
-        # see if a synchronous operation is waiting to start
-        # or is already running, in which case we wait (or just
-        # give up and return)
-        if wait:
-            while self.current_sync_operation is not None:
-                self.condition.wait()
-        else:
-            if self.current_sync_operation is not None:
-                self.condition.release()
-                return False
-
-        self.async += 1
-        
-        self.condition.release()
+            self.async += 1
+        finally:
+            self.condition.release()
 
         if not wait: 
             return True
         
     def do_release_read_lock(self):
         self.condition.acquire()
-
-        self.async -= 1
+        try:
+            self.async -= 1
         
-        # check if we are the last asynchronous reader thread 
-        # out the door.
-        if self.async == 0:
-            # yes. so if a sync operation is waiting, notifyAll to wake
-            # it up
-            if self.current_sync_operation is not None:
-                self.condition.notifyAll()
-        elif self.async < 0:
-            raise LockError("Synchronizer error - too many release_read_locks called")
-            
-        self.condition.release()
-
+            # check if we are the last asynchronous reader thread 
+            # out the door.
+            if self.async == 0:
+                # yes. so if a sync operation is waiting, notifyAll to wake
+                # it up
+                if self.current_sync_operation is not None:
+                        self.condition.notifyAll()
+            elif self.async < 0:
+                raise LockError("Synchronizer error - too many release_read_locks called")
+        finally:
+            self.condition.release()
     
     def do_acquire_write_lock(self, wait = True):
         self.condition.acquire()
-
-        # here, we are not a synchronous reader, and after returning,
-        # assuming waiting or immediate availability, we will be.
+        try:
+            # here, we are not a synchronous reader, and after returning,
+            # assuming waiting or immediate availability, we will be.
         
-        if wait:
-            # if another sync is working, wait
-            while self.current_sync_operation is not None:
-                self.condition.wait()
-        else:
-            # if another sync is working,
-            # we dont want to wait, so forget it
-            if self.current_sync_operation is not None:
-                self.condition.release()
-                return False
-            
-        # establish ourselves as the current sync 
-        # this indicates to other read/write operations
-        # that they should wait until this is None again
-        self.current_sync_operation = _threading.currentThread()
-
-        # now wait again for asyncs to finish
-        if self.async > 0:
             if wait:
-                # wait
-                self.condition.wait()
+                # if another sync is working, wait
+                while self.current_sync_operation is not None:
+                    self.condition.wait()
             else:
+                # if another sync is working,
                 # we dont want to wait, so forget it
-                self.current_sync_operation = None
-                self.condition.release()
-                return False
-        
-        self.condition.release()
+                if self.current_sync_operation is not None:
+                    return False
+            
+            # establish ourselves as the current sync 
+            # this indicates to other read/write operations
+            # that they should wait until this is None again
+            self.current_sync_operation = _threading.currentThread()
+
+            # now wait again for asyncs to finish
+            if self.async > 0:
+                if wait:
+                    # wait
+                    self.condition.wait()
+                else:
+                    # we dont want to wait, so forget it
+                    self.current_sync_operation = None
+                    return False
+        finally:
+            self.condition.release()
         
         if not wait: 
             return True
 
     def do_release_write_lock(self):
         self.condition.acquire()
+        try:
+            if self.current_sync_operation is not _threading.currentThread():
+                raise LockError("Synchronizer error - current thread doesnt have the write lock")
 
-        if self.current_sync_operation is not _threading.currentThread():
-            raise LockError("Synchronizer error - current thread doesnt have the write lock")
+            # reset the current sync operation so 
+            # another can get it
+            self.current_sync_operation = None
 
-        # reset the current sync operation so 
-        # another can get it
-        self.current_sync_operation = None
-
-        # tell everyone to get ready
-        self.condition.notifyAll()
-
-        # everyone go !!
-        self.condition.release()
+            # tell everyone to get ready
+            self.condition.notifyAll()
+        finally:
+            # everyone go !!
+            self.condition.release()
