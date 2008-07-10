@@ -4,7 +4,7 @@ from datetime import datetime
 
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
-from beaker.synchronization import Synchronizer, _threading
+from beaker.synchronization import file_synchronizer, _threading, NullSynchronizer
 from beaker.util import verify_directory, SyncDict
 
 sa_version = None
@@ -23,8 +23,8 @@ if not hasattr(sa, 'BoundMetaData'):
     sa_version = '0.4'
 
 class DatabaseNamespaceManager(NamespaceManager):
-    metadatas = SyncDict(_threading.Lock(), {})
-    tables = SyncDict(_threading.Lock(), {})
+    metadatas = SyncDict()
+    tables = SyncDict()
     
     def __init__(self, namespace, url=None, sa_opts=None, optimistic=False,
                  table_name='beaker_cache', data_dir=None, lock_dir=None,
@@ -94,12 +94,14 @@ class DatabaseNamespaceManager(NamespaceManager):
         self.loaded = False
         self.cache = DatabaseNamespaceManager.tables.get(table_key, make_cache)
     
-    # The database does its own locking.  override our own stuff
-    def do_acquire_read_lock(self): pass
-    def do_release_read_lock(self): pass
-    def do_acquire_write_lock(self, wait = True): return True
-    def do_release_write_lock(self): pass
-    
+    def get_access_lock(self):
+        return NullSynchronizer()
+
+    def get_creation_lock(self, key):
+        return file_synchronizer(
+            identifier ="databasecontainer/funclock/%s" % self.namespace,
+            lock_dir = self.lock_dir)
+
     def do_open(self, flags):
         # If we already loaded the data, don't bother loading it again
         if self.loaded:
@@ -161,24 +163,6 @@ class DatabaseNamespaceManager(NamespaceManager):
 
     def keys(self):
         return self.hash.keys()
-        
 
 class DatabaseContainer(Container):
-
-    def do_init(self, data_dir=None, lock_dir=None, **params):
-        self.funclock = None
-
-    def create_namespace(self, namespace, url, **params):
-        return DatabaseNamespaceManager(namespace, url, **params)
-    create_namespace = classmethod(create_namespace)
-
-    def lock_createfunc(self, wait = True):
-        if self.funclock is None:
-            self.funclock = Synchronizer(identifier =
-"databasecontainer/funclock/%s" % self.namespacemanager.namespace,
-use_files = True, lock_dir = self.namespacemanager.lock_dir)
-
-        return self.funclock.acquire_write_lock(wait)
-
-    def unlock_createfunc(self):
-        self.funclock.release_write_lock()
+    namespace_manager = DatabaseNamespaceManager

@@ -2,7 +2,8 @@ import sys
 
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
-from beaker.synchronization import _threading, Synchronizer
+from beaker.synchronization import _threading, file_synchronizer, NullSynchronizer
+
 from beaker.util import verify_directory, SyncDict
 
 try:
@@ -14,7 +15,7 @@ except ImportError:
         raise InvalidCacheBackendError("Memcached cache backend requires either the 'memcache' or 'cmemcache' library")
 
 class MemcachedNamespaceManager(NamespaceManager):
-    clients = SyncDict(_threading.Lock(), {})
+    clients = SyncDict()
     
     def __init__(self, namespace, url, data_dir=None, lock_dir=None, **params):
         NamespaceManager.__init__(self, namespace, **params)
@@ -31,16 +32,17 @@ class MemcachedNamespaceManager(NamespaceManager):
         self.mc = MemcachedNamespaceManager.clients.get(url, 
             lambda: memcache.Client(url.split(';'), debug=0))
 
-    # memcached does its own locking.  override our own stuff
-    def do_acquire_read_lock(self): pass
-    def do_release_read_lock(self): pass
-    def do_acquire_write_lock(self, wait = True): return True
-    def do_release_write_lock(self): pass
+    def get_access_lock(self):
+        return NullSynchronizer()
 
-    # override open/close to do nothing, keep memcache connection open as long
-    # as possible
-    def open(self, *args, **params):pass
-    def close(self, *args, **params):pass
+    def get_creation_lock(self, key):
+        return file_synchronizer(
+            identifier="memcachedcontainer/funclock/%s" % self.namespace,lock_dir = self.lock_dir)
+
+    def open(self, *args, **params):
+        pass
+    def close(self, *args, **params):
+        pass
 
     def __getitem__(self, key):
         ns_key = self.namespace + '_' + key.replace(' ', '\302\267')
@@ -100,22 +102,4 @@ class MemcachedNamespaceManager(NamespaceManager):
             return [x.replace('\302\267', ' ') for x in keys.keys()]
 
 class MemcachedContainer(Container):
-
-    def do_init(self, data_dir=None, lock_dir=None, **params):
-        self.funclock = None
-
-    def create_namespace(self, namespace, url, **params):
-        return MemcachedNamespaceManager(namespace, url, **params)
-    create_namespace = classmethod(create_namespace)
-
-    def lock_createfunc(self, wait = True):
-        if self.funclock is None:
-            self.funclock = Synchronizer(identifier =
-"memcachedcontainer/funclock/%s" % self.namespacemanager.namespace,
-use_files = True, lock_dir = self.namespacemanager.lock_dir)
-
-        return self.funclock.acquire_write_lock(wait)
-
-    def unlock_createfunc(self):
-        self.funclock.release_write_lock()
-
+    namespace_class = MemcachedNamespaceManager

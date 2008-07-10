@@ -1,115 +1,90 @@
 import os
 import random
 import time
-import sys
-import weakref
-import test_base
+import unittest
 from beaker.container import *
-from beaker.synchronization import Synchronizer
+from beaker.synchronization import synchronizers
+import thread
 
-# container test -
-# tests the container's get_value() function mostly, to insure
-# that items are recreated when expired, and that create function
-# is called exactly once per expiration
-
-try:
-    import thread
-except:
-    raise "this test requires a thread-enabled python"
-    
-#import logging
-#logging.basicConfig()
-#logging.getLogger('beaker.container').setLevel(logging.DEBUG)
-
-class Item(object):
-    
-    def __init__(self, id):
-        self.id = id
-        
-    def __str__(self):
-        return "item id %d" % self.id
-
-    def test_item(self):
-        return True
-
-
-# keep running indicator
-running = False
-
-starttime = time.time()
-
-# creation func entrance detector to detect non-synchronized access
-# to the create function
-baton = None
-
-context = ContainerContext()
-
-def create(id, delay = 0):
-    global baton
-    if baton is not None:
-        raise "baton is not none , ident " + repr(baton) + " this thread " + repr(thread.get_ident())
+def create(delay=0):
+    global baton, totalcreates
+    assert baton is None, "baton is not none , ident %r, this thread %r" % (baton, thread.get_ident())
 
     baton = thread.get_ident()
     try:    
-        i = Item(id)
-
+        obj = object()
         time.sleep(delay)
-        global totalcreates
         totalcreates += 1
-
-        return i
+        return obj
     finally:
         baton = None
         
-def threadtest(cclass, id, statusdict, expiretime, delay, threadlocal):
+def runthread(cclass, id, runningids, container, delay, kwargs):
     print "create thread %d starting" % id
-    statusdict[id] = True
-
+    runningids.add(id)
 
     try:
-        if threadlocal:
-            container = cclass(context = context, namespace = 'test', key = 'test', createfunc = lambda: create(id, delay), expiretime = expiretime, data_dir='./cache', starttime = starttime)
-        else:
-            container = global_container
+        if not container:
+            container = cclass(
+                context=context, 
+                namespace='test', 
+                key='test', 
+                createfunc=lambda: create(delay), 
+                **kwargs
+                )
             
-        global running
-        global totalgets
+        global running, totalgets
         try:
             while running:
                 item = container.get_value()
-                if not item.test_item():
-                    raise "item did not test"
+                assert item is not None
                 item = None
                 totalgets += 1
                 time.sleep(random.random() * .00001)
         except:
-            
-            e = sys.exc_info()[0]
             running = False
-            print e
             raise
     finally:
         print "create thread %d exiting" % id
-        statusdict[id] = False
+        runningids.remove(id)
+
+def _runtest(cclass, totaltime, expiretime, delay, threadlocal):
+    print "\ntesting %s for %d secs with expiretime %s delay %d" % (
+        cclass, totaltime, expiretime, delay)
+
+    global running, starttime, baton, context, totalcreates, totalgets
     
+    running = False
+    starttime = time.time()
+    baton = None
+    context = ContainerContext()
 
-def runtest(cclass, totaltime, expiretime, delay, threadlocal):
-
-    statusdict = {}
-    global totalcreates
+    runningids = set()
     totalcreates = 0
 
-    global totalgets
     totalgets = 0
+    
+    kwargs = dict(
+        expiretime=expiretime, 
+        starttime = starttime)
+    
+    if cclass in (FileContainer, DBMContainer):
+        kwargs['data_dir'] = './cache'
 
-    global global_container
-    global_container = cclass(context = context, namespace = 'test', key = 'test', createfunc = lambda: create(id, delay), expiretime = expiretime, data_dir='./cache', starttime = starttime)
-    global_container.clear_value()
-
-    global running
+    if not threadlocal:
+        container = cclass(
+            context=context, 
+            namespace='test', 
+            key='test', 
+            createfunc=lambda:create(delay), 
+            **kwargs)
+        container.clear_value()
+    else:
+        container = None
+        
     running = True    
     for t in range(1, 20):
-        thread.start_new_thread(threadtest, (cclass, t, statusdict, expiretime, delay, threadlocal))
+        thread.start_new_thread(runthread, (cclass, t, runningids, container, delay, kwargs))
         
     time.sleep(totaltime)
     
@@ -117,89 +92,88 @@ def runtest(cclass, totaltime, expiretime, delay, threadlocal):
 
     running = False
 
-    pause = True
-    while pause:
-        time.sleep(1)    
-        pause = False
-        for v in statusdict.values():
-            if v:
-                pause = True
-                break
+    while runningids:
+        time.sleep(1)
 
-    if failed:
-        raise "test failed"
+    assert not failed
 
     print "total object creates %d" % totalcreates
     print "total object gets %d" % totalgets
-
-class ContainerTest(test_base.MyghtyTest):
-    def _runtest(self, cclass, totaltime, expiretime, delay):
-        print "\ntesting %s for %d secs with expiretime %s delay %d" % (
-            cclass, totaltime, expiretime, delay)
-        
-        runtest(cclass, totaltime, expiretime, delay, threadlocal=False)
-
-        if expiretime is None:
-            self.assert_(totalcreates == 1)
-        else:
-            self.assert_(abs(totaltime / expiretime - totalcreates) <= 2)
-
-    def testMemoryContainer(self, totaltime=10, expiretime=None, delay=0):
-        self._runtest(container_registry('memory'),
-                      totaltime, expiretime, delay)
-
-    def testMemoryContainer2(self):
-        self.testMemoryContainer(expiretime=2)
-
-    def testMemoryContainer3(self):
-        self.testMemoryContainer(expiretime=5, delay=2)
-
-    def testDbmContainer(self, totaltime=10, expiretime=None, delay=0):
-        self._runtest(container_registry('dbm'),
-                      totaltime, expiretime, delay)
-        
-    def testDbmContainer2(self):
-        self.testDbmContainer(expiretime=2)
-
-    def testDbmContainer3(self):
-        self.testDbmContainer(expiretime=5, delay=2)
-
     
-    def test_file_open_bug(self):
-        # 1. create container
-        container = container_registry('file')(context=context, namespace='reentrant_test', key='test', data_dir='./cache')
-        
-        # 2. ensure its file doesnt exist.
-        try:
-            os.remove(container.namespacemanager.file)
-        except OSError:
-            pass
-        
-        # 3. set a value.
-        container.set_value("x")
+    if expiretime is None:
+        assert totalcreates == 1
+    else:
+        assert abs(totaltime / expiretime - totalcreates) <= 2
 
-        # 4. open the file and corrupt its pickled data
-        f = open(container.namespacemanager.file, 'w')
-        f.write("BLAH BLAH BLAH")
-        f.close()
+def test_memory_container(totaltime=10, expiretime=None, delay=0, threadlocal=False):
+    _runtest(container_registry('memory'),
+                  totaltime, expiretime, delay, threadlocal)
+
+def test_dbm_container(totaltime=10, expiretime=None, delay=0):
+    _runtest(container_registry('dbm'), totaltime, expiretime, delay, False)
+
+def test_file_container(totaltime=10, expiretime=None, delay=0, threadlocal=False):
+    _runtest(container_registry('file'), totaltime, expiretime, delay, threadlocal)
+
+def test_memory_container_tlocal():
+    test_memory_container(expiretime=5, delay=2, threadlocal=True)
+    
+def test_memory_container_2():
+    test_memory_container(expiretime=2)
+
+def test_memory_container_3():
+    test_memory_container(expiretime=5, delay=2)
+
+def test_dbm_container_2():
+    test_dbm_container(expiretime=2)
+
+def test_dbm_container_3():
+    test_dbm_container(expiretime=5, delay=2)
+
+def test_file_container_2():
+    test_file_container(expiretime=2)
+    
+def test_file_container_3():
+    test_file_container(expiretime=5, delay=2)
+
+def test_file_container_tlocal():
+    test_file_container(expiretime=5, delay=2, threadlocal=True)
+
+def test_file_open_bug():
+    # 1. create container
+    container = container_registry('file')(context=context, namespace='reentrant_test', key='test', data_dir='./cache')
+    
+    # 2. ensure its file doesnt exist.
+    try:
+        os.remove(container.namespacemanager.file)
+    except OSError:
+        pass
+    
+    # 3. set a value.
+    container.set_value("x")
+
+    # 4. open the file and corrupt its pickled data
+    f = open(container.namespacemanager.file, 'w')
+    f.write("BLAH BLAH BLAH")
+    f.close()
+    
+    # 5. set another value.  namespace.acquire_lock() opens the file, the pickle raises an exception, the lock stays open (that was the bug)
+    # comment out line 147 of container.py, do_release_write_lock() inside of acquire_write_lock(), to illustrate
+    try:
+        container.set_value("y")
+        assert False
+    except:
+        pass
         
-        # 5. set another value.  namespace.acquire_lock() opens the file, the pickle raises an exception, the lock stays open (that was the bug)
-        # comment out line 147 of container.py, self.do_release_write_lock() inside of acquire_write_lock(), to illustrate
-        try:
-            container.set_value("y")
-            assert False
-        except:
-            pass
-            
-        # 6. clear file synchronziers, rebuild the namespace / context etc. so a new Synchchronizer gets built (alternatively, just
-        # access the same container from a different thread)
-        Synchronizer.conditions.clear()
-        context.clear()
-        container = container_registry('file')(context=context, namespace='reentrant_test', key='test', data_dir='./cache')
-        
-        # 7. acquire write lock hangs !
-        try:
-            container.set_value("z")
-            assert False
-        except:
-            pass
+    # 6. clear file synchronziers, rebuild the namespace / context etc. so a new Synchchronizer gets built (alternatively, just
+    # access the same container from a different thread)
+    synchronizers.clear()
+    context.clear()
+    container = container_registry('file')(context=context, namespace='reentrant_test', key='test', data_dir='./cache')
+    
+    # 7. acquire write lock hangs !
+    try:
+        container.set_value("z")
+        assert False
+    except:
+        pass

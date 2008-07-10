@@ -148,7 +148,9 @@ class Session(UserDict.DictMixin):
             self.request['cookie_out'] = self.cookie[self.key].output(header='')
             self.request['set_cookie'] = False
     
-    created = property(lambda self: self.dict['_creation_time'])
+    def created(self):
+        return self.dict['_creation_time']
+    created = property(created)
 
     def delete(self):
         """Deletes the session from the persistent storage, and sends

@@ -1,4 +1,4 @@
-__all__  = ["Synchronizer", "NameLock", "_threading", "_thread"]
+__all__  = ["file_synchronizer", "mutex_synchronizer", "NameLock", "_threading", "_thread"]
 
 import os
 import sys
@@ -35,8 +35,7 @@ class NameLock(object):
      
     locks = util.WeakValuedRegistry()
 
-    class NLContainer:
-        """cant put Lock as a weakref"""
+    class NLContainer(object):
         def __init__(self, reentrant):
             if reentrant:
                 self.lock = _threading.RLock()
@@ -46,69 +45,68 @@ class NameLock(object):
             return self.lock
 
     def __init__(self, identifier = None, reentrant = False):
-        self.lock = self._get_lock(identifier, reentrant)
+        if identifier is None:
+            self._lock = NameLock.NLContainer(reentrant)
+        else:
+            self._lock = NameLock.locks.get(identifier, NameLock.NLContainer, reentrant)
 
     def acquire(self, wait = True):
-        return self.lock().acquire(wait)
+        return self._lock().acquire(wait)
 
     def release(self):
-        self.lock().release()
+        self._lock().release()
 
-    def _get_lock(self, identifier, reentrant):
-        
-        if identifier is None:
-            return NameLock.NLContainer(reentrant)
-        
-        return NameLock.locks.get(identifier, lambda: NameLock.NLContainer(reentrant))
+synchronizers = util.WeakValuedRegistry()
+def synchronizer(identifier, cls, **kwargs):
+    return synchronizers.sync_get((identifier, cls), cls, identifier, **kwargs)
 
+def file_synchronizer(identifier, **kwargs):
+    return synchronizer(identifier, FileSynchronizer, **kwargs)
 
+def mutex_synchronizer(identifier, **kwargs):
+    return synchronizer(identifier, ConditionSynchronizer, **kwargs)
 
-
-class Synchronizer(object):
-    """a read-many/single-writer synchronizer which globally synchronizes on a given string name."""
-    
-    conditions = util.WeakValuedRegistry()
-
-    def __init__(self, identifier = None, use_files = False, lock_dir = None, digest_filenames = True):
-        if not has_flock:
-            use_files = False
-
-        if use_files:
-            syncs = Synchronizer.conditions.sync_get("file_%s" % identifier, lambda:util.ThreadLocal(creator=lambda: FileSynchronizer(identifier, lock_dir, digest_filenames)))
-            self._get_impl = lambda:syncs.get()
-        else:
-            condition = Synchronizer.conditions.sync_get("condition_%s" % identifier, lambda: ConditionSynchronizer(identifier))
-            self._get_impl = lambda:condition
-
-    def release_read_lock(self):
-        self._get_impl().release_read_lock()
-        
-    def acquire_read_lock(self, wait=True):
-        return self._get_impl().acquire_read_lock(wait=wait)
-
+class NullSynchronizer(object):
     def acquire_write_lock(self, wait=True):
-        return self._get_impl().acquire_write_lock(wait=wait)
-        
+        pass
+    def acquire_read_lock(self, wait=True):
+        pass
     def release_write_lock(self):
-        self._get_impl().release_write_lock()
-        
-class SyncState(object):
-    """used to track the current thread's reading/writing state as well as reentrant block counting."""
+        pass
+    def release_read_lock(self):
+        pass
+    acquire = acquire_write_lock
+    release = release_write_lock
     
-    def __init__(self):
-        self.reentrantcount = 0
-        self.writing = False
-        self.reading = False
-
 class SynchronizerImpl(object):
-    """base class for synchronizers.  the release/acquire methods may or may not be threadsafe
-    depending on whether the 'state' accessor returns a thread-local instance."""
+
+    def __init__(self):
+        self._state = util.ThreadLocal()
+
+    class SyncState(object):
+        __slots__ = 'reentrantcount', 'writing', 'reading'
+
+        def __init__(self):
+            self.reentrantcount = 0
+            self.writing = False
+            self.reading = False
+
+    def state(self):
+        if not self._state.has():
+            state = SynchronizerImpl.SyncState()
+            self._state.put(state)
+            return state
+        else:
+            return self._state.get()
+    state = property(state)
     
     def release_read_lock(self):
         state = self.state
 
-        if state.writing: raise LockError("lock is in writing state")
-        if not state.reading: raise LockError("lock is not in reading state")
+        if state.writing: 
+            raise LockError("lock is in writing state")
+        if not state.reading: 
+            raise LockError("lock is not in reading state")
         
         if state.reentrantcount == 1:
             self.do_release_read_lock()
@@ -119,7 +117,8 @@ class SynchronizerImpl(object):
     def acquire_read_lock(self, wait = True):
         state = self.state
 
-        if state.writing: raise LockError("lock is in writing state")
+        if state.writing: 
+            raise LockError("lock is in writing state")
         
         if state.reentrantcount == 0:
             x = self.do_acquire_read_lock(wait)
@@ -134,19 +133,24 @@ class SynchronizerImpl(object):
     def release_write_lock(self):
         state = self.state
 
-        if state.reading: raise LockError("lock is in reading state")
-        if not state.writing: raise LockError("lock is not in writing state")
+        if state.reading: 
+            raise LockError("lock is in reading state")
+        if not state.writing: 
+            raise LockError("lock is not in writing state")
 
         if state.reentrantcount == 1:
             self.do_release_write_lock()
             state.writing = False
 
         state.reentrantcount -= 1
-        
+    
+    release = release_write_lock
+    
     def acquire_write_lock(self, wait  = True):
         state = self.state
 
-        if state.reading: raise LockError("lock is in reading state")
+        if state.reading: 
+            raise LockError("lock is in reading state")
         
         if state.reentrantcount == 0:
             x = self.do_acquire_write_lock(wait)
@@ -157,6 +161,8 @@ class SynchronizerImpl(object):
         elif state.writing:
             state.reentrantcount += 1
             return True
+
+    acquire = acquire_write_lock
 
     def do_release_read_lock(self):
         raise NotImplementedError()
@@ -171,101 +177,84 @@ class SynchronizerImpl(object):
         raise NotImplementedError()
     
 class FileSynchronizer(SynchronizerImpl):
-    """a synchronizer using lock files.   
-    
-    as it relies upon flock, its inherently not threadsafe.  The 
-    Synchronizer container will maintain a unique FileSynchronizer per Synchronizer instance per thread.
-    This works out since the synchronizers are all locking on a file on the filesystem.
-    """
-    
-    def __init__(self, identifier, lock_dir, digest_filenames):
-        self.state = SyncState()
+    """a synchronizer which locks using flock()."""
 
+    def __init__(self, identifier, lock_dir):
+        super(FileSynchronizer, self).__init__()
+        self._filedescriptor = util.ThreadLocal()
+        
         if lock_dir is None:
             lock_dir = tempfile.gettempdir()
         else:
             lock_dir = lock_dir
 
-        self.filename = util.encoded_path(lock_dir, [identifier], extension = '.lock', digest = digest_filenames)
+        self.filename = util.encoded_path(
+                            lock_dir, 
+                            [identifier], 
+                            extension='.lock'
+                        )
 
-        self.opened = False
-        self.filedesc = None
-    
+    def _filedesc(self):
+        return self._filedescriptor.get()
+    _filedesc = property(_filedesc)
+        
     def _open(self, mode):
-        if not self.opened:
-            self.filedesc = os.open(self.filename, mode)
-            self.opened = True
+        filedescriptor = self._filedesc
+        if not filedescriptor:
+            filedescriptor = os.open(self.filename, mode)
+            self._filedescriptor.put(filedescriptor)
+        return filedescriptor
             
     def do_acquire_read_lock(self, wait):
-        self._open(os.O_CREAT | os.O_RDONLY)
-
+        filedescriptor = self._open(os.O_CREAT | os.O_RDONLY)
         if not wait:
             try:
-                fcntl.flock(self.filedesc, fcntl.LOCK_SH | fcntl.LOCK_NB)
-                ret = True
+                fcntl.flock(filedescriptor, fcntl.LOCK_SH | fcntl.LOCK_NB)
+                return True
             except IOError:
-                ret = False
-                
-            return ret
+                return False
         else:
-            fcntl.flock(self.filedesc, fcntl.LOCK_SH)
+            fcntl.flock(filedescriptor, fcntl.LOCK_SH)
             return True
-        
-        
-    def do_acquire_write_lock(self, wait):
-        self._open(os.O_CREAT | os.O_WRONLY)
 
+    def do_acquire_write_lock(self, wait):
+        filedescriptor = self._open(os.O_CREAT | os.O_WRONLY)
         if not wait:
             try:
-                fcntl.flock(self.filedesc, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                ret  = True
+                fcntl.flock(filedescriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return True
             except IOError:
-                ret = False
-                
-            return ret
+                return False
         else:
-            fcntl.flock(self.filedesc, fcntl.LOCK_EX);
+            fcntl.flock(filedescriptor, fcntl.LOCK_EX);
             return True
     
     def do_release_read_lock(self):
-        self.release_all_locks()
+        self._release_all_locks()
     
     def do_release_write_lock(self):
-        self.release_all_locks()
+        self._release_all_locks()
     
-    def release_all_locks(self):
-        if self.opened:
-            fcntl.flock(self.filedesc, fcntl.LOCK_UN)
-            os.close(self.filedesc)
-            self.opened = False
+    def _release_all_locks(self):
+        filedescriptor = self._filedesc
+        if filedescriptor:
+            fcntl.flock(filedescriptor, fcntl.LOCK_UN)
+            os.close(filedescriptor)
+            self._filedescriptor.remove()
 
     def __del__(self):
-        if not os:
-            # os module has already been GCed
-            return
-        if os.access(self.filename, os.F_OK):
+        if os and os.access(self.filename, os.F_OK):
             try:
                 os.remove(self.filename)
             except OSError:
                 # occasionally another thread beats us to it
                 pass                    
 
-
 class ConditionSynchronizer(SynchronizerImpl):
-    """a synchronizer using a Condition.  
-    
-    this synchronizer is based on threading.Lock() objects and
-    therefore must be shared among threads, so it is also threadsafe.
-    the "state" variable referenced by the base SynchronizerImpl class
-    is turned into a thread local, and all the do_XXXX methods are synchronized
-    on the condition object.
-    
-    The Synchronizer container will maintain a registry of ConditionSynchronizer
-    objects keyed to the name of the synchronizer.
-    """
+    """a synchronizer using a Condition."""
     
     def __init__(self, identifier):
-        self.tlocalstate = util.ThreadLocal(creator = lambda: SyncState())
+        super(ConditionSynchronizer, self).__init__()
 
         # counts how many asynchronous methods are executing
         self.async = 0
@@ -276,8 +265,6 @@ class ConditionSynchronizer(SynchronizerImpl):
         # condition object to lock on
         self.condition = _threading.Condition(_threading.Lock())
 
-    state = property(lambda self: self.tlocalstate())
-        
     def do_acquire_read_lock(self, wait = True):    
         self.condition.acquire()
 
@@ -296,7 +283,8 @@ class ConditionSynchronizer(SynchronizerImpl):
         
         self.condition.release()
 
-        if not wait: return True
+        if not wait: 
+            return True
         
     def do_release_read_lock(self):
         self.condition.acquire()
@@ -351,13 +339,13 @@ class ConditionSynchronizer(SynchronizerImpl):
         
         self.condition.release()
         
-        if not wait: return True
+        if not wait: 
+            return True
 
     def do_release_write_lock(self):
         self.condition.acquire()
 
-
-        if self.current_sync_operation != _threading.currentThread():
+        if self.current_sync_operation is not _threading.currentThread():
             raise LockError("Synchronizer error - current thread doesnt have the write lock")
 
         # reset the current sync operation so 

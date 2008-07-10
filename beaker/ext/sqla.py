@@ -4,7 +4,7 @@ from datetime import datetime
 
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
-from beaker.synchronization import Synchronizer, _threading
+from beaker.synchronization import file_synchronizer, _threading, NullSynchronizer
 from beaker.util import verify_directory, SyncDict
 
 try:
@@ -48,17 +48,13 @@ class SQLAlchemyNamespaceManager(NamespaceManager):
         self._is_new = False
         self.loaded = False
 
-    def do_acquire_read_lock(self):
-        pass
+    def get_access_lock(self):
+        return NullSynchronizer()
 
-    def do_release_read_lock(self):
-        pass
-
-    def do_acquire_write_lock(self, wait=True):
-        return True
-
-    def do_release_write_lock(self):
-        pass
+    def get_creation_lock(self, key):
+        return file_synchronizer(
+            identifier ="databasecontainer/funclock/%s" % self.namespace,
+            lock_dir=self.lock_dir)
 
     def do_open(self, flags):
         if self.loaded:
@@ -118,25 +114,7 @@ class SQLAlchemyNamespaceManager(NamespaceManager):
 
 
 class SQLAlchemyContainer(Container):
-    def do_init(self, data_dir=None, lock_dir=None, **kwargs):
-        self.funclock = None
-
-    def create_namespace(self, namespace, bind, table, **kwargs):
-        return SQLAlchemyNamespaceManager(namespace, bind, table, **kwargs)
-
-    create_namespace = classmethod(create_namespace)
-
-    def lock_createfunc(self, wait=True):
-        if self.funclock is None:
-            identifier = 'sqlalchemycontainer/funclock/%s' \
-                % self.namespacemanager.namespace
-            self.funclock = Synchronizer(identifier, True,
-                                         self.namespacemanager.lock_dir)
-        return self.funclock.acquire_write_lock(wait)
-
-    def unlock_createfunc(self):
-        self.funclock.release_write_lock()
-
+    namespace_manager = SQLAlchemyNamespaceManager
 
 def make_cache_table(metadata, table_name='beaker_cache'):
     """Return a ``Table`` object suitable for storing cached values for the

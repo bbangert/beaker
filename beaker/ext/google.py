@@ -6,6 +6,7 @@ from datetime import datetime
 
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
+from beaker.synchronization import NullSynchronizer
 
 log = logging.getLogger(__name__)
 
@@ -40,12 +41,11 @@ class GoogleNamespaceManager(NamespaceManager):
         # to start with a letter
         self.namespace = 'p%s' % self.namespace
     
-    # datastore does its own locking (or does it? who knows).  override our
-    # own stuff
-    def do_acquire_read_lock(self): pass
-    def do_release_read_lock(self): pass
-    def do_acquire_write_lock(self, wait = True): return True
-    def do_release_write_lock(self): pass
+    def get_access_lock(self):
+        return NullSynchronizer()
+
+    def get_creation_lock(self, key):
+        return NullSynchronizer()
 
     def do_open(self, flags):
         # If we already loaded the data, don't bother loading it again
@@ -112,16 +112,4 @@ class GoogleNamespaceManager(NamespaceManager):
         
 
 class GoogleContainer(Container):
-
-    def do_init(self, data_dir=None, lock_dir=None, **params):
-        self.funclock = None
-
-    def create_namespace(self, namespace, url, **params):
-        return GoogleNamespaceManager(namespace, url, **params)
-    create_namespace = classmethod(create_namespace)
-
-    def lock_createfunc(self, wait = True):
-        pass
-
-    def unlock_createfunc(self):
-        pass
+    namespace_class = GoogleNamespaceManager

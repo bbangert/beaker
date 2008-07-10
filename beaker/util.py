@@ -85,44 +85,20 @@ def verify_directory(dir):
                 raise
 
     
-class ThreadLocal(object):
+class ThreadLocal(dict):
     """stores a value on a per-thread basis"""
-    def __init__(self, value = None, default = None, creator = None):
-        self.dict = {}
-        self.default = default
-        self.creator = creator
-        if value:
-            self.put(value)
 
-    def __call__(self, *arg):
-        if len(arg):
-            self.put(arg[0])
-        else:
-            return self.get()
-
-    def __str__(self):
-        return str(self.get())
-    
-    def assign(self, value):
-        self.dict[_thread.get_ident()] = value
-    
     def put(self, value):
-        self.assign(value)
+        self[_thread.get_ident()] = value
     
-    def exists(self):
-        return self.dict.has_key(_thread.get_ident())
+    def has(self):
+        return _thread.get_ident() in self
             
-    def get(self, *args, **params):
-        if not self.dict.has_key(_thread.get_ident()):
-            if self.default is not None: 
-                self.put(self.default)
-            elif self.creator is not None: 
-                self.put(self.creator(*args, **params))
-        
-        return self.dict[_thread.get_ident()]
+    def get(self, default=None):
+        return dict.get(self, _thread.get_ident(), default)
             
     def remove(self):
-        del self.dict[_thread.get_ident()]
+        del self[_thread.get_ident()]
         
     
 class SyncDict(object):
@@ -139,51 +115,34 @@ class SyncDict(object):
     was driving me nuts with garbage collection/weakrefs in this section.
     """
     
-    def __init__(self, mutex, dictionary):
-        self.mutex = mutex
-        self.dict = dictionary
+    def __init__(self):
+        self.mutex = _thread.allocate_lock()
+        self.dict = {}
         
-    def clear(self):
-        self.dict.clear()
-        
-    def get(self, key, createfunc, isvalidfunc = None):
-        """regular get method.  returns the object asynchronously, if present
-        and also passes the optional isvalidfunc,
-        else defers to the synchronous get method which will create it."""
+    def get(self, key, createfunc, *args, **kwargs):
         try:
             if self.has_key(key):
-                return self._get_obj(key, createfunc, isvalidfunc)
+                return self.dict[key]
             else:
-                return self.sync_get(key, createfunc, isvalidfunc)
+                return self.sync_get(key, createfunc, *args, **kwargs)
         except KeyError:
-            return self.sync_get(key, createfunc, isvalidfunc)
+            return self.sync_get(key, createfunc, *args, **kwargs)
 
-    def sync_get(self, key, createfunc, isvalidfunc = None):
+    def sync_get(self, key, createfunc, *args, **kwargs):
         self.mutex.acquire()
         try:
             try:
                 if self.has_key(key):
-                    return self._get_obj(key, createfunc, isvalidfunc, create = True)
+                    return self.dict[key]
                 else:
-                    return self._create(key, createfunc)
+                    return self._create(key, createfunc, *args, **kwargs)
             except KeyError:
-                return self._create(key, createfunc)
+                return self._create(key, createfunc, *args, **kwargs)
         finally:
             self.mutex.release()
 
-    def _get_obj(self, key, createfunc, isvalidfunc, create = False):
-        obj = self[key]
-        if isvalidfunc is not None and not isvalidfunc(obj):
-            if create:
-                return self._create(key, createfunc)
-            else:
-                return self.sync_get(key, createfunc, isvalidfunc)
-        else:
-            return obj
-    
-    def _create(self, key, createfunc):
-        obj = createfunc()
-        self[key] = obj
+    def _create(self, key, createfunc, *args, **kwargs):
+        self[key] = obj = createfunc(*args, **kwargs)
         return obj
 
     def has_key(self, key):
@@ -196,32 +155,22 @@ class SyncDict(object):
         self.dict.__setitem__(key, value)
     def __delitem__(self, key):
         return self.dict.__delitem__(key)
+    def clear(self):
+        self.dict.clear()
+
     
 
-class Registry(SyncDict):
-    """a registry object."""
-    def __init__(self):
-        SyncDict.__init__(self, _threading.Lock(), {})
-
 class WeakValuedRegistry(SyncDict):
-    """a registry that stores objects only as long as someone has a reference to them."""
     def __init__(self):
-        # weakrefs apparently can trigger the __del__ method of other
-        # unreferenced objects, when you create a new reference.  this can occur
-        # when you place new items into the WeakValueDictionary.  if that __del__
-        # method happens to want to access this same registry, well, then you need
-        # the RLock instead of a regular lock, since at the point of dictionary
-        # insertion, we are already inside the lock.
-        SyncDict.__init__(self, _threading.RLock(), weakref.WeakValueDictionary())
-
+        self.mutex = _threading.RLock()
+        self.dict = weakref.WeakValueDictionary()
             
-def encoded_path(root, identifiers, extension = ".enc", depth = 3, digest = True):
+def encoded_path(root, identifiers, extension = ".enc", depth = 3):
     """generate a unique file-accessible path from the given list of identifiers
     starting at the given root directory."""
     ident = string.join(identifiers, "_")
 
-    if digest:
-        ident = sha.new(ident).hexdigest()
+    ident = sha.new(ident).hexdigest()
     
     ident = os.path.basename(ident)
 

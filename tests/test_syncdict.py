@@ -1,4 +1,4 @@
-from beaker.util import SyncDict
+from beaker.util import SyncDict, WeakValuedRegistry
 import gc, random, sys, time, weakref
 
 # this script tests SyncDict for its thread safety, 
@@ -7,10 +7,7 @@ import gc, random, sys, time, weakref
 # insures that when used as a registry, only one instance
 # of a particular key/value exists at any one time.
 
-try:
-    import thread
-except:
-    raise "this test requires a thread-enabled python"
+import thread
     
 jython = sys.platform.startswith('java')
 
@@ -44,16 +41,14 @@ baton = None
 
 def create(id):
     global baton
-    if baton is not None:
-        raise "baton is not none !"
+    assert baton is None, "baton is not none !"
 
     baton = True
     try:    
         global theitem
         collect()
         
-        if theitem() is not None:
-            raise "create %d old item is still referenced" % id
+        assert theitem() is None, "create %d old item is still referenced" % id
             
         i = item(id)
         theitem = weakref.ref(i)
@@ -84,8 +79,6 @@ def threadtest(s, id, statusdict):
     finally:
         print "create thread %d exiting" % id
         statusdict[id] = False
-    
-
 
 def runtest(s):
 
@@ -145,7 +138,7 @@ def test_dict():
     # the number of removes plus one.    
     collect()
     print "\ntesting with normal dict"
-    runtest(SyncDict(thread.allocate_lock(), {}))
+    runtest(SyncDict())
 
     assert(totalremoves + 1 == totalcreates)
 
@@ -153,4 +146,4 @@ def test_dict():
 def test_weakdict():
     collect()
     print "\ntesting with weak dict"
-    runtest(SyncDict(thread.allocate_lock(), weakref.WeakValueDictionary()))
+    runtest(WeakValuedRegistry())
