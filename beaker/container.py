@@ -323,7 +323,7 @@ class CreationAbortedError(Exception):
 class MemoryNamespaceManager(NamespaceManager):
     namespaces = util.SyncDict()
 
-    def __init__(self, namespace):
+    def __init__(self, namespace, **kwargs):
         NamespaceManager.__init__(self, namespace)
         self.dictionary = MemoryNamespaceManager.namespaces.get(self.namespace, dict)
     
@@ -366,7 +366,7 @@ class MemoryNamespaceManager(NamespaceManager):
 
 class DBMNamespaceManager(NamespaceManager):
 
-    def __init__(self, namespace, dbmmodule=None, data_dir=None, dbm_dir=None, lock_dir=None):
+    def __init__(self, namespace, dbmmodule=None, data_dir=None, dbm_dir=None, lock_dir=None, **kwargs):
 
         if dbm_dir is not None:
             self.dbm_dir = dbm_dir
@@ -468,7 +468,7 @@ class DBMNamespaceManager(NamespaceManager):
 
 class FileNamespaceManager(NamespaceManager):
 
-    def __init__(self, namespace, data_dir=None, file_dir=None, lock_dir=None):
+    def __init__(self, namespace, data_dir=None, file_dir=None, lock_dir=None, **kwargs):
         if file_dir is not None:
             self.file_dir = file_dir
         elif data_dir is None:
