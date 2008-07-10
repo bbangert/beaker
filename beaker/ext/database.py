@@ -43,7 +43,7 @@ class DatabaseNamespaceManager(NamespaceManager):
         ``table_name``
             The table name to use in the database for the cache.
         """
-        NamespaceManager.__init__(self, namespace, **params)
+        NamespaceManager.__init__(self, namespace)
         
         if sa_opts is None:
             sa_opts = params
