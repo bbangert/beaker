@@ -30,7 +30,7 @@ class SqlaNamespaceManager(NamespaceManager):
             SQLAlchemy ``Table`` object in which to store namespace data.
             This should usually be something created by ``make_cache_table``.
         """
-        super(SqlaNamespaceManager).__init__(namespace, **kwargs)
+        NamespaceManager.__init__(self, namespace)
 
         if lock_dir is not None:
             self.lock_dir = lock_dir
