@@ -18,7 +18,7 @@ class MemcachedNamespaceManager(NamespaceManager):
     clients = SyncDict()
     
     def __init__(self, namespace, url, data_dir=None, lock_dir=None, **params):
-        NamespaceManager.__init__(self, namespace, **params)
+        NamespaceManager.__init__(self, namespace)
         
         if lock_dir is not None:
             self.lock_dir = lock_dir
