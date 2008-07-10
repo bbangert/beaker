@@ -165,12 +165,13 @@ class WeakValuedRegistry(SyncDict):
         self.mutex = _threading.RLock()
         self.dict = weakref.WeakValueDictionary()
             
-def encoded_path(root, identifiers, extension = ".enc", depth = 3):
+def encoded_path(root, identifiers, extension = ".enc", depth = 3, digest_filenames=True):
     """generate a unique file-accessible path from the given list of identifiers
     starting at the given root directory."""
     ident = string.join(identifiers, "_")
 
-    ident = sha.new(ident).hexdigest()
+    if digest_filenames:
+        ident = sha.new(ident).hexdigest()
     
     ident = os.path.basename(ident)
 

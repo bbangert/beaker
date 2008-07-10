@@ -10,20 +10,17 @@ import time
 import UserDict
 from datetime import datetime, timedelta
 
-# Determine if strong crypto is available
-crypto_ok = False
-
 # Check for pycryptopp encryption for AES
 try:
     from pycryptopp.cipher import aes
     from beaker.crypto import generateCryptoKeys
     crypto_ok = True
 except:
-    pass
+    crypto_ok = False
 
-from beaker.container import namespace_registry
+from beaker.cache import clsmap
 from beaker.exceptions import BeakerException
-from beaker.util import b64decode, b64encode, coerce_session_params
+from beaker.util import b64decode, b64encode, coerce_session_params, Set
 
 __all__ = ['SignedCookie', 'Session']
 
@@ -46,28 +43,36 @@ class SignedCookie(Cookie.BaseCookie):
         return str(val), ("%s%s" % (sig, val))
 
 
-class Session(UserDict.DictMixin):
+class Session(dict):
     "session object that uses container package for storage"
 
-    def __init__(self, request, id=None, invalidate_corrupt=False, 
-                 use_cookies=True, type=None, data_dir=None, 
-                 key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, secret=None, secure=False, log_file=None, 
-                 namespace_class=None, **kwargs):
-        if type is None:
-            if data_dir is None:
-                self.type = 'memory'
-            else:
+    def __init__(self, 
+                    request, 
+                    id=None, 
+                    invalidate_corrupt=False, 
+                    use_cookies=True, 
+                    type=None, 
+                    data_dir=None, 
+                    key='beaker.session.id', 
+                    timeout=None, 
+                    cookie_expires=True,
+                    cookie_domain=None, 
+                    secret=None, 
+                    secure=False, 
+                    namespace_class=None, 
+                    **namespace_args):
+        
+        if not type:
+            if data_dir:
                 self.type = 'file'
+            else:
+                self.type = 'memory'
         else:
             self.type = type
 
-        if namespace_class is None:
-            self.namespace_class = namespace_registry(self.type)
-        else:
-            self.namespace_class = namespace_class
+        self.namespace_class = namespace_class or clsmap[self.type]
 
-        self.kwargs = kwargs
+        self.namespace_args = namespace_args
         
         self.request = request
         self.data_dir = data_dir
@@ -76,36 +81,28 @@ class Session(UserDict.DictMixin):
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
         self.cookie_domain = cookie_domain
-        self.log_file = log_file
         self.was_invalidated = False
         self.secret = secret
         self.secure = secure
-        
         self.id = id
             
         if self.use_cookies:
-            try:
-                cookieheader = request['cookie']
-            except KeyError:
-                cookieheader = ''
-                
-            if secret is not None:
+            cookieheader = request.get('cookie', '')
+            if secret:
                 try:
-                    self.cookie = SignedCookie(secret, input = cookieheader)
+                    self.cookie = SignedCookie(secret, input=cookieheader)
                 except Cookie.CookieError:
-                    self.cookie = SignedCookie(secret, input = None)
+                    self.cookie = SignedCookie(secret, input=None)
             else:
-                self.cookie = Cookie.SimpleCookie(input = cookieheader)
-
-            if self.id is None and self.cookie.has_key(self.key):
+                self.cookie = Cookie.SimpleCookie(input=cookieheader)
+            
+            if not self.id and self.cookie.has_key(self.key):
                 self.id = self.cookie[self.key].value
         
-        if self.id is None:
+        self.is_new = self.id is None
+        if self.is_new:
             self._create_id()
         else:
-            self.is_new = False
-        
-        if not self.is_new:
             try:
                 self.load()
             except:
@@ -113,17 +110,10 @@ class Session(UserDict.DictMixin):
                     self.invalidate()
                 else:
                     raise
-        else:
-            self.dict = {}
         
     def _create_id(self):
-        if hasattr(os, 'getpid'):
-            pid = os.getpid()
-        else:
-            pid = ''
-        
         self.id = md5.new(
-            md5.new("%f%s%f%s" % (time.time(), id({}), random.random(), pid) ).hexdigest(), 
+            md5.new("%f%s%f%s" % (time.time(), id({}), random.random(), os.getpid()) ).hexdigest(), 
         ).hexdigest()
         self.is_new = True
         if self.use_cookies:
@@ -149,7 +139,7 @@ class Session(UserDict.DictMixin):
             self.request['set_cookie'] = False
     
     def created(self):
-        return self.dict['_creation_time']
+        return self['_creation_time']
     created = property(created)
 
     def delete(self):
@@ -177,23 +167,6 @@ class Session(UserDict.DictMixin):
         self.request['cookie_out'] = session.cookie[session.key].output(header='')
         self.request['set_cookie'] = True
 
-    def __getitem__(self, key):
-        return self.dict.__getitem__(key)
-    def __setitem__(self, key, value):
-        self.dict.__setitem__(key, value)
-    def __delitem__(self, key):
-        del self.dict[key]
-    def keys(self):
-        return self.dict.keys()
-    def __contains__(self, key):
-        return self.dict.has_key(key)
-    def has_key(self, key):
-        return self.dict.has_key(key)
-    def __iter__(self):
-        return iter(self.dict.keys())
-    def iteritems(self):
-        return self.dict.iteritems()
-        
     def invalidate(self):
         "invalidates this session, creates a new session id, returns to the is_new state"
         namespace = self.namespace
@@ -211,19 +184,17 @@ class Session(UserDict.DictMixin):
     def load(self):
         "loads the data from this session from persistent storage"
 
-        self.namespace = self.namespace_class(self.id, data_dir=self.data_dir,
-                                              digest_filenames=False, **self.kwargs)
+        self.namespace = namespace = self.namespace_class(self.id, data_dir=self.data_dir,
+                                              digest_filenames=False, **self.namespace_args)
         
-        namespace = self.namespace
         self.request['set_cookie'] = True
         
         namespace.acquire_write_lock()
         try:
-            self.debug("session loading keys")
-            self.dict = {}
+            self.clear()
             now = time.time()
             
-            if not namespace.has_key('_creation_time'):
+            if not '_creation_time' in namespace:
                 namespace['_creation_time'] = now
                 self.is_new = True
             try:
@@ -236,36 +207,36 @@ class Session(UserDict.DictMixin):
                 self.invalidate()
             else:
                 for k in namespace.keys():
-                    self.dict[k] = namespace[k]
+                    self[k] = namespace[k]
         
         finally:
             namespace.release_write_lock()
     
     def save(self):
         "saves the data for this session to persistent storage"
+
         if not hasattr(self, 'namespace'):
-            curdict = self.dict
-            self.load()
-            self.dict = curdict
-        
+            self.namespace = self.namespace_class(
+                                    self.id, 
+                                    data_dir=self.data_dir,
+                                    digest_filenames=False, 
+                                    **self.namespace_args)
+
         self.namespace.acquire_write_lock()
         try:
-            self.debug("session saving keys")
-            todel = []
-            for k in self.namespace.keys():
-                if not self.dict.has_key(k):
-                    todel.append(k)
+            if not '_creation_time' in self.namespace:
+                self.is_new = True
             
-            for k in todel:
+            keys = self.keys()
+            for k in Set(self.namespace.keys()).difference(keys):
                 del self.namespace[k]
                     
-            for k in self.dict.keys():
-                self.namespace[k] = self.dict[k]
-                
-            self.namespace['_accessed_time'] = self.dict['_accessed_time'] \
-                = time.time()
-            self.namespace['_creation_time'] = self.dict['_creation_time'] \
-                = time.time()
+            for k in keys:
+                self.namespace[k] = self[k]
+            
+            now = time.time()
+            self.namespace['_accessed_time'] = self['_accessed_time'] = now
+            self.namespace['_creation_time'] = self['_creation_time'] = now
         finally:
             self.namespace.release_write_lock()
         if self.is_new:
@@ -281,7 +252,6 @@ class Session(UserDict.DictMixin):
         without shutting down the whole application.
         """
         self.namespace.acquire_write_lock()
-    
 
     def unlock(self):
         """unlocks this session against other processes/threads.  this is 
@@ -293,12 +263,6 @@ class Session(UserDict.DictMixin):
         
         """
         self.namespace.release_write_lock()
-    
-
-    def debug(self, message):
-        if self.log_file is not None:
-            self.log_file.write(message)
-
 
 class CookieSession(Session):
     """Pure cookie-based session
@@ -353,23 +317,27 @@ class CookieSession(Session):
         except Cookie.CookieError:
             self.cookie = SignedCookie(validate_key, input=None)
         
-        self.dict = {}
-        self.dict['_id'] = self._make_id()
+        self['_id'] = self._make_id()
         self.is_new = True
         
         # If we have a cookie, load it
         if self.key in self.cookie and self.cookie[self.key].value is not None:
             self.is_new = False
             try:
-                self.dict = self._decrypt_data()
+                self.update(self._decrypt_data())
             except:
-                self.dict = {}
-            if self.timeout is not None and time.time() - self.dict['_accessed_time'] > self.timeout:
-                self.dict = {}
+                pass
+            if self.timeout is not None and time.time() - self['_accessed_time'] > self.timeout:
+                self.clear()
             self._create_cookie()
     
-    created = property(lambda self: self.dict['_creation_time'])
-    id = property(lambda self: self.dict['_id'])
+    def created(self):
+        return self['_creation_time']
+    created = property(created)
+    
+    def id(self):
+        return self['_id']
+    id = property(id)
     
     def _encrypt_data(self):
         """Cerealize, encipher, and base64 the session dict"""
@@ -377,10 +345,10 @@ class CookieSession(Session):
             nonce = b64encode(os.urandom(40))[:8]
             encrypt_key = generateCryptoKeys(self.encrypt_key, self.validate_key + nonce, 1)
             ctrcipher = aes.AES(encrypt_key)
-            data = cPickle.dumps(self.dict, protocol=2)
+            data = cPickle.dumps(self.copy(), protocol=2)
             return nonce + b64encode(ctrcipher.process(data))
         else:
-            data = cPickle.dumps(self.dict, protocol=2)
+            data = cPickle.dumps(self.copy(), protocol=2)
             return b64encode(data)
     
     def _decrypt_data(self):
@@ -407,11 +375,11 @@ class CookieSession(Session):
         self._create_cookie()
     
     def _create_cookie(self):
-        if '_creation_time' not in self.dict:
-            self.dict['_creation_time'] = time.time()
-        if '_id' not in self.dict:
-            self.dict['_id'] = self._make_id()
-        self.dict['_accessed_time'] = time.time()
+        if '_creation_time' not in self:
+            self['_creation_time'] = time.time()
+        if '_id' not in self:
+            self['_id'] = self._make_id()
+        self['_accessed_time'] = time.time()
         val = self._encrypt_data()
         if len(val) > 4064:
             raise BeakerException("Cookie value is too long to store")
@@ -440,7 +408,7 @@ class CookieSession(Session):
     
     def delete(self):
         # Send a delete cookie request
-        self.dict = {}
+        self.clear()
         self._delete_cookie()
     
     # Alias invalidate to delete

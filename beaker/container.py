@@ -13,36 +13,7 @@ from beaker.synchronization import _threading, _thread, file_synchronizer, mutex
 __all__ = ['ContainerContext', 'Value', 'Container', 
            'MemoryContainer', 'DBMContainer', 'NamespaceManager',
            'MemoryNamespaceManager', 'DBMNamespaceManager', 'FileContainer',
-           'FileNamespaceManager', 'CreationAbortedError', 
-           'container_registry', 'namespace_registry']
-
-def namespace_registry(name):
-    """Given the string name of a Namespace 'type', 
-    return the NamespaceManager subclass corresponding to that type.
-    
-    """
-    return _cls_registry(name, 'NamespaceManager')
-
-# deprecated
-def container_registry(name):
-    """Given the string name of a Container 'type', 
-    return the Container subclass corresponding to that type.
-    
-    """
-    return _cls_registry(name, 'Container')
-
-def _cls_registry(name, clsname):
-    if name.startswith('ext:') \
-            or name in ['memcached', 'database', 'sqla', 'google']:
-        if name.startswith('ext:'):
-            name = name[4:]
-        modname = "beaker.ext." + name
-        mod = getattr(__import__(modname).ext, name)
-    else:
-        mod = sys.modules[__name__]
-
-    cname = string.capitalize(name) + clsname
-    return getattr(mod, cname)
+           'FileNamespaceManager', 'CreationAbortedError']
 
 logger = logging.getLogger('beaker.container')
 if logger.isEnabledFor(logging.DEBUG):
@@ -366,35 +337,33 @@ class MemoryNamespaceManager(NamespaceManager):
 
 class DBMNamespaceManager(NamespaceManager):
 
-    def __init__(self, namespace, dbmmodule=None, data_dir=None, dbm_dir=None, lock_dir=None, **kwargs):
-
-        if dbm_dir is not None:
-            self.dbm_dir = dbm_dir
-        elif data_dir is None:
+    def __init__(self, namespace, dbmmodule=None, data_dir=None, 
+            dbm_dir=None, lock_dir=None, digest_filenames=True, **kwargs):
+        self.digest_filenames = digest_filenames
+        
+        if not dbm_dir and not data_dir:
             raise MissingCacheParameter("data_dir or dbm_dir is required")
+        elif dbm_dir:
+            self.dbm_dir = dbm_dir
         else:
             self.dbm_dir = data_dir + "/container_dbm"
+        util.verify_directory(self.dbm_dir)
         
-        if lock_dir is not None:
-            self.lock_dir = lock_dir
-        elif data_dir is None:
+        if not lock_dir and not data_dir:
             raise MissingCacheParameter("data_dir or lock_dir is required")
+        elif lock_dir:
+            self.lock_dir = lock_dir
         else:
             self.lock_dir = data_dir + "/container_dbm_lock"
-        
-        if dbmmodule is None:
-            self.dbmmodule = anydbm
-        else:
-            self.dbmmodule = dbmmodule
-        
-        util.verify_directory(self.dbm_dir)
         util.verify_directory(self.lock_dir)
+
+        self.dbmmodule = dbmmodule or anydbm
 
         self.dbm = None
         NamespaceManager.__init__(self, namespace)
 
         self.file = util.encoded_path(root= self.dbm_dir, 
-                                      identifiers=[self.namespace], extension='.dbm')
+                                      identifiers=[self.namespace], extension='.dbm', digest_filenames=self.digest_filenames)
         
         debug("data file %s" % self.file)
         
@@ -468,27 +437,29 @@ class DBMNamespaceManager(NamespaceManager):
 
 class FileNamespaceManager(NamespaceManager):
 
-    def __init__(self, namespace, data_dir=None, file_dir=None, lock_dir=None, **kwargs):
-        if file_dir is not None:
-            self.file_dir = file_dir
-        elif data_dir is None:
+    def __init__(self, namespace, data_dir=None, file_dir=None, lock_dir=None, digest_filenames=True, **kwargs):
+        self.digest_filenames = digest_filenames
+        
+        if not file_dir and not data_dir:
             raise MissingCacheParameter("data_dir or file_dir is required")
+        elif file_dir:
+            self.file_dir = file_dir
         else:
             self.file_dir = data_dir + "/container_file"
-        
-        if lock_dir is not None:
-            self.lock_dir = lock_dir
-        elif data_dir is None:
+        util.verify_directory(self.file_dir)
+
+        if not lock_dir and not data_dir:
             raise MissingCacheParameter("data_dir or lock_dir is required")
+        elif lock_dir:
+            self.lock_dir = lock_dir
         else:
             self.lock_dir = data_dir + "/container_file_lock"
-
-        util.verify_directory(self.file_dir)
         util.verify_directory(self.lock_dir)
         NamespaceManager.__init__(self, namespace)
+
         self.file = util.encoded_path(root=self.file_dir, 
                                       identifiers=[self.namespace],
-                                      extension='.cache')
+                                      extension='.cache',digest_filenames=self.digest_filenames)
         self.hash = {}
         
         debug("data file %s" % self.file)
