@@ -14,9 +14,9 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-class SQLAlchemyNamespaceManager(NamespaceManager):
-    binds = SyncDict(_threading.Lock(), {})
-    tables = SyncDict(_threading.Lock(), {})
+class SqlaNamespaceManager(NamespaceManager):
+    binds = SyncDict()
+    tables = SyncDict()
 
     def __init__(self, namespace, bind, table, data_dir=None, lock_dir=None,
                  **kwargs):
@@ -30,7 +30,7 @@ class SQLAlchemyNamespaceManager(NamespaceManager):
             SQLAlchemy ``Table`` object in which to store namespace data.
             This should usually be something created by ``make_cache_table``.
         """
-        NamespaceManager.__init__(self, namespace, **kwargs)
+        super(SqlaNamespaceManager).__init__(namespace, **kwargs)
 
         if lock_dir is not None:
             self.lock_dir = lock_dir
@@ -113,8 +113,8 @@ class SQLAlchemyNamespaceManager(NamespaceManager):
         return self.hash.keys()
 
 
-class SQLAlchemyContainer(Container):
-    namespace_manager = SQLAlchemyNamespaceManager
+class SqlaContainer(Container):
+    namespace_manager = SqlaNamespaceManager
 
 def make_cache_table(metadata, table_name='beaker_cache'):
     """Return a ``Table`` object suitable for storing cached values for the

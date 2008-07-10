@@ -24,7 +24,7 @@ except InvalidCacheBackendError:
 
 try:
     import beaker.ext.sqla as sqla
-    clsmap['ext:sqla'] = sqla.SQLAlchemyContainer
+    clsmap['ext:sqla'] = sqla.SqlaContainer
 except InvalidCacheBackendError:
     pass
 
