@@ -51,13 +51,13 @@ def test_expire_changes():
     cache.set_value('test', 10)
     assert cache.has_key('test')
     assert cache['test'] == 10
-    assert cache._containers['test'].expiretime is None
+    assert cache._values['test'].expiretime is None
     
     # ensure that we can change a never-expiring value
     cache.set_value('test', 20, expiretime=1)
     assert cache.has_key('test')
     assert cache['test'] == 20
-    assert cache._containers['test'].expiretime == 1
+    assert cache._values['test'].expiretime == 1
     time.sleep(1)
     assert not cache.has_key('test')
     
@@ -65,12 +65,12 @@ def test_expire_changes():
     cache.set_value('test', 30, expiretime=50)
     assert cache.has_key('test')
     assert cache['test'] == 30
-    assert cache._containers['test'].expiretime == 50
+    assert cache._values['test'].expiretime == 50
     
     cache.set_value('test', 40, expiretime=3)
     assert cache.has_key('test')
     assert cache['test'] == 40
-    assert cache._containers['test'].expiretime == 3
+    assert cache._values['test'].expiretime == 3
     time.sleep(3)
     assert not cache.has_key('test')
 
