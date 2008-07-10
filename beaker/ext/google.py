@@ -6,7 +6,7 @@ from datetime import datetime
 
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
-from beaker.synchronization import NullSynchronizer
+from beaker.synchronization import null_synchronizer
 
 log = logging.getLogger(__name__)
 
@@ -42,10 +42,10 @@ class GoogleNamespaceManager(NamespaceManager):
         self.namespace = 'p%s' % self.namespace
     
     def get_access_lock(self):
-        return NullSynchronizer()
+        return null_synchronizer()
 
     def get_creation_lock(self, key):
-        return NullSynchronizer()
+        return null_synchronizer()
 
     def do_open(self, flags):
         # If we already loaded the data, don't bother loading it again

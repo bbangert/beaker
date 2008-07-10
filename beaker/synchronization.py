@@ -1,4 +1,4 @@
-__all__  = ["file_synchronizer", "mutex_synchronizer", "NameLock", "_threading", "_thread"]
+__all__  = ["file_synchronizer", "mutex_synchronizer", "null_synchronizer", "NameLock", "_threading", "_thread"]
 
 import os
 import sys
@@ -66,10 +66,10 @@ def file_synchronizer(identifier, **kwargs):
 def mutex_synchronizer(identifier, **kwargs):
     return synchronizer(identifier, ConditionSynchronizer, **kwargs)
 
-class NullSynchronizer(object):
+class null_synchronizer(object):
     def acquire_write_lock(self, wait=True):
-        pass
-    def acquire_read_lock(self, wait=True):
+        return True
+    def acquire_read_lock(self):
         pass
     def release_write_lock(self):
         pass

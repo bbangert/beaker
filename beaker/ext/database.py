@@ -4,7 +4,7 @@ from datetime import datetime
 
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
-from beaker.synchronization import file_synchronizer, _threading, NullSynchronizer
+from beaker.synchronization import file_synchronizer, _threading, null_synchronizer
 from beaker.util import verify_directory, SyncDict
 
 sa_version = None
@@ -95,7 +95,7 @@ class DatabaseNamespaceManager(NamespaceManager):
         self.cache = DatabaseNamespaceManager.tables.get(table_key, make_cache)
     
     def get_access_lock(self):
-        return NullSynchronizer()
+        return null_synchronizer()
 
     def get_creation_lock(self, key):
         return file_synchronizer(

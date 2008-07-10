@@ -2,7 +2,7 @@ import sys
 
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
-from beaker.synchronization import _threading, file_synchronizer, NullSynchronizer
+from beaker.synchronization import _threading, file_synchronizer, null_synchronizer
 
 from beaker.util import verify_directory, SyncDict
 
@@ -33,7 +33,7 @@ class MemcachedNamespaceManager(NamespaceManager):
             lambda: memcache.Client(url.split(';'), debug=0))
 
     def get_access_lock(self):
-        return NullSynchronizer()
+        return null_synchronizer()
 
     def get_creation_lock(self, key):
         return file_synchronizer(
