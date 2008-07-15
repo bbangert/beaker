@@ -5,9 +5,7 @@ import md5
 import os
 import random
 import sha
-import sys
 import time
-import UserDict
 from datetime import datetime, timedelta
 
 # Check for pycryptopp encryption for AES
@@ -20,7 +18,7 @@ except:
 
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException
-from beaker.util import b64decode, b64encode, coerce_session_params, Set
+from beaker.util import b64decode, b64encode, Set
 
 __all__ = ['SignedCookie', 'Session']
 
@@ -162,9 +160,9 @@ class Session(dict):
             self.cookie[self.key]['secure'] = True
         self.cookie[self.key]['path'] = '/'
         expires = datetime.today().replace(year=2003)
-        self.cookie[session.key]['expires'] = \
+        self.cookie[self.key]['expires'] = \
             expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
-        self.request['cookie_out'] = session.cookie[session.key].output(header='')
+        self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = True
 
     def invalidate(self):
