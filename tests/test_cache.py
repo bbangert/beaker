@@ -74,6 +74,27 @@ def test_expire_changes():
     time.sleep(3)
     assert not cache.has_key('test')
 
+def test_fresh_createfunc():
+    cache = Cache('test', data_dir='./cache', type='dbm')
+    x = cache.get_value('test', createfunc=lambda: 10, expiretime=2)
+    assert x == 10
+    x = cache.get_value('test', createfunc=lambda: 12, expiretime=2)
+    assert x == 10
+    x = cache.get_value('test', createfunc=lambda: 14, expiretime=2)
+    assert x == 10
+    time.sleep(2)
+    x = cache.get_value('test', createfunc=lambda: 16, expiretime=2)
+    assert x == 16
+    x = cache.get_value('test', createfunc=lambda: 18, expiretime=2)
+    assert x == 16
+    
+    cache.remove_value('test')
+    assert not cache.has_key('test')
+    x = cache.get_value('test', createfunc=lambda: 20, expiretime=2)
+    assert x == 20
+    
+    
+    
 def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', type='dbm')
     o = object()

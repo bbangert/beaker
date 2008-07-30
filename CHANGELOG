@@ -5,7 +5,10 @@ Beaker Changelog
 * Added cookie delete to both cookie only sessions and normal sessions, to
   help with proxies and such that may determine whether a user is logged in
   via a cookie. (cookie varies, etc.). Suggested by Felix Schwarz.
-
+* cache.get_value() now uses the given **kwargs in all cases in the same
+  manner as cache.set_value().  This way you can send a new createfunc
+  to cache.get_value() each time and it will be used.
+  
 0.9.5 (6/19/2008)
 * Fixed bug in memcached to be tolerant of keys disappearing when memcached
   expires them.

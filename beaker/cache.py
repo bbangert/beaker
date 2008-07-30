@@ -44,30 +44,32 @@ class Cache(object):
         self.kwargs.setdefault('type', 'memory')
     
     def put(self, key, value, **kwargs):
-        kw = self.kwargs.copy()
-        kw.update(kwargs)
         self._values.pop(key, None)
-        self._get_value(key, **kw).set_value(value)
+        self._get_value(key, **kwargs).set_value(value)
     set_value = put
     
     def get(self, key, **kwargs):
-        kw = self.kwargs.copy()
-        kw.update(kwargs)
-        return self._get_value(key, **kw).get_value()
+        return self._get_value(key, **kwargs).get_value()
     get_value = get
     
     def remove_value(self, key, **kwargs):
-        mycontainer = self._get_value(key, **self.kwargs)
+        mycontainer = self._get_value(key, **kwargs)
         if mycontainer.has_current_value():
             mycontainer.clear_value()
 
-    def _get_value(self, key, type, **kwargs):
+    def _get_value(self, key, **kwargs):
         if isinstance(key, unicode):
             key = key.encode('ascii', 'backslashreplace')
-        value = self._values.get(key)
+            
+        if not kwargs:
+            value = self._values.get(key)
+        else:
+            value = None
+            
         if not value:
             kw = self.kwargs.copy()
             kw.update(kwargs)
+            type = kw.pop('type')
             self._values[key] = value = container.Value(key, self.context, self.namespace, clsmap[type], **kw)
         return value
     
@@ -98,7 +100,7 @@ class Cache(object):
         return self.has_key(key)
     
     def has_key(self, key):
-        mycontainer = self._get_value(key, **self.kwargs)
+        mycontainer = self._get_value(key)
         return mycontainer.has_current_value()
     
     def __delitem__(self, key):
