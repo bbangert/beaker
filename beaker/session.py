@@ -44,22 +44,11 @@ class SignedCookie(Cookie.BaseCookie):
 class Session(dict):
     "session object that uses container package for storage"
 
-    def __init__(self, 
-                    request, 
-                    id=None, 
-                    invalidate_corrupt=False, 
-                    use_cookies=True, 
-                    type=None, 
-                    data_dir=None, 
-                    key='beaker.session.id', 
-                    timeout=None, 
-                    cookie_expires=True,
-                    cookie_domain=None, 
-                    secret=None, 
-                    secure=False, 
-                    namespace_class=None, 
-                    **namespace_args):
-        
+    def __init__(self, request, id=None, invalidate_corrupt=False,
+                 use_cookies=True, type=None, data_dir=None,
+                 key='beaker.session.id', timeout=None, cookie_expires=True,
+                 cookie_domain=None, secret=None, secure=False,
+                 namespace_class=None, **namespace_args):
         if not type:
             if data_dir:
                 self.type = 'file'

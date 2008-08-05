@@ -1,14 +1,12 @@
-__all__  = ["file_synchronizer", "mutex_synchronizer", "null_synchronizer", "NameLock", "_threading", "_thread"]
+__all__  = ["file_synchronizer", "mutex_synchronizer", "null_synchronizer", "NameLock", "_threading"]
 
 import os
 import sys
 import tempfile
 
 try:
-    import thread as _thread
     import threading as _threading
 except ImportError:
-    import dummy_thread as _thread
     import dummy_threading as _threading
 
 # check for fcntl module
@@ -226,7 +224,7 @@ class FileSynchronizer(SynchronizerImpl):
             except IOError:
                 return False
         else:
-            fcntl.flock(filedescriptor, fcntl.LOCK_EX);
+            fcntl.flock(filedescriptor, fcntl.LOCK_EX)
             return True
     
     def do_release_read_lock(self):
@@ -296,7 +294,7 @@ class ConditionSynchronizer(SynchronizerImpl):
                 # yes. so if a sync operation is waiting, notifyAll to wake
                 # it up
                 if self.current_sync_operation is not None:
-                        self.condition.notifyAll()
+                    self.condition.notifyAll()
             elif self.async < 0:
                 raise LockError("Synchronizer error - too many release_read_locks called")
         finally:

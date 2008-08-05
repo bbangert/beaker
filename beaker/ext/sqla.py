@@ -4,7 +4,7 @@ from datetime import datetime
 
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
-from beaker.synchronization import file_synchronizer, _threading, null_synchronizer
+from beaker.synchronization import file_synchronizer, null_synchronizer
 from beaker.util import verify_directory, SyncDict
 
 try:

@@ -2,13 +2,11 @@ import anydbm
 import cPickle
 import logging
 import os.path
-import string
-import sys
 import time
 
 from beaker.exceptions import MissingCacheParameter
 import beaker.util as util
-from beaker.synchronization import _threading, _thread, file_synchronizer, mutex_synchronizer, NameLock
+from beaker.synchronization import _threading, file_synchronizer, mutex_synchronizer, NameLock
 
 __all__ = ['ContainerContext', 'Value', 'Container', 
            'MemoryContainer', 'DBMContainer', 'NamespaceManager',

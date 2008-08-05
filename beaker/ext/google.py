@@ -1,11 +1,10 @@
 from __future__ import absolute_import
 import cPickle
 import logging
-import re
 from datetime import datetime
 
 from beaker.container import NamespaceManager, Container
-from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
+from beaker.exceptions import InvalidCacheBackendError
 from beaker.synchronization import null_synchronizer
 
 log = logging.getLogger(__name__)

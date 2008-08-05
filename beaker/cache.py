@@ -1,7 +1,5 @@
-import warnings
 import beaker.container as container
 from beaker.exceptions import InvalidCacheBackendError
-from beaker.util import coerce_cache_params
 import beaker.util as util
 
 clsmap = {
