@@ -3,7 +3,7 @@ import random
 import time
 import unittest
 from beaker.container import *
-from beaker.synchronization import synchronizers
+from beaker.synchronization import _synchronizers
 from beaker.cache import clsmap
 import thread
 

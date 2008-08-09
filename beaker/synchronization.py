@@ -54,15 +54,18 @@ class NameLock(object):
     def release(self):
         self._lock().release()
 
-synchronizers = util.WeakValuedRegistry()
-def synchronizer(identifier, cls, **kwargs):
-    return synchronizers.sync_get((identifier, cls), cls, identifier, **kwargs)
+_synchronizers = util.WeakValuedRegistry()
+def _synchronizer(identifier, cls, **kwargs):
+    return _synchronizers.sync_get((identifier, cls), cls, identifier, **kwargs)
 
 def file_synchronizer(identifier, **kwargs):
-    return synchronizer(identifier, FileSynchronizer, **kwargs)
+    if not has_flock:
+        return mutex_synchronizer(identifier)
+    else:
+        return _synchronizer(identifier, FileSynchronizer, **kwargs)
 
 def mutex_synchronizer(identifier, **kwargs):
-    return synchronizer(identifier, ConditionSynchronizer, **kwargs)
+    return _synchronizer(identifier, ConditionSynchronizer, **kwargs)
 
 class null_synchronizer(object):
     def acquire_write_lock(self, wait=True):
