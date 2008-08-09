@@ -84,7 +84,7 @@ class NamespaceManager(object):
         try:
             self.open('r', checkcount = True)
         except:
-            self.do_release_read_lock()
+            self.access_lock.release_read_lock()
             raise
             
     def release_read_lock(self):
