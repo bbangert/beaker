@@ -156,7 +156,7 @@ def test_file_open_bug():
     except:
         pass
         
-    synchronizers.clear()
+    _synchronizers.clear()
     context.clear()
     value = Value('test', context, 'reentrant_test', clsmap['file'], data_dir='./cache')
 
