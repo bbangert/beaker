@@ -1,7 +1,7 @@
 Beaker Changelog
 ================
 
-1.0 (8/5/2008)
+1.0 (8/13/2008)
 * Added cookie delete to both cookie only sessions and normal sessions, to
   help with proxies and such that may determine whether a user is logged in
   via a cookie. (cookie varies, etc.). Suggested by Felix Schwarz.
