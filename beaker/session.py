@@ -132,13 +132,13 @@ class Session(dict):
     def delete(self):
         """Deletes the session from the persistent storage, and sends
         an expired cookie out"""
+        if self.use_cookies:
+            self._delete_cookie()
         self.namespace.acquire_write_lock()
         try:
             self.namespace.remove()
         finally:
             self.namespace.release_write_lock()
-        if self.use_cookies:
-            self._delete_cookie()
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -395,8 +395,8 @@ class CookieSession(Session):
     
     def delete(self):
         # Send a delete cookie request
-        self.clear()
         self._delete_cookie()
+        self.clear()
     
     # Alias invalidate to delete
     invalidate = delete
