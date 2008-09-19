@@ -9,7 +9,6 @@ except ImportError:
 
 from datetime import datetime, timedelta
 import os
-import sha
 import string
 import types
 import weakref
@@ -18,6 +17,10 @@ try:
     Set = set
 except NameError:
     from sets import Set
+try:
+    from hashlib import sha1
+except ImportError:
+    from sha import sha as sha1
 
 from beaker.converters import asbool
 
@@ -171,7 +174,7 @@ def encoded_path(root, identifiers, extension = ".enc", depth = 3, digest_filena
     ident = string.join(identifiers, "_")
 
     if digest_filenames:
-        ident = sha.new(ident).hexdigest()
+        ident = sha1(ident).hexdigest()
     
     ident = os.path.basename(ident)
 

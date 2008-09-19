@@ -1,12 +1,17 @@
 import cPickle
 import Cookie
 import hmac
-import md5
 import os
 import random
-import sha
 import time
 from datetime import datetime, timedelta
+try:
+    from hashlib import md5, sha1
+except ImportError:
+    from md5 import md5
+    # NOTE: We have to use the callable with hashlib (hashlib.sha1),
+    # otherwise hmac only accepts the sha module object itself
+    import sha as sha1
 
 # Check for pycryptopp encryption for AES
 try:
@@ -30,14 +35,14 @@ class SignedCookie(Cookie.BaseCookie):
     
     def value_decode(self, val):
         val = val.strip('"')
-        sig = hmac.new(self.secret, val[40:], sha).hexdigest()
+        sig = hmac.new(self.secret, val[40:], sha1).hexdigest()
         if sig != val[:40]:
             return None, val
         else:
             return val[40:], val
     
     def value_encode(self, val):
-        sig = hmac.new(self.secret, val, sha).hexdigest()
+        sig = hmac.new(self.secret, val, sha1).hexdigest()
         return str(val), ("%s%s" % (sig, val))
 
 
@@ -99,8 +104,8 @@ class Session(dict):
                     raise
         
     def _create_id(self):
-        self.id = md5.new(
-            md5.new("%f%s%f%s" % (time.time(), id({}), random.random(), os.getpid()) ).hexdigest(), 
+        self.id = md5(
+            md5("%f%s%f%s" % (time.time(), id({}), random.random(), os.getpid()) ).hexdigest(), 
         ).hexdigest()
         self.is_new = True
         if self.use_cookies:
@@ -354,7 +359,7 @@ class CookieSession(Session):
             return cPickle.loads(data)
     
     def _make_id(self):
-        return md5.new(md5.new(
+        return md5(md5(
             "%f%s%f%d" % (time.time(), id({}), random.random(), os.getpid())
             ).hexdigest()
         ).hexdigest()

@@ -79,7 +79,12 @@ try:
 except ImportError:
     # PyCrypto not available.  Use the Python standard library.
     import hmac as HMAC
-    import sha as SHA1
+    try:
+        from hashlib import sha1 as SHA1
+    except ImportError:
+        # NOTE: We have to use the callable with hashlib (hashlib.sha1),
+        # otherwise hmac only accepts the sha module object itself
+        import sha as SHA1
 
 def strxor(a, b):
     return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b)])
@@ -106,13 +111,18 @@ class PBKDF2(object):
 
     def __init__(self, passphrase, salt, iterations=1000,
                  digestmodule=SHA1, macmodule=HMAC):
+        # Support both sha/md5 style modules and hashlib functions
+        if not callable(macmodule):
+            macmodule = macmodule.new
+        if not callable(digestmodule):
+            digestmodule = digestmodule.new
         self.__macmodule = macmodule
         self.__digestmodule = digestmodule
         self._setup(passphrase, salt, iterations, self._pseudorandom)
 
     def _pseudorandom(self, key, msg):
         """Pseudorandom function.  e.g. HMAC-SHA1"""
-        return self.__macmodule.new(key=key, msg=msg,
+        return self.__macmodule(key=key, msg=msg,
             digestmod=self.__digestmodule).digest()
     
     def read(self, bytes):
