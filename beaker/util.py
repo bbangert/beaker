@@ -1,5 +1,4 @@
-__all__  = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict", "encoded_path", "verify_directory"]
-
+"""Beaker utilities"""
 try:
     import thread as _thread
     import threading as _threading
@@ -74,6 +73,10 @@ except ImportError:
             raise TypeError(msg)
 
 
+__all__  = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict",
+            "encoded_path", "verify_directory"]
+
+
 def verify_directory(dir):
     """verifies and creates a directory.  tries to
     ignore collisions with other threads and processes."""
@@ -106,18 +109,20 @@ class ThreadLocal(dict):
     
 class SyncDict(object):
     """
-    an efficient/threadsafe singleton map algorithm, a.k.a.
-    "get a value based on this key, and create if not found or not valid" paradigm:
+    An efficient/threadsafe singleton map algorithm, a.k.a.
+    "get a value based on this key, and create if not found or not
+    valid" paradigm:
     
         exists && isvalid ? get : create
 
-    works with weakref dictionaries and the LRUCache to handle items asynchronously 
-    disappearing from the dictionary.  
+    Works with weakref dictionaries and the LRUCache to handle items
+    asynchronously disappearing from the dictionary.  
 
-    use python 2.3.3 or greater !  a major bug was just fixed in Nov. 2003 that
-    was driving me nuts with garbage collection/weakrefs in this section.
-    """
-    
+    Use python 2.3.3 or greater !  a major bug was just fixed in Nov.
+    2003 that was driving me nuts with garbage collection/weakrefs in
+    this section.
+
+    """    
     def __init__(self):
         self.mutex = _thread.allocate_lock()
         self.dict = {}
@@ -161,16 +166,17 @@ class SyncDict(object):
     def clear(self):
         self.dict.clear()
 
-    
 
 class WeakValuedRegistry(SyncDict):
     def __init__(self):
         self.mutex = _threading.RLock()
         self.dict = weakref.WeakValueDictionary()
+
             
-def encoded_path(root, identifiers, extension = ".enc", depth = 3, digest_filenames=True):
-    """generate a unique file-accessible path from the given list of identifiers
-    starting at the given root directory."""
+def encoded_path(root, identifiers, extension = ".enc", depth = 3,
+                 digest_filenames=True):
+    """Generate a unique file-accessible path from the given list of
+    identifiers starting at the given root directory."""
     ident = string.join(identifiers, "_")
 
     if digest_filenames:
@@ -186,6 +192,7 @@ def encoded_path(root, identifiers, extension = ".enc", depth = 3, digest_filena
     verify_directory(dir)
     
     return os.path.join(dir, ident + extension)
+
 
 def verify_options(opt, types, error):
     if not isinstance(opt, types):
@@ -206,33 +213,45 @@ def verify_options(opt, types, error):
             raise Exception(error)
     return opt
 
+
 def verify_rules(params, ruleset):
     for key, types, message in ruleset:
         if key in params:
             params[key] = verify_options(params[key], types, message)
     return params
 
+
 def coerce_session_params(params):
     rules = [
-        ('data_dir', (str, types.NoneType), "data_dir must be a string referring to a directory."),
-        ('lock_dir', (str,), "lock_dir must be a string referring to a directory."),
+        ('data_dir', (str, types.NoneType), "data_dir must be a string "
+         "referring to a directory."),
+        ('lock_dir', (str,), "lock_dir must be a string referring to a "
+         "directory."),
         ('type', (str, types.NoneType), "Session type must be a string."),
-        ('cookie_expires', (bool, datetime, timedelta), "Cookie expires was not a boolean, datetime, or timedelta instance."),
-        ('cookie_domain', (str, types.NoneType), "Cookie domain must be a string."),
+        ('cookie_expires', (bool, datetime, timedelta), "Cookie expires was "
+         "not a boolean, datetime, or timedelta instance."),
+        ('cookie_domain', (str, types.NoneType), "Cookie domain must be a "
+         "string."),
         ('id', (str,), "Session id must be a string."),
         ('key', (str,), "Session key must be a string."),
         ('secret', (str, types.NoneType), "Session secret must be a string."),
-        ('validate_key', (str, types.NoneType), "Session encrypt_key must be a string."),
-        ('encrypt_key', (str, types.NoneType), "Session validate_key must be a string."),
+        ('validate_key', (str, types.NoneType), "Session encrypt_key must be "
+         "a string."),
+        ('encrypt_key', (str, types.NoneType), "Session validate_key must be "
+         "a string."),
         ('secure', (bool, types.NoneType), "Session secure must be a boolean."),
-        ('timeout', (int, types.NoneType), "Session timeout must be an integer."),
+        ('timeout', (int, types.NoneType), "Session timeout must be an "
+         "integer."),
     ]
     return verify_rules(params, rules)
 
+
 def coerce_cache_params(params):
     rules = [
-        ('data_dir', (str, types.NoneType), "data_dir must be a string referring to a directory."),
-        ('lock_dir', (str,), "lock_dir must be a string referring to a directory."),
+        ('data_dir', (str, types.NoneType), "data_dir must be a string "
+         "referring to a directory."),
+        ('lock_dir', (str,), "lock_dir must be a string referring to a "
+         "directory."),
         ('type', (str,), "Session type must be a string."),
     ]
     return verify_rules(params, rules)

@@ -28,7 +28,7 @@ from beaker.util import b64decode, b64encode, Set
 __all__ = ['SignedCookie', 'Session']
 
 class SignedCookie(Cookie.BaseCookie):
-    "extends python cookie to give digital signature support"
+    """Extends python cookie to give digital signature support"""
     def __init__(self, secret, input=None):
         self.secret = secret
         Cookie.BaseCookie.__init__(self, input)
@@ -47,8 +47,7 @@ class SignedCookie(Cookie.BaseCookie):
 
 
 class Session(dict):
-    "session object that uses container package for storage"
-
+    """Session object that uses container package for storage"""
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
                  key='beaker.session.id', timeout=None, cookie_expires=True,
@@ -105,7 +104,8 @@ class Session(dict):
         
     def _create_id(self):
         self.id = md5(
-            md5("%f%s%f%s" % (time.time(), id({}), random.random(), os.getpid()) ).hexdigest(), 
+            md5("%f%s%f%s" % (time.time(), id({}), random.random(),
+                              os.getpid()) ).hexdigest(), 
         ).hexdigest()
         self.is_new = True
         if self.use_cookies:
@@ -161,7 +161,8 @@ class Session(dict):
         self.request['set_cookie'] = True
 
     def invalidate(self):
-        "invalidates this session, creates a new session id, returns to the is_new state"
+        """Invalidates this session, creates a new session id, returns
+        to the is_new state"""
         if hasattr(self, 'namespace'):
             namespace = self.namespace
             namespace.acquire_write_lock()
@@ -173,13 +174,12 @@ class Session(dict):
         self.was_invalidated = True
         self._create_id()
         self.load()
-
-                    
+ 
     def load(self):
-        "loads the data from this session from persistent storage"
-
-        self.namespace = namespace = self.namespace_class(self.id, data_dir=self.data_dir,
-                                              digest_filenames=False, **self.namespace_args)
+        "Loads the data from this session from persistent storage"
+        self.namespace = namespace = self.namespace_class(self.id,
+            data_dir=self.data_dir, digest_filenames=False,
+            **self.namespace_args)
         
         self.request['set_cookie'] = True
         
@@ -207,8 +207,7 @@ class Session(dict):
             namespace.release_write_lock()
     
     def save(self):
-        "saves the data for this session to persistent storage"
-
+        "Saves the data for this session to persistent storage"
         if not hasattr(self, 'namespace'):
             self.namespace = self.namespace_class(
                                     self.id, 
@@ -237,24 +236,24 @@ class Session(dict):
             self.request['set_cookie'] = True
     
     def lock(self):
-        """locks this session against other processes/threads.  this is 
+        """Locks this session against other processes/threads.  This is
         automatic when load/save is called.
         
         ***use with caution*** and always with a corresponding 'unlock'
-        inside a "finally:" block,
-        as a stray lock typically cannot be unlocked
-        without shutting down the whole application.
+        inside a "finally:" block, as a stray lock typically cannot be
+        unlocked without shutting down the whole application.
+
         """
         self.namespace.acquire_write_lock()
 
     def unlock(self):
-        """unlocks this session against other processes/threads.  this is 
-        automatic when load/save is called.
+        """Unlocks this session against other processes/threads.  This
+        is automatic when load/save is called.
 
-        ***use with caution*** and always within a "finally:" block,
-        as a stray lock typically cannot be unlocked
-        without shutting down the whole application.
-        
+        ***use with caution*** and always within a "finally:" block, as
+        a stray lock typically cannot be unlocked without shutting down
+        the whole application.
+
         """
         self.namespace.release_write_lock()
 
@@ -271,8 +270,8 @@ class CookieSession(Session):
         regardless of the cookie being present or not to determine
         whether session data is still valid.
     ``encrypt_key``
-        The key to use for the session encryption, if not provided the session
-        will not be encrypted.
+        The key to use for the session encryption, if not provided the
+        session will not be encrypted.
     ``validate_key``
         The key used to sign the encrypted session
     ``cookie_domain``
@@ -304,7 +303,8 @@ class CookieSession(Session):
             cookieheader = ''
         
         if validate_key is None:
-            raise BeakerException("No validate_key specified for Cookie only Session.")
+            raise BeakerException("No validate_key specified for Cookie only "
+                                  "Session.")
         
         try:
             self.cookie = SignedCookie(validate_key, input=cookieheader)
@@ -321,7 +321,8 @@ class CookieSession(Session):
                 self.update(self._decrypt_data())
             except:
                 pass
-            if self.timeout is not None and time.time() - self['_accessed_time'] > self.timeout:
+            if self.timeout is not None and time.time() - \
+               self['_accessed_time'] > self.timeout:
                 self.clear()
             self._create_cookie()
     
@@ -334,10 +335,11 @@ class CookieSession(Session):
     id = property(id)
     
     def _encrypt_data(self):
-        """Cerealize, encipher, and base64 the session dict"""
+        """Serialize, encipher, and base64 the session dict"""
         if self.encrypt_key:
             nonce = b64encode(os.urandom(40))[:8]
-            encrypt_key = generateCryptoKeys(self.encrypt_key, self.validate_key + nonce, 1)
+            encrypt_key = generateCryptoKeys(self.encrypt_key,
+                                             self.validate_key + nonce, 1)
             ctrcipher = aes.AES(encrypt_key)
             data = cPickle.dumps(self.copy(), protocol=2)
             return nonce + b64encode(ctrcipher.process(data))
@@ -346,10 +348,12 @@ class CookieSession(Session):
             return b64encode(data)
     
     def _decrypt_data(self):
-        """Bas64, decipher, then un-cerealize the data for the session dict"""
+        """Bas64, decipher, then un-serialize the data for the session
+        dict"""
         if self.encrypt_key:
             nonce = self.cookie[self.key].value[:8]
-            encrypt_key = generateCryptoKeys(self.encrypt_key, self.validate_key + nonce, 1)
+            encrypt_key = generateCryptoKeys(self.encrypt_key,
+                                             self.validate_key + nonce, 1)
             ctrcipher = aes.AES(encrypt_key)
             payload = b64decode(self.cookie[self.key].value[8:])
             data = ctrcipher.process(payload)
@@ -365,7 +369,7 @@ class CookieSession(Session):
         ).hexdigest()
     
     def save(self):
-        "saves the data for this session to persistent storage"
+        """Saves the data for this session to persistent storage"""
         self._create_cookie()
     
     def _create_cookie(self):
@@ -412,10 +416,10 @@ class CookieSession(Session):
 class SessionObject(object):
     """Session proxy/lazy creator
     
-    This object proxies access to the actual session object, so that in the
-    case that the session hasn't been used before, it will be setup. This
-    avoid creating and loading the session from persistent storage unless
-    its actually used during the request.
+    This object proxies access to the actual session object, so that in
+    the case that the session hasn't been used before, it will be
+    setup. This avoid creating and loading the session from persistent
+    storage unless its actually used during the request.
     
     """
     def __init__(self, environ, **params):
@@ -434,7 +438,8 @@ class SessionObject(object):
             if params.get('type') == 'cookie':
                 self.__dict__['_sess'] = CookieSession(req, **params)
             else:
-                self.__dict__['_sess'] = Session(req, use_cookies=True, **params)
+                self.__dict__['_sess'] = Session(req, use_cookies=True,
+                                                 **params)
         return self.__dict__['_sess']
     
     def __getattr__(self, attr):

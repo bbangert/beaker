@@ -1,5 +1,4 @@
-__all__  = ["file_synchronizer", "mutex_synchronizer", "null_synchronizer", "NameLock", "_threading"]
-
+"""Synchronization module for keeping state of values in sync"""
 import os
 import sys
 import tempfile
@@ -23,14 +22,18 @@ except:
 from beaker import util
 from beaker.exceptions import LockError
 
+__all__  = ["file_synchronizer", "mutex_synchronizer", "null_synchronizer",
+            "NameLock", "_threading"]
+
+
 class NameLock(object):
-    """a proxy for an RLock object that is stored in a name 
-    based registry.  
+    """a proxy for an RLock object that is stored in a name based
+    registry.  
     
-    Multiple threads can get a reference to the same RLock based on 
-    the name alone, and synchronize operations related to that name.
-    """
-     
+    Multiple threads can get a reference to the same RLock based on the
+    name alone, and synchronize operations related to that name.
+
+    """     
     locks = util.WeakValuedRegistry()
 
     class NLContainer(object):
@@ -46,7 +49,8 @@ class NameLock(object):
         if identifier is None:
             self._lock = NameLock.NLContainer(reentrant)
         else:
-            self._lock = NameLock.locks.get(identifier, NameLock.NLContainer, reentrant)
+            self._lock = NameLock.locks.get(identifier, NameLock.NLContainer,
+                                            reentrant)
 
     def acquire(self, wait = True):
         return self._lock().acquire(wait)
@@ -54,9 +58,11 @@ class NameLock(object):
     def release(self):
         self._lock().release()
 
+
 _synchronizers = util.WeakValuedRegistry()
 def _synchronizer(identifier, cls, **kwargs):
     return _synchronizers.sync_get((identifier, cls), cls, identifier, **kwargs)
+
 
 def file_synchronizer(identifier, **kwargs):
     if not has_flock:
@@ -64,8 +70,10 @@ def file_synchronizer(identifier, **kwargs):
     else:
         return _synchronizer(identifier, FileSynchronizer, **kwargs)
 
+
 def mutex_synchronizer(identifier, **kwargs):
     return _synchronizer(identifier, ConditionSynchronizer, **kwargs)
+
 
 class null_synchronizer(object):
     def acquire_write_lock(self, wait=True):
@@ -78,9 +86,9 @@ class null_synchronizer(object):
         pass
     acquire = acquire_write_lock
     release = release_write_lock
-    
-class SynchronizerImpl(object):
 
+
+class SynchronizerImpl(object):
     def __init__(self):
         self._state = util.ThreadLocal()
 
@@ -176,7 +184,8 @@ class SynchronizerImpl(object):
     
     def do_acquire_write_lock(self):
         raise NotImplementedError()
-    
+
+
 class FileSynchronizer(SynchronizerImpl):
     """a synchronizer which locks using flock()."""
 
@@ -251,6 +260,7 @@ class FileSynchronizer(SynchronizerImpl):
                 # occasionally another thread beats us to it
                 pass                    
 
+
 class ConditionSynchronizer(SynchronizerImpl):
     """a synchronizer using a Condition."""
     
@@ -299,7 +309,8 @@ class ConditionSynchronizer(SynchronizerImpl):
                 if self.current_sync_operation is not None:
                     self.condition.notifyAll()
             elif self.async < 0:
-                raise LockError("Synchronizer error - too many release_read_locks called")
+                raise LockError("Synchronizer error - too many "
+                                "release_read_locks called")
         finally:
             self.condition.release()
     
@@ -343,7 +354,8 @@ class ConditionSynchronizer(SynchronizerImpl):
         self.condition.acquire()
         try:
             if self.current_sync_operation is not _threading.currentThread():
-                raise LockError("Synchronizer error - current thread doesnt have the write lock")
+                raise LockError("Synchronizer error - current thread doesnt "
+                                "have the write lock")
 
             # reset the current sync operation so 
             # another can get it
