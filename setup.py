@@ -1,6 +1,17 @@
+import sys
+
 from setuptools import setup, find_packages
 
 version = '1.0.2'
+
+pycryptopp = 'pycryptopp>=0.3.0'
+tests_require = ['nose', 'python-memcached', 'webtest']
+if not sys.platform.startswith('java') and not sys.platform == 'cli':
+    tests_require.extend([pycryptopp, 'SQLALchemy'])
+    try:
+        import sqlite3
+    except ImportError:
+        tests_require.append('pysqlite')
 
 setup(name='Beaker',
       version=version,
@@ -128,10 +139,10 @@ The latest developer version is available in a `Mercurial repository
       zip_safe=False,
       install_requires=[],
       extras_require={
-          'crypto':["pycryptopp>=0.3.0"]
+          'crypto':[pycryptopp]
       },
       test_suite='nose.collector',
-      tests_require=['nose', 'webtest'],
+      tests_require=tests_require,
       entry_points="""
           [paste.filter_factory]
           beaker_session = beaker.middleware:session_filter_factory

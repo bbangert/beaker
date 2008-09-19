@@ -111,11 +111,8 @@ class PBKDF2(object):
 
     def __init__(self, passphrase, salt, iterations=1000,
                  digestmodule=SHA1, macmodule=HMAC):
-        # Support both sha/md5 style modules and hashlib functions
         if not callable(macmodule):
             macmodule = macmodule.new
-        if not callable(digestmodule):
-            digestmodule = digestmodule.new
         self.__macmodule = macmodule
         self.__digestmodule = digestmodule
         self._setup(passphrase, salt, iterations, self._pseudorandom)
