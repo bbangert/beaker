@@ -12,29 +12,34 @@ from beaker.cache import CacheManager
 from beaker.session import Session, SessionObject
 from beaker.util import coerce_cache_params, coerce_session_params
 
+
 class CacheMiddleware(object):
     cache = beaker_cache
     
     def __init__(self, app, config=None, environ_key='beaker.cache', **kwargs):
         """Initialize the Cache Middleware
         
-        The Cache middleware will make a Cache instance available every request
-        under the ``environ['beaker.cache']`` key by default. The location in
-        environ can be changed by setting ``environ_key``.
+        The Cache middleware will make a Cache instance available
+        every request under the ``environ['beaker.cache']`` key by
+        default. The location in environ can be changed by setting
+        ``environ_key``.
         
         ``config``
-            dict  All settings should be prefixed by 'cache.'. This method of
-            passing variables is intended for Paste and other setups that
-            accumulate multiple component settings in a single dictionary. If
-            config contains *no cache. prefixed args*, then *all* of the config
-            options will be used to intialize the Cache objects.
+            dict  All settings should be prefixed by 'cache.'. This
+            method of passing variables is intended for Paste and other
+            setups that accumulate multiple component settings in a
+            single dictionary. If config contains *no cache. prefixed
+            args*, then *all* of the config options will be used to
+            intialize the Cache objects.
         
         ``environ_key``
-            Location where the Cache instance will keyed in the WSGI environ
+            Location where the Cache instance will keyed in the WSGI
+            environ
         
         ``**kwargs``
-            All keyword arguments are assumed to be cache settings and will
-            override any settings found in ``config``
+            All keyword arguments are assumed to be cache settings and
+            will override any settings found in ``config``
+
         """
         self.app = app
         config = config or {}
@@ -58,7 +63,8 @@ class CacheMiddleware(object):
         # Coerce and validate cache params
         coerce_cache_params(self.options)
         
-        # Assume all keys are intended for cache if none are prefixed with 'cache.'
+        # Assume all keys are intended for cache if none are prefixed with
+        # 'cache.'
         if not self.options and config:
             self.options = config
         
@@ -69,7 +75,8 @@ class CacheMiddleware(object):
     def __call__(self, environ, start_response):
         if environ.get('paste.registry'):
             if environ['paste.registry'].reglist:
-                environ['paste.registry'].register(self.cache, self.cache_manager)
+                environ['paste.registry'].register(self.cache,
+                                                   self.cache_manager)
         environ[self.environ_key] = self.cache_manager
         return self.app(environ, start_response)
 
@@ -77,27 +84,31 @@ class CacheMiddleware(object):
 class SessionMiddleware(object):
     session = beaker_session
     
-    def __init__(self, wrap_app, config=None, environ_key='beaker.session', **kwargs):
+    def __init__(self, wrap_app, config=None, environ_key='beaker.session',
+                 **kwargs):
         """Initialize the Session Middleware
         
-        The Session middleware will make a lazy session instance available
-        every request under the ``environ['beaker.session']`` key by
-        default. The location in environ can be changed by setting
-        ``environ_key``.
+        The Session middleware will make a lazy session instance
+        available every request under the ``environ['beaker.session']``
+        key by default. The location in environ can be changed by
+        setting ``environ_key``.
         
         ``config``
-            dict  All settings should be prefixed by 'session.'. This method of
-            passing variables is intended for Paste and other setups that
-            accumulate multiple component settings in a single dictionary. If
-            config contains *no cache. prefixed args*, then *all* of the config
-            options will be used to intialize the Cache objects.
+            dict  All settings should be prefixed by 'session.'. This
+            method of passing variables is intended for Paste and other
+            setups that accumulate multiple component settings in a
+            single dictionary. If config contains *no cache. prefixed
+            args*, then *all* of the config options will be used to
+            intialize the Cache objects.
         
         ``environ_key``
-            Location where the Session instance will keyed in the WSGI environ
+            Location where the Session instance will keyed in the WSGI
+            environ
         
         ``**kwargs``
-            All keyword arguments are assumed to be cache settings and will
-            override any settings found in ``config``
+            All keyword arguments are assumed to be cache settings and
+            will override any settings found in ``config``
+
         """
         config = config or {}
         
@@ -121,7 +132,8 @@ class SessionMiddleware(object):
         # Coerce and validate session params
         coerce_session_params(self.options)
         
-        # Assume all keys are intended for cache if none are prefixed with 'cache.'
+        # Assume all keys are intended for cache if none are prefixed with
+        # 'cache.'
         if not self.options and config:
             self.options = config
         

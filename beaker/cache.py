@@ -1,6 +1,14 @@
+"""Cache object
+
+The Cache object is used to manage a set of cache files and their
+associated backend. The backends can be rotated on the fly by
+specifying an alternate type when used.
+
+"""
 import beaker.container as container
 from beaker.exceptions import InvalidCacheBackendError
 import beaker.util as util
+
 
 clsmap = {
           'memory':container.MemoryNamespaceManager,
@@ -31,6 +39,7 @@ try:
     clsmap['ext:google'] = google.GoogleNamespaceManager
 except (InvalidCacheBackendError, SyntaxError):
     pass
+
 
 class Cache(object):
     """Front-end to the containment API implementing a data cache."""
@@ -106,6 +115,7 @@ class Cache(object):
     
     def __setitem__(self, key, value):
         self.put(key, value)
+
 
 class CacheManager(object):
     def __init__(self, **kwargs):

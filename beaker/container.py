@@ -1,43 +1,49 @@
+"""Container and Namespace classes"""
 import anydbm
 import cPickle
 import logging
 import os.path
 import time
 
-from beaker.exceptions import MissingCacheParameter
 import beaker.util as util
-from beaker.synchronization import _threading, file_synchronizer, mutex_synchronizer, NameLock
+from beaker.exceptions import CreationAbortedError, MissingCacheParameter
+from beaker.synchronization import _threading, file_synchronizer, \
+     mutex_synchronizer, NameLock
 
 __all__ = ['ContainerContext', 'Value', 'Container', 
            'MemoryContainer', 'DBMContainer', 'NamespaceManager',
            'MemoryNamespaceManager', 'DBMNamespaceManager', 'FileContainer',
            'FileNamespaceManager', 'CreationAbortedError']
 
+
 logger = logging.getLogger('beaker.container')
 if logger.isEnabledFor(logging.DEBUG):
     debug = logger.debug
 else:
-    def debug(message):
+    def debug(message, *args):
         pass
-     
+
+
 class NamespaceManager(object):
-    """handles dictionary operations and locking for a namespace of values.  
+    """Handles dictionary operations and locking for a namespace of
+    values.
     
-    the implementation for setting and retrieving the namespace data is handled
-    by subclasses.
+    The implementation for setting and retrieving the namespace data is
+    handled by subclasses.
     
     NamespaceManager may be used alone, or may be privately accessed by
-    one or more Container objects.  Container objects provide per-key services
-    like expiration times and automatic recreation of values.  
+    one or more Container objects.  Container objects provide per-key
+    services like expiration times and automatic recreation of values.
     
-    multiple NamespaceManagers created with a particular name will all share
-    access to the same underlying datasource and will attempt to synchronize
-    against a common mutex object.  The scope of this sharing may be within 
-    a single process or across multiple processes, depending on the type of
-    NamespaceManager used.
+    Multiple NamespaceManagers created with a particular name will all
+    share access to the same underlying datasource and will attempt to
+    synchronize against a common mutex object.  The scope of this
+    sharing may be within a single process or across multiple
+    processes, depending on the type of NamespaceManager used.
     
-    The NamespaceManager itself is generally threadsafe, except in the case
-    of the DBMNamespaceManager in conjunction with the gdbm dbm implementation.
+    The NamespaceManager itself is generally threadsafe, except in the
+    case of the DBMNamespaceManager in conjunction with the gdbm dbm
+    implementation.
 
     """
     def __init__(self, namespace):
@@ -144,10 +150,12 @@ class NamespaceManager(object):
         finally:
             self.access_lock.release_write_lock()
 
+
 class ContainerContext(object):
-    """initial context supplied to Containers. 
-    
-    Keeps track of namespacemangers keyed off of namespace names and container types.
+    """Initial context supplied to Containers. 
+
+    Keeps track of namespacemangers keyed off of namespace names and
+    container types.
 
     """
     def __init__(self):
@@ -170,16 +178,20 @@ class ContainerContext(object):
     def clear(self):
         self.registry.clear()
 
-class Value(object):
-    __slots__ = 'key', 'createfunc', 'expiretime', 'starttime', 'storedtime', 'namespacemanager'
 
-    def __init__(self, key, context, namespace, nscls, createfunc=None, expiretime=None, starttime=None, **kwargs):
+class Value(object):
+    __slots__ = 'key', 'createfunc', 'expiretime', 'starttime', 'storedtime',\
+                'namespacemanager'
+
+    def __init__(self, key, context, namespace, nscls, createfunc=None,
+                 expiretime=None, starttime=None, **kwargs):
         self.key = key
         self.createfunc = createfunc
         self.expiretime = expiretime
         self.starttime = starttime
         self.storedtime = -1
-        self.namespacemanager = context.get_namespace(namespace, nscls, **kwargs)
+        self.namespacemanager = context.get_namespace(namespace, nscls,
+                                                      **kwargs)
 
     def has_value(self):
         """return true if the container has a value stored.
@@ -271,7 +283,7 @@ class Value(object):
         self.namespacemanager.acquire_write_lock()
         try:
             self.storedtime = time.time()
-            debug("set_value stored time %d" % self.storedtime)
+            debug("set_value stored time %d", self.storedtime)
             self.namespacemanager[self.key] = [self.storedtime, value]
         finally:
             self.namespacemanager.release_write_lock()
@@ -286,15 +298,14 @@ class Value(object):
         finally:
             self.namespacemanager.release_write_lock()
 
-class CreationAbortedError(Exception):
-    """an exception that allows a creation function to abort what it's doing"""
 
 class MemoryNamespaceManager(NamespaceManager):
     namespaces = util.SyncDict()
 
     def __init__(self, namespace, **kwargs):
         NamespaceManager.__init__(self, namespace)
-        self.dictionary = MemoryNamespaceManager.namespaces.get(self.namespace, dict)
+        self.dictionary = MemoryNamespaceManager.namespaces.get(self.namespace,
+                                                                dict)
     
     def get_access_lock(self):
         return mutex_synchronizer(
@@ -302,7 +313,7 @@ class MemoryNamespaceManager(NamespaceManager):
         
     def get_creation_lock(self, key):
         return NameLock(
-            identifier="memorycontainer/funclock/%s/%s" % (self.namespace, key), 
+            identifier="memorycontainer/funclock/%s/%s" % (self.namespace, key),
             reentrant=True
         )
         
@@ -333,8 +344,8 @@ class MemoryNamespaceManager(NamespaceManager):
     def keys(self):
         return self.dictionary.keys()
 
-class DBMNamespaceManager(NamespaceManager):
 
+class DBMNamespaceManager(NamespaceManager):
     def __init__(self, namespace, dbmmodule=None, data_dir=None, 
             dbm_dir=None, lock_dir=None, digest_filenames=True, **kwargs):
         self.digest_filenames = digest_filenames
@@ -360,15 +371,17 @@ class DBMNamespaceManager(NamespaceManager):
         self.dbm = None
         NamespaceManager.__init__(self, namespace)
 
-        self.file = util.encoded_path(root= self.dbm_dir, 
-                                      identifiers=[self.namespace], extension='.dbm', digest_filenames=self.digest_filenames)
+        self.file = util.encoded_path(root= self.dbm_dir,
+                                      identifiers=[self.namespace],
+                                      extension='.dbm',
+                                      digest_filenames=self.digest_filenames)
         
-        debug("data file %s" % self.file)
-        
+        debug("data file %s", self.file)
         self._checkfile()
 
     def get_access_lock(self):
-        return file_synchronizer(identifier=self.namespace, lock_dir=self.lock_dir)
+        return file_synchronizer(identifier=self.namespace,
+                                 lock_dir=self.lock_dir)
                                  
     def get_creation_lock(self, key):
         return file_synchronizer(
@@ -402,7 +415,7 @@ class DBMNamespaceManager(NamespaceManager):
         return list
 
     def do_open(self, flags):
-        debug("opening dbm file %s" % self.file)
+        debug("opening dbm file %s", self.file)
         try:
             self.dbm = self.dbmmodule.open(self.file, flags)
         except:
@@ -411,7 +424,7 @@ class DBMNamespaceManager(NamespaceManager):
 
     def do_close(self):
         if self.dbm is not None:
-            debug("closing dbm file %s" % self.file)
+            debug("closing dbm file %s", self.file)
             self.dbm.close()
         
     def do_remove(self):
@@ -433,9 +446,10 @@ class DBMNamespaceManager(NamespaceManager):
     def keys(self):
         return self.dbm.keys()
 
-class FileNamespaceManager(NamespaceManager):
 
-    def __init__(self, namespace, data_dir=None, file_dir=None, lock_dir=None, digest_filenames=True, **kwargs):
+class FileNamespaceManager(NamespaceManager):
+    def __init__(self, namespace, data_dir=None, file_dir=None, lock_dir=None,
+                 digest_filenames=True, **kwargs):
         self.digest_filenames = digest_filenames
         
         if not file_dir and not data_dir:
@@ -457,13 +471,15 @@ class FileNamespaceManager(NamespaceManager):
 
         self.file = util.encoded_path(root=self.file_dir, 
                                       identifiers=[self.namespace],
-                                      extension='.cache',digest_filenames=self.digest_filenames)
+                                      extension='.cache',
+                                      digest_filenames=self.digest_filenames)
         self.hash = {}
         
-        debug("data file %s" % self.file)
+        debug("data file %s", self.file)
 
     def get_access_lock(self):
-        return file_synchronizer(identifier=self.namespace, lock_dir=self.lock_dir)
+        return file_synchronizer(identifier=self.namespace,
+                                 lock_dir=self.lock_dir)
                                  
     def get_creation_lock(self, key):
         return file_synchronizer(
@@ -519,9 +535,11 @@ class ContainerMeta(type):
     def __init__(cls, classname, bases, dict_):
         namespace_classes[cls] = cls.namespace_class
         return type.__init__(cls, classname, bases, dict_)
-    def __call__(self, key, context, namespace, createfunc=None, expiretime=None, starttime=None, **kwargs):
+    def __call__(self, key, context, namespace, createfunc=None,
+                 expiretime=None, starttime=None, **kwargs):
         nscls = namespace_classes[self]
-        return Value(key, context, namespace, nscls, createfunc=createfunc, expiretime=expiretime, starttime=starttime, **kwargs)
+        return Value(key, context, namespace, nscls, createfunc=createfunc,
+                     expiretime=expiretime, starttime=starttime, **kwargs)
 
 class Container(object):
     __metaclass__ = ContainerMeta
