@@ -1,9 +1,12 @@
 Beaker Changelog
 ================
 
-1.0.1 (**tip**)
+1.0.2 (**tip**)
 * Fixed bug caused when attempting to invalidate a session that hadn't
   previously been created.
+
+1.0.1 (8/19/2008)
+* Bug fix for cookie sessions to retain id before clearing values.
 
 1.0 (8/13/2008)
 * Added cookie delete to both cookie only sessions and normal sessions, to
