@@ -1,7 +1,7 @@
 Beaker Changelog
 ================
 
-1.0.2 (**tip**)
+1.0.2 (9/22/2008)
 * Fixed bug caused when attempting to invalidate a session that hadn't
   previously been created.
 
