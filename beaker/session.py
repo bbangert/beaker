@@ -27,6 +27,8 @@ from beaker.util import b64decode, b64encode, Set
 
 __all__ = ['SignedCookie', 'Session']
 
+getpid = hasattr(os, 'getpid') and os.getpid or (lambda : '')
+
 class SignedCookie(Cookie.BaseCookie):
     """Extends python cookie to give digital signature support"""
     def __init__(self, secret, input=None):
@@ -105,7 +107,7 @@ class Session(dict):
     def _create_id(self):
         self.id = md5(
             md5("%f%s%f%s" % (time.time(), id({}), random.random(),
-                              os.getpid()) ).hexdigest(), 
+                              getpid())).hexdigest(), 
         ).hexdigest()
         self.is_new = True
         if self.use_cookies:
@@ -364,7 +366,7 @@ class CookieSession(Session):
     
     def _make_id(self):
         return md5(md5(
-            "%f%s%f%d" % (time.time(), id({}), random.random(), os.getpid())
+            "%f%s%f%d" % (time.time(), id({}), random.random(), getpid())
             ).hexdigest()
         ).hexdigest()
     
