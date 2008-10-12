@@ -374,12 +374,35 @@ class CookieSession(Session):
         """Saves the data for this session to persistent storage"""
         self._create_cookie()
     
+    def expire(self):
+        """Delete the 'expires' attribute on this Session, if any."""
+        
+        self.pop('_expires', None)
+        
     def _create_cookie(self):
         if '_creation_time' not in self:
             self['_creation_time'] = time.time()
         if '_id' not in self:
             self['_id'] = self._make_id()
         self['_accessed_time'] = time.time()
+        
+        
+        if self.cookie_expires is not True:
+            if self.cookie_expires is False:
+                expires = datetime.fromtimestamp( 0x7FFFFFFF )
+            elif isinstance(self.cookie_expires, timedelta):
+                expires = datetime.today() + self.cookie_expires
+            elif isinstance(self.cookie_expires, datetime):
+                expires = self.cookie_expires
+            else:
+                raise ValueError("Invalid argument for cookie_expires: %s"
+                                 % repr(self.cookie_expires))
+            self['_expires'] = expires
+        elif '_expires' in self:
+            expires = self['_expires']
+        else:
+            expires = None
+
         val = self._encrypt_data()
         if len(val) > 4064:
             raise BeakerException("Cookie value is too long to store")
@@ -391,16 +414,8 @@ class CookieSession(Session):
             self.cookie[self.key]['secure'] = True
         
         self.cookie[self.key]['path'] = '/'
-        if self.cookie_expires is not True:
-            if self.cookie_expires is False:
-                expires = datetime.fromtimestamp( 0x7FFFFFFF )
-            elif isinstance(self.cookie_expires, timedelta):
-                expires = datetime.today() + self.cookie_expires
-            elif isinstance(self.cookie_expires, datetime):
-                expires = self.cookie_expires
-            else:
-                raise ValueError("Invalid argument for cookie_expires: %s"
-                                 % repr(self.cookie_expires))
+        
+        if expires:
             self.cookie[self.key]['expires'] = \
                 expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
