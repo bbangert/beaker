@@ -9,12 +9,12 @@ from beaker.synchronization import null_synchronizer
 
 log = logging.getLogger(__name__)
 
-try:
-    from google.appengine.ext import db
-except ImportError:
-    raise InvalidCacheBackendError("Datastore cache backend requires the "
-                                   "'google.appengine.ext' library")
-
+#try:
+#    from google.appengine.ext import db
+#except ImportError:
+#    raise InvalidCacheBackendError("Datastore cache backend requires the "
+#                                   "'google.appengine.ext' library")
+#
 
 class GoogleNamespaceManager(NamespaceManager):
     tables = {}

@@ -2,7 +2,7 @@ import sys
 
 from setuptools import setup, find_packages
 
-version = '1.0.3'
+version = '1.0.4'
 
 pycryptopp = 'pycryptopp>=0.5.7'
 tests_require = ['nose', 'python-memcached', 'webtest']

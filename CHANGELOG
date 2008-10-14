@@ -1,8 +1,13 @@
 Beaker Changelog
 ================
 
-1.0.3 (**tip**)
+1.0.4 (**tip**)
 
+
+1.0.3 (10/14/2008)
+* Fixed os.getpid issue on GAE.
+* CookieSession will add '_expires' value to data when an expire time is set, 
+  and uses it
 
 1.0.2 (9/22/2008)
 * Fixed bug caused when attempting to invalidate a session that hadn't
