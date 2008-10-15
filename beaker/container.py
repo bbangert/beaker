@@ -209,11 +209,24 @@ class Value(object):
         return self.has_current_value() or self.createfunc is not None  
 
     def has_current_value(self):
-        return self.has_value() and not self.is_expired()
+        self.namespacemanager.acquire_read_lock()
+        try:    
+            has_value = self.namespacemanager.has_key(self.key)
+            if has_value:
+                [self.storedtime, value] = self.namespacemanager[self.key]
+                return not self._is_expired()
+            else:
+                return False
+        finally:
+            self.namespacemanager.release_read_lock()
 
-    def is_expired(self):
-        """Return true if this container's value is expired."""
-
+    def _is_expired(self):
+        """Return true if this container's value is expired.
+        
+        Note that this method is only correct if has_current_value()
+        or get_value() have been called already.
+        
+        """
         return (
             (
                 self.starttime is not None and
@@ -232,10 +245,10 @@ class Value(object):
             has_value = self.has_value()
             if has_value:
                 [self.storedtime, value] = self.namespacemanager[self.key]
-                if not self.is_expired():
+                if not self._is_expired():
                     return value
 
-            if not self.can_have_value():
+            if not self.createfunc:
                 raise KeyError(self.key)
         finally:
             self.namespacemanager.release_read_lock()
@@ -261,7 +274,7 @@ class Value(object):
             try:
                 if self.has_value():
                     [self.storedtime, value] = self.namespacemanager[self.key]
-                    if not self.is_expired():
+                    if not self._is_expired():
                         return value
             finally:
                 self.namespacemanager.release_read_lock()
@@ -498,6 +511,7 @@ class FileNamespaceManager(NamespaceManager):
             except (IOError, OSError, EOFError, cPickle.PickleError):
                 pass
             fh.close()
+
         self.flags = flags
         
     def do_close(self):
@@ -506,6 +520,7 @@ class FileNamespaceManager(NamespaceManager):
             cPickle.dump(self.hash, fh)
             fh.close()
 
+        self.hash = {}
         self.flags = None
                 
     def do_remove(self):

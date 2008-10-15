@@ -1,6 +1,11 @@
 Beaker Changelog
 ================
-
+1.0.4
+* file-based cache will not hold onto cached value once read from file;
+  will create new value if the file is deleted as opposed to re-using
+  what was last read.  This allows external removal of files to be
+  used as a cache-invalidation mechanism.
+  
 1.0.3 (10/14/2008)
 * Fixed os.getpid issue on GAE.
 * CookieSession will add '_expires' value to data when an expire time is set, 

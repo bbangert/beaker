@@ -166,3 +166,22 @@ def test_file_open_bug():
         assert False
     except:
         pass
+
+
+def test_removing_file_refreshes():
+    """test that the cache doesn't ignore file removals"""
+    
+    x = [0]
+    def create():
+        x[0] += 1
+        return x[0]
+        
+    value = Value('test', context, 'refresh_test', clsmap['file'], data_dir='./cache', createfunc=create, starttime=time.time())
+    assert value.get_value() == 1
+    assert value.get_value() == 1
+    os.remove(value.namespacemanager.file)
+    assert value.get_value() == 2
+    
+    
+    
+    
