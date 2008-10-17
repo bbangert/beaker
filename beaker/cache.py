@@ -43,72 +43,65 @@ except (InvalidCacheBackendError, SyntaxError):
 
 class Cache(object):
     """Front-end to the containment API implementing a data cache."""
-    def __init__(self, namespace, **kwargs):
-        self.namespace = namespace
-        self.context = container.ContainerContext()
-        self._values = {}
-        self.kwargs = kwargs
-        self.kwargs.setdefault('type', 'memory')
-    
-    def put(self, key, value, **kwargs):
-        self._values.pop(key, None)
-        self._get_value(key, **kwargs).set_value(value)
+
+    def __init__(self, namespace, type='memory', expiretime=None, starttime=None, **nsargs):
+        try:
+            cls = clsmap[type]
+        except KeyError:
+            raise TypeError("Unknown cache implementation %r" % type)
+            
+        self.namespace = cls(namespace, **nsargs)
+        self.expiretime = expiretime
+        self.starttime = starttime
+        self.nsargs = nsargs
+        
+    def put(self, key, value, **kw):
+        self._get_value(key, **kw).set_value(value)
     set_value = put
     
-    def get(self, key, **kwargs):
-        return self._get_value(key, **kwargs).get_value()
+    def get(self, key, **kw):
+        return self._get_value(key, **kw).get_value()
     get_value = get
     
-    def remove_value(self, key, **kwargs):
-        mycontainer = self._get_value(key, **kwargs)
+    def remove_value(self, key, **kw):
+        mycontainer = self._get_value(key, **kw)
         if mycontainer.has_current_value():
             mycontainer.clear_value()
 
-    def _get_value(self, key, **kwargs):
+    def _get_value(self, key, **kw):
         if isinstance(key, unicode):
             key = key.encode('ascii', 'backslashreplace')
-            
-        if not kwargs:
-            value = self._values.get(key)
-        else:
-            value = None
-            
-        if not value:
-            kw = self.kwargs.copy()
-            kw.update(kwargs)
-            type = kw.pop('type')
-            self._values[key] = value = container.Value(key, self.context, self.namespace, clsmap[type], **kw)
-        return value
-    
-    def _get_namespace(self, **kwargs):
-        type = kwargs['type']
-        return self.context.get_namespace(self.namespace, clsmap[type], **kwargs)
-    
-    def _get_namespaces(self):
-        """return a collection of all distinct ``Namespace`` instances 
-        referenced by this ``Cache``."""
+
+        if 'type' in kw:
+            return self._legacy_get_value(key, **kw)
+
+        kw.setdefault('expiretime', self.expiretime)
+        kw.setdefault('starttime', self.starttime)
         
-        return util.Set(
-            [v.namespacemanager for v in self._values.values()]).\
-            union([self._get_namespace(**self.kwargs)])
+        return container.Value(key, self.namespace, **kw)
+    
+    def _legacy_get_value(self, key, type, **kw):
+        expiretime = kw.pop('expiretime', self.expiretime)
+        starttime = kw.pop('starttime', None)
+        createfunc = kw.pop('createfunc', None)
+        kwargs = self.nsargs.copy()
+        kwargs.update(kw)
+        c = Cache(self.namespace.namespace, type=type, **kwargs)
+        return c._get_value(key, expiretime=expiretime, createfunc=createfunc, starttime=starttime)
+    _legacy_get_value = util.deprecated(_legacy_get_value, "Specifying a 'type' and other namespace configuration with cache.get()/put()/etc. is depreacted.  Specify 'type' and other namespace configuration to cache_manager.get_cache() and/or the Cache constructor instead.")
     
     def clear(self):
-        """clear this Cache's default namespace, as well as any other 
-        Namespaces that have been referenced by this Cache."""
-        for namespace in self._get_namespaces():
-            namespace.remove()
-        self._values = {}
+        self.namespace.remove()
     
-    # public dict interface
+    # dict interface
     def __getitem__(self, key):
         return self.get(key)
     
     def __contains__(self, key):
-        return self.has_key(key)
+        return self._get_value(key).has_current_value()
     
     def has_key(self, key):
-        mycontainer = self._get_value(key)
-        return mycontainer.has_current_value()
+        return key in self
     
     def __delitem__(self, key):
         self.remove_value(key)

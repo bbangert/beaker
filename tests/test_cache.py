@@ -47,17 +47,15 @@ def test_has_key():
     assert not cache.has_key("test")
 
 def test_expire_changes():
-    cache = Cache('test', data_dir='./cache', type='dbm')
+    cache = Cache('test_bar', data_dir='./cache', type='dbm')
     cache.set_value('test', 10)
     assert cache.has_key('test')
     assert cache['test'] == 10
-    assert cache._values['test'].expiretime is None
     
     # ensure that we can change a never-expiring value
     cache.set_value('test', 20, expiretime=1)
     assert cache.has_key('test')
     assert cache['test'] == 20
-    assert cache._values['test'].expiretime == 1
     time.sleep(1)
     assert not cache.has_key('test')
     
@@ -65,17 +63,15 @@ def test_expire_changes():
     cache.set_value('test', 30, expiretime=50)
     assert cache.has_key('test')
     assert cache['test'] == 30
-    assert cache._values['test'].expiretime == 50
     
     cache.set_value('test', 40, expiretime=3)
     assert cache.has_key('test')
     assert cache['test'] == 40
-    assert cache._values['test'].expiretime == 3
     time.sleep(3)
     assert not cache.has_key('test')
 
 def test_fresh_createfunc():
-    cache = Cache('test', data_dir='./cache', type='dbm')
+    cache = Cache('test_foo', data_dir='./cache', type='dbm')
     x = cache.get_value('test', createfunc=lambda: 10, expiretime=2)
     assert x == 10
     x = cache.get_value('test', createfunc=lambda: 12, expiretime=2)
@@ -163,3 +159,27 @@ def test_cache_manager():
     assert 'test_key is: test value' in res
     assert 'test_key cleared' in res
     
+def test_legacy_cache():
+    cache = Cache('newtests', data_dir='./cache', type='dbm')
+    
+    cache.set_value('x', '1')
+    assert cache.get_value('x') == '1'
+    
+    cache.set_value('x', '2', type='file', data_dir='./cache')
+    assert cache.get_value('x') == '1'
+    assert cache.get_value('x', type='file', data_dir='./cache') == '2'
+    
+    cache.remove_value('x')
+    cache.remove_value('x', type='file', data_dir='./cache')
+    
+    assert cache.get_value('x', expiretime=1, createfunc=lambda: '5') == '5'
+    assert cache.get_value('x', expiretime=1, createfunc=lambda: '6', type='file', data_dir='./cache') == '6'
+    assert cache.get_value('x', expiretime=1, createfunc=lambda: '7') == '5'
+    assert cache.get_value('x', expiretime=1, createfunc=lambda: '8', type='file', data_dir='./cache') == '6'
+    time.sleep(1)
+    assert cache.get_value('x', expiretime=1, createfunc=lambda: '9') == '9'
+    assert cache.get_value('x', expiretime=1, createfunc=lambda: '10', type='file', data_dir='./cache') == '10'
+    assert cache.get_value('x', expiretime=1, createfunc=lambda: '11') == '9'
+    assert cache.get_value('x', expiretime=1, createfunc=lambda: '12', type='file', data_dir='./cache') == '10'
+    
+

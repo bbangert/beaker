@@ -5,9 +5,7 @@ class BeakerException(Exception):
 
 
 class CreationAbortedError(Exception):
-    """an exception that allows a creation function to abort what it's
-    doing"""
-
+    """deprecated."""
 
 class InvalidCacheBackendError(BeakerException):
     pass

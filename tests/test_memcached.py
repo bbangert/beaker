@@ -85,12 +85,12 @@ def test_dropping_keys():
     assert cache.has_key('fred')
     
     # Directly nuke the actual key, to simulate it being removed by memcached
-    cache._values['test'].namespacemanager.mc.delete('test_test')
+    cache.namespace.mc.delete('test_test')
     assert not cache.has_key('test')
     assert cache.has_key('fred')
     
     # Nuke the keys dict, it might die, who knows
-    cache._values['fred'].namespacemanager.mc.delete('test:keys')
+    cache.namespace.mc.delete('test:keys')
     assert cache.has_key('fred')
     
     # And we still need clear to work, even if it won't work well
@@ -101,7 +101,7 @@ def test_deleting_keys():
     cache.set_value('test', 20)
     
     # Nuke the keys dict, it might die, who knows
-    cache._values['test'].namespacemanager.mc.delete('test:keys')
+    cache.namespace.mc.delete('test:keys')
     
     assert cache.has_key('test')
     

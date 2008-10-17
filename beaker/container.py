@@ -10,7 +10,7 @@ from beaker.exceptions import CreationAbortedError, MissingCacheParameter
 from beaker.synchronization import _threading, file_synchronizer, \
      mutex_synchronizer, NameLock
 
-__all__ = ['ContainerContext', 'Value', 'Container', 
+__all__ = ['Value', 'Container', 'ContainerContext',
            'MemoryContainer', 'DBMContainer', 'NamespaceManager',
            'MemoryNamespaceManager', 'DBMNamespaceManager', 'FileContainer',
            'FileNamespaceManager', 'CreationAbortedError']
@@ -75,6 +75,16 @@ class NamespaceManager(object):
         
     def __setitem__(self, key, value):
         raise NotImplementedError()
+    
+    def set_value(self, key, value, expiretime=None):
+        """Optional set_value() method called by Value.
+        
+        Allows an expiretime to be passed, for namespace
+        implementations which can prune their collections
+        using expiretime.
+        
+        """
+        self[key] = value
         
     def __contains__(self, key):
         raise NotImplementedError()
@@ -151,47 +161,17 @@ class NamespaceManager(object):
             self.access_lock.release_write_lock()
 
 
-class ContainerContext(object):
-    """Initial context supplied to Containers. 
-
-    Keeps track of namespacemangers keyed off of namespace names and
-    container types.
-
-    """
-    def __init__(self):
-        self.registry = {}
-    
-    def get_namespace(self, namespace, cls, **kwargs):
-        key = (cls, namespace)
-        try:
-            return self.registry[key]
-        except KeyError:
-            self.registry[key] = ns = cls(namespace, **kwargs)
-            return ns
-    
-    # deprecated
-    def get_namespace_manager(self, namespace, container_class, **kwargs):
-        nscls = namespace_classes[container_class]
-        return self.get_namespace(namespace, nscls, **kwargs)
-
-    # remove ?
-    def clear(self):
-        self.registry.clear()
-
-
 class Value(object):
-    __slots__ = 'key', 'createfunc', 'expiretime', 'starttime', 'storedtime',\
-                'namespacemanager'
+    __slots__ = 'key', 'createfunc', 'expiretime', 'expire_argument', 'starttime', 'storedtime',\
+                'namespace'
 
-    def __init__(self, key, context, namespace, nscls, createfunc=None,
-                 expiretime=None, starttime=None, **kwargs):
+    def __init__(self, key, namespace, createfunc=None, expiretime=None, starttime=None):
         self.key = key
         self.createfunc = createfunc
-        self.expiretime = expiretime
+        self.expire_argument = expiretime
         self.starttime = starttime
         self.storedtime = -1
-        self.namespacemanager = context.get_namespace(namespace, nscls,
-                                                      **kwargs)
+        self.namespace = namespace
 
     def has_value(self):
         """return true if the container has a value stored.
@@ -199,26 +179,26 @@ class Value(object):
         This is regardless of it being expired or not.
 
         """
-        self.namespacemanager.acquire_read_lock()
+        self.namespace.acquire_read_lock()
         try:    
-            return self.namespacemanager.has_key(self.key)
+            return self.namespace.has_key(self.key)
         finally:
-            self.namespacemanager.release_read_lock()
+            self.namespace.release_read_lock()
 
     def can_have_value(self):
         return self.has_current_value() or self.createfunc is not None  
 
     def has_current_value(self):
-        self.namespacemanager.acquire_read_lock()
+        self.namespace.acquire_read_lock()
         try:    
-            has_value = self.namespacemanager.has_key(self.key)
+            has_value = self.namespace.has_key(self.key)
             if has_value:
-                [self.storedtime, value] = self.namespacemanager[self.key]
+                self.storedtime, self.expiretime, value = self.namespace[self.key]
                 return not self._is_expired()
             else:
                 return False
         finally:
-            self.namespacemanager.release_read_lock()
+            self.namespace.release_read_lock()
 
     def _is_expired(self):
         """Return true if this container's value is expired.
@@ -240,21 +220,21 @@ class Value(object):
         )
 
     def get_value(self):
-        self.namespacemanager.acquire_read_lock()
+        self.namespace.acquire_read_lock()
         try:
             has_value = self.has_value()
             if has_value:
-                [self.storedtime, value] = self.namespacemanager[self.key]
+                self.storedtime, self.expiretime, value = self.namespace[self.key]
                 if not self._is_expired():
                     return value
 
             if not self.createfunc:
                 raise KeyError(self.key)
         finally:
-            self.namespacemanager.release_read_lock()
+            self.namespace.release_read_lock()
 
         has_createlock = False
-        creation_lock = self.namespacemanager.get_creation_lock(self.key)
+        creation_lock = self.namespace.get_creation_lock(self.key)
         if has_value:
             if not creation_lock.acquire(wait=False):
                 debug("get_value returning old value while new one is created")
@@ -270,46 +250,41 @@ class Value(object):
 
         try:
             # see if someone created the value already
-            self.namespacemanager.acquire_read_lock()
+            self.namespace.acquire_read_lock()
             try:
                 if self.has_value():
-                    [self.storedtime, value] = self.namespacemanager[self.key]
+                    self.storedtime, self.expiretime, value = self.namespace[self.key]
                     if not self._is_expired():
                         return value
             finally:
-                self.namespacemanager.release_read_lock()
+                self.namespace.release_read_lock()
 
             debug("get_value creating new value")
-            try:
-                v = self.createfunc()
-            except CreationAbortedError, e:
-                raise
-
+            v = self.createfunc()
             self.set_value(v)
-
             return v
         finally:
             creation_lock.release()
             debug("released create lock")
 
     def set_value(self, value):
-        self.namespacemanager.acquire_write_lock()
+        self.namespace.acquire_write_lock()
         try:
             self.storedtime = time.time()
-            debug("set_value stored time %d", self.storedtime)
-            self.namespacemanager[self.key] = [self.storedtime, value]
+            debug("set_value stored time %r expire time %r", self.storedtime, self.expire_argument)
+            self.namespace.set_value(self.key, (self.storedtime, self.expire_argument, value), expiretime=self.expire_argument)
         finally:
-            self.namespacemanager.release_write_lock()
+            self.namespace.release_write_lock()
 
     def clear_value(self):
-        self.namespacemanager.acquire_write_lock()
+        self.namespace.acquire_write_lock()
         try:
             debug("clear_value")
-            if self.namespacemanager.has_key(self.key):
-                del self.namespacemanager[self.key]
+            if self.namespace.has_key(self.key):
+                del self.namespace[self.key]
             self.storedtime = -1
         finally:
-            self.namespacemanager.release_write_lock()
+            self.namespace.release_write_lock()
 
 
 class MemoryNamespaceManager(NamespaceManager):
@@ -546,15 +521,22 @@ class FileNamespaceManager(NamespaceManager):
 #### legacy stuff to support the old "Container" class interface
 
 namespace_classes = {}
+
+ContainerContext = dict
+    
 class ContainerMeta(type):
     def __init__(cls, classname, bases, dict_):
         namespace_classes[cls] = cls.namespace_class
         return type.__init__(cls, classname, bases, dict_)
     def __call__(self, key, context, namespace, createfunc=None,
                  expiretime=None, starttime=None, **kwargs):
-        nscls = namespace_classes[self]
-        return Value(key, context, namespace, nscls, createfunc=createfunc,
-                     expiretime=expiretime, starttime=starttime, **kwargs)
+        if namespace in context:
+            ns = context[namespace]
+        else:
+            nscls = namespace_classes[self]
+            context[namespace] = ns = nscls(namespace, **kwargs)
+        return Value(key, ns, createfunc=createfunc,
+                     expiretime=expiretime, starttime=starttime)
 
 class Container(object):
     __metaclass__ = ContainerMeta

@@ -5,6 +5,29 @@ Beaker Changelog
   will create new value if the file is deleted as opposed to re-using
   what was last read.  This allows external removal of files to be
   used as a cache-invalidation mechanism.
+* Sending "type" and other namespace config arguments to cache.get()/
+  cache.put()/cache.remove_value() is deprecated.   The namespace configuration is now 
+  preferred at the Cache level, i.e. when you construct a Cache
+  or call cache_manager.get_cache().  This removes the ambiguity
+  of Cache's dictionary interface and has_key() methods, which have
+  no awareness of those arguments.
+* the "expiretime" in use is stored in the cache itself, so that it is 
+  always available when calling has_key() and other methods.  Between
+  this change and the deprecation of 'type', the Cache no longer has
+  any need to store cache configuration in memory per cache key, which in a 
+  dynamically-generated key scenario stores an arbitrarily large number 
+  of configurations - essentially a memory leak.
+* memcache caching has been vastly improved, no longer stores a list of
+  all keys, which along the same theme prevented efficient usage for an 
+  arbitrarily large number of keys.  The keys() method is now unimplemented, 
+  and cache.remove() clears the entire memcache cache across all namespaces.  
+  This is what the memcache API provides so it's the best we can do. 
+* memcache caching passes along "expiretime" to the memcached "time" parameter,
+  so that the cache itself can reduce its size for elements which are
+  expired (memcache seems to manage its size in any case, this is just a hint
+  to improve its operation).
+* replaced homegrown ThreadLocal implementation with threading.local, falls
+  back to a 2.3 compat one for python<2.4
   
 1.0.3 (10/14/2008)
 * Fixed os.getpid issue on GAE.

@@ -7,8 +7,6 @@ from beaker.synchronization import _synchronizers
 from beaker.cache import clsmap
 import thread
 
-context = ContainerContext()
-
 def create(delay=0):
     global baton, totalcreates
     assert baton is None, "baton is not none , ident %r, this thread %r" % (baton, thread.get_ident())
@@ -28,9 +26,9 @@ def runthread(cls, id, runningids, value, delay, kwargs):
 
     try:
         if not value:
-            value = Value('test', context, 'test', cls, 
-                createfunc=lambda:create(delay), 
-                **kwargs)
+            expiretime = kwargs.pop('expiretime', None)
+            starttime = kwargs.pop('starttime', None)
+            value = Value('test', cls('test', **kwargs), createfunc=lambda:create(delay), expiretime=expiretime, starttime=starttime)
             
         global running, totalgets
         try:
@@ -69,9 +67,9 @@ def _runtest(cls, totaltime, expiretime, delay, threadlocal):
         )
     
     if not threadlocal:
-        value = Value('test', context, 'test', cls, 
-            createfunc=lambda:create(delay), 
-            **kwargs)
+        expiretime = kwargs.pop('expiretime', None)
+        starttime = kwargs.pop('starttime', None)
+        value = Value('test', cls('test', **kwargs), createfunc=lambda:create(delay), expiretime=expiretime, starttime=starttime)
         value.clear_value()
     else:
         value = None
@@ -136,16 +134,16 @@ def test_file_container_tlocal():
 def test_file_open_bug():
     """ensure errors raised during reads or writes don't lock the namespace open."""
     
-    value = Value('test', context, 'reentrant_test', clsmap['file'], data_dir='./cache')
+    value = Value('test', clsmap['file']('reentrant_test', data_dir='./cache'))
     
     try:
-        os.remove(value.namespacemanager.file)
+        os.remove(value.namespace.file)
     except OSError:
         pass
     
     value.set_value("x")
 
-    f = open(value.namespacemanager.file, 'w')
+    f = open(value.namespace.file, 'w')
     f.write("BLAH BLAH BLAH")
     f.close()
     
@@ -157,8 +155,8 @@ def test_file_open_bug():
         pass
         
     _synchronizers.clear()
-    context.clear()
-    value = Value('test', context, 'reentrant_test', clsmap['file'], data_dir='./cache')
+
+    value = Value('test', clsmap['file']('reentrant_test', data_dir='./cache'))
 
     # TODO: do we have an assertRaises() in nose to use here ?
     try:
@@ -176,10 +174,10 @@ def test_removing_file_refreshes():
         x[0] += 1
         return x[0]
         
-    value = Value('test', context, 'refresh_test', clsmap['file'], data_dir='./cache', createfunc=create, starttime=time.time())
+    value = Value('test', clsmap['file']('refresh_test', data_dir='./cache'), createfunc=create, starttime=time.time())
     assert value.get_value() == 1
     assert value.get_value() == 1
-    os.remove(value.namespacemanager.file)
+    os.remove(value.namespace.file)
     assert value.get_value() == 2
     
     

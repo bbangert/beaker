@@ -27,7 +27,7 @@ class MemcachedNamespaceManager(NamespaceManager):
         verify_directory(self.lock_dir)            
         
         self.mc = MemcachedNamespaceManager.clients.get(url, 
-            lambda: memcache.Client(url.split(';'), debug=0))
+            memcache.Client, url.split(';'), debug=0)
 
     def get_access_lock(self):
         return null_synchronizer()
@@ -38,65 +38,40 @@ class MemcachedNamespaceManager(NamespaceManager):
 
     def open(self, *args, **params):
         pass
+        
     def close(self, *args, **params):
         pass
 
+    def _format_key(self, key):
+        return self.namespace + '_' + key.replace(' ', '\302\267')
+
     def __getitem__(self, key):
-        ns_key = self.namespace + '_' + key.replace(' ', '\302\267')
-        all_key = self.namespace + ':keys'
-        keys = [ns_key, all_key]
-        key_dict = self.mc.get_multi(keys)
-        if ns_key not in key_dict:
-            raise KeyError(key)
-        return key_dict[ns_key]
+        return self.mc.get(self._format_key(key))
 
     def __contains__(self, key):
-        return self.has_key(key)
+        value = self.mc.get(self._format_key(key))
+        return value is not None
 
     def has_key(self, key):
-        ns_key = self.namespace + '_' + key.replace(' ', '\302\267')
-        all_key = self.namespace + ':keys'
-        keys = [ns_key, all_key]
-        key_dict = self.mc.get_multi(keys)
-        return ns_key in key_dict
+        return key in self
+
+    def set_value(self, key, value, expiretime=None):
+        if expiretime:
+            self.mc.set(self._format_key(key), value, time=expiretime)
+        else:
+            self.mc.set(self._format_key(key), value)
 
     def __setitem__(self, key, value):
-        key = key.replace(' ', '\302\267')
-        keys = self.mc.get(self.namespace + ':keys')
-        if keys is None:
-            keys = {}
-        keys[key] = True
-        self.mc.set(self.namespace + ':keys', keys)
-        self.mc.set(self.namespace + "_" + key, value)
-
+        self.set_value(key, value)
+        
     def __delitem__(self, key):
-        cache_key = key.replace(' ', '\302\267')
-        ns_key = self.namespace + '_' + cache_key
-        all_key = self.namespace + ':keys'
-        keys = [ns_key, all_key]
-        key_dict = self.mc.get_multi(keys)
-        if ns_key in key_dict:
-            self.mc.delete(ns_key)
-            mem_keys = key_dict.get(all_key, {})
-            if cache_key in mem_keys:
-                del mem_keys[cache_key]
-                self.mc.set(all_key, mem_keys)
-        else:
-            raise KeyError
+        self.mc.delete(self._format_key(key))
 
     def do_remove(self):
-        keys = self.mc.get(self.namespace + ':keys')
-        if keys is not None:
-            delete_keys = [self.namespace + '_' + x for x in keys]
-            delete_keys.append(self.namespace + ':keys')
-            self.mc.delete_multi(delete_keys)
+        self.mc.flush_all()
     
     def keys(self):
-        keys = self.mc.get(self.namespace + ':keys')
-        if keys is None:
-            return []
-        else:
-            return [x.replace('\302\267', ' ') for x in keys.keys()]
+        raise NotImplementedError("Memcache caching does not support iteration of all cache keys")
 
 class MemcachedContainer(Container):
     namespace_class = MemcachedNamespaceManager

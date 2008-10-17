@@ -11,6 +11,7 @@ import os
 import string
 import types
 import weakref
+import warnings
 
 try:
     Set = set
@@ -72,6 +73,31 @@ except ImportError:
             # Transform this exception for consistency
             raise TypeError(msg)
 
+try:
+    from threading import local as _tlocal
+except ImportError:
+    try:
+        from dummy_threading import local as _tlocal
+    except ImportError:
+        class _tlocal(object):
+            def __init__(self):
+                self.__dict__['_tdict'] = {}
+
+            def __delattr__(self, key):
+                try:
+                    del self._tdict[(thread.get_ident(), key)]
+                except KeyError:
+                    raise AttributeError(key)
+
+            def __getattr__(self, key):
+                try:
+                    return self._tdict[(thread.get_ident(), key)]
+                except KeyError:
+                    raise AttributeError(key)
+
+            def __setattr__(self, key, value):
+                self._tdict[(thread.get_ident(), key)] = value
+
 
 __all__  = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict",
             "encoded_path", "verify_directory"]
@@ -91,21 +117,31 @@ def verify_directory(dir):
                 raise
 
     
-class ThreadLocal(dict):
-    """stores a value on a per-thread basis"""
+def deprecated(func, message):
+    def deprecated_method(*args, **kargs):
+        warnings.warn(message, DeprecationWarning, 2)
+        return func(*args, **kargs)
+    try:
+        deprecated_method.__name__ = func.__name__
+    except TypeError: # Python < 2.4
+        pass
+    deprecated_method.__doc__ = "%s\n\n%s" % (message, func.__doc__)
+    return deprecated_method
 
+class ThreadLocal(_tlocal):
+    """stores a value on a per-thread basis"""
+    
     def put(self, value):
-        self[_thread.get_ident()] = value
+        self.value = value
     
     def has(self):
-        return _thread.get_ident() in self
+        return hasattr(self, 'value')
             
     def get(self, default=None):
-        return dict.get(self, _thread.get_ident(), default)
+        return getattr(self, 'value', default)
             
     def remove(self):
-        del self[_thread.get_ident()]
-        
+        del self.value
     
 class SyncDict(object):
     """
@@ -155,6 +191,7 @@ class SyncDict(object):
 
     def has_key(self, key):
         return self.dict.has_key(key)
+        
     def __contains__(self, key):
         return self.dict.__contains__(key)
     def __getitem__(self, key):
