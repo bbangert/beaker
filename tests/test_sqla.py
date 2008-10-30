@@ -4,7 +4,7 @@ from beaker.middleware import CacheMiddleware
 from nose import SkipTest
 from webtest import TestApp
 
-if 'ext:sqla' not in clsmap:
+if isinstance(clsmap.get('ext:database'), Exception):
     raise SkipTest('SQLAlchemy extension not installed; skipping test')
 
 import sqlalchemy as sa

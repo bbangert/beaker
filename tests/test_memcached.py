@@ -4,7 +4,7 @@ from beaker.middleware import CacheMiddleware
 from nose import SkipTest
 from webtest import TestApp
 
-if 'ext:memcached' not in clsmap:
+if isinstance(clsmap.get('ext:memcached'), Exception):
     raise SkipTest("'memcache' or 'cmemcache' is not installed, can't test "
                    "memcached backend")
 
