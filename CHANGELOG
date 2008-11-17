@@ -1,7 +1,7 @@
 Beaker Changelog
 ================
 
-1.1 (**tip**)
+1.1 (11/16/2008)
 * file-based cache will not hold onto cached value once read from file;
   will create new value if the file is deleted as opposed to re-using
   what was last read.  This allows external removal of files to be
