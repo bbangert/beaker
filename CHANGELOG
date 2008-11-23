@@ -1,5 +1,8 @@
 Beaker Changelog
 ================
+1.1.1
+* Fixed bug involving lockfiles left open during cache "value creation"
+  step.
 
 1.1 (**tip**)
 * file-based cache will not hold onto cached value once read from file;

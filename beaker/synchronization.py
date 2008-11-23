@@ -239,6 +239,8 @@ class FileSynchronizer(SynchronizerImpl):
                 fcntl.flock(filedescriptor, fcntl.LOCK_SH | fcntl.LOCK_NB)
                 return True
             except IOError:
+                os.close(filedescriptor)
+                self._filedescriptor.remove()
                 return False
         else:
             fcntl.flock(filedescriptor, fcntl.LOCK_SH)
@@ -251,6 +253,8 @@ class FileSynchronizer(SynchronizerImpl):
                 fcntl.flock(filedescriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 return True
             except IOError:
+                os.close(filedescriptor)
+                self._filedescriptor.remove()
                 return False
         else:
             fcntl.flock(filedescriptor, fcntl.LOCK_EX)
