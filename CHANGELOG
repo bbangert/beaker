@@ -1,6 +1,7 @@
 Beaker Changelog
 ================
-1.1.1
+
+1.1.1 (**tip**)
 * Fixed bug involving lockfiles left open during cache "value creation"
   step.
 
