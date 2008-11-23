@@ -19,26 +19,26 @@ clsmap = {
 try:
     import beaker.ext.memcached as memcached
     clsmap['ext:memcached'] = memcached.MemcachedNamespaceManager
-except InvalidCacheBackendError:
-    pass
+except InvalidCacheBackendError, e:
+    clsmap['ext:memcached'] = e
 
 try:
     import beaker.ext.database as database
     clsmap['ext:database'] = database.DatabaseNamespaceManager
-except InvalidCacheBackendError:
-    pass
+except InvalidCacheBackendError, e:
+    clsmap['ext:database'] = e
 
 try:
     import beaker.ext.sqla as sqla
     clsmap['ext:sqla'] = sqla.SqlaNamespaceManager
-except InvalidCacheBackendError:
-    pass
+except InvalidCacheBackendError, e:
+    clsmap['ext:sqla'] = e
 
 try:
     import beaker.ext.google as google
     clsmap['ext:google'] = google.GoogleNamespaceManager
-except (InvalidCacheBackendError, SyntaxError):
-    pass
+except (InvalidCacheBackendError, SyntaxError), e:
+    clsmap['ext:google'] = e
 
 
 class Cache(object):
@@ -47,6 +47,8 @@ class Cache(object):
     def __init__(self, namespace, type='memory', expiretime=None, starttime=None, **nsargs):
         try:
             cls = clsmap[type]
+            if isinstance(cls, InvalidCacheBackendError):
+                raise cls
         except KeyError:
             raise TypeError("Unknown cache implementation %r" % type)
             

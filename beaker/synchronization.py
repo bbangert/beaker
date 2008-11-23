@@ -1,4 +1,11 @@
-"""Synchronization module for keeping state of values in sync"""
+"""Synchronization functions.
+
+File- and mutex-based mutual exclusion synchronizers are provided,
+as well as a name-based mutex which locks within an application
+based on a string name.
+
+"""
+
 import os
 import sys
 import tempfile
@@ -187,8 +194,18 @@ class SynchronizerImpl(object):
 
 
 class FileSynchronizer(SynchronizerImpl):
-    """a synchronizer which locks using flock()."""
+    """a synchronizer which locks using flock().
 
+    Adapted for Python/multithreads from Apache::Session::Lock::File,
+    http://search.cpan.org/src/CWEST/Apache-Session-1.81/Session/Lock/File.pm
+    
+    This module does not unlink temporary files, 
+    because it interferes with proper locking.  This can cause 
+    problems on certain systems (Linux) whose file systems (ext2) do not 
+    perform well with lots of files in one directory.  To prevent this
+    you should use a script to clean out old files from your lock directory.
+    
+    """
     def __init__(self, identifier, lock_dir):
         super(FileSynchronizer, self).__init__()
         self._filedescriptor = util.ThreadLocal()
@@ -222,6 +239,8 @@ class FileSynchronizer(SynchronizerImpl):
                 fcntl.flock(filedescriptor, fcntl.LOCK_SH | fcntl.LOCK_NB)
                 return True
             except IOError:
+                os.close(filedescriptor)
+                self._filedescriptor.remove()
                 return False
         else:
             fcntl.flock(filedescriptor, fcntl.LOCK_SH)
@@ -234,6 +253,8 @@ class FileSynchronizer(SynchronizerImpl):
                 fcntl.flock(filedescriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 return True
             except IOError:
+                os.close(filedescriptor)
+                self._filedescriptor.remove()
                 return False
         else:
             fcntl.flock(filedescriptor, fcntl.LOCK_EX)
@@ -251,14 +272,6 @@ class FileSynchronizer(SynchronizerImpl):
             fcntl.flock(filedescriptor, fcntl.LOCK_UN)
             os.close(filedescriptor)
             self._filedescriptor.remove()
-
-    def __del__(self):
-        if os and os.access(self.filename, os.F_OK):
-            try:
-                os.remove(self.filename)
-            except OSError:
-                # occasionally another thread beats us to it
-                pass                    
 
 
 class ConditionSynchronizer(SynchronizerImpl):

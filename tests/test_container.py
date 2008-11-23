@@ -135,11 +135,8 @@ def test_file_open_bug():
     """ensure errors raised during reads or writes don't lock the namespace open."""
     
     value = Value('test', clsmap['file']('reentrant_test', data_dir='./cache'))
-    
-    try:
+    if os.path.exists(value.namespace.file):
         os.remove(value.namespace.file)
-    except OSError:
-        pass
     
     value.set_value("x")
 
@@ -175,11 +172,9 @@ def test_removing_file_refreshes():
         return x[0]
         
     value = Value('test', clsmap['file']('refresh_test', data_dir='./cache'), createfunc=create, starttime=time.time())
+    if os.path.exists(value.namespace.file):
+        os.remove(value.namespace.file)
     assert value.get_value() == 1
     assert value.get_value() == 1
     os.remove(value.namespace.file)
     assert value.get_value() == 2
-    
-    
-    
-    

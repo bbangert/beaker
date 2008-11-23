@@ -14,9 +14,11 @@ except ImportError:
 class MemcachedNamespaceManager(NamespaceManager):
     clients = SyncDict()
     
-    def __init__(self, namespace, url, data_dir=None, lock_dir=None, **params):
+    def __init__(self, namespace, url=None, data_dir=None, lock_dir=None, **params):
         NamespaceManager.__init__(self, namespace)
-        
+       
+        if not url:
+            raise MissingCacheParameter("url is required") 
         if lock_dir is not None:
             self.lock_dir = lock_dir
         elif data_dir is None:

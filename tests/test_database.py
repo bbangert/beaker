@@ -4,7 +4,7 @@ from beaker.middleware import CacheMiddleware
 from nose import SkipTest
 from webtest import TestApp
 
-if 'ext:database' not in clsmap:
+if isinstance(clsmap.get('ext:database'), Exception):
     raise SkipTest("'sqlalchemy' is not installed, can't test database "
                    "backend")
 

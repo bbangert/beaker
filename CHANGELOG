@@ -1,11 +1,17 @@
 Beaker Changelog
 ================
+1.1.1
+* Fixed bug involving lockfiles left open during cache "value creation"
+  step.
 
 1.1 (11/16/2008)
 * file-based cache will not hold onto cached value once read from file;
   will create new value if the file is deleted as opposed to re-using
   what was last read.  This allows external removal of files to be
   used as a cache-invalidation mechanism.
+* file-based locking will not unlink lockfiles; this can interfere
+  with the flock() mechanism in the event that a concurrent process
+  is accessing the files.  
 * Sending "type" and other namespace config arguments to cache.get()/
   cache.put()/cache.remove_value() is deprecated.   The namespace
   configuration is now preferred at the Cache level, i.e. when you construct
