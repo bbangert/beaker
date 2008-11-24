@@ -1,7 +1,9 @@
 Beaker Changelog
 ================
 
-1.2 (**tip**)
+1.1.2 (11/24/2008)
+* Upgrade Beaker pre-1.1 cache/session values to the new format rather than
+  throwing an exception.
 
 1.1.1 (11/24/2008)
 * Fixed bug in Google extension which passed arguments it should no longer
