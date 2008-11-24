@@ -21,7 +21,7 @@ class GoogleNamespaceManager(NamespaceManager):
     
     def __init__(self, namespace, table_name='beaker_cache', **params):
         """Creates a datastore namespace manager"""
-        NamespaceManager.__init__(self, namespace, **params)
+        NamespaceManager.__init__(self, namespace)
         
         def make_cache():
             table_dict = dict(created=db.DateTimeProperty(),
