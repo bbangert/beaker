@@ -8,12 +8,12 @@ from beaker.middleware import CacheMiddleware
 from beaker.cache import Cache
 from webtest import TestApp
 
-# Tarball of the output of:
+# Tarballs of the output of:
 # >>> from beaker.cache import Cache
 # >>> c = Cache('test', data_dir='db', type='dbm')
 # >>> c['foo'] = 'bar'
-# at [24f57102d310]
-old_cache_tar = """\
+# in the old format, Beaker @ revision: 24f57102d310
+dbm_cache_tar = """\
 eJzt3EtOwkAAgOEBjTHEBDfu2ekKZ6bTTnsBL+ABzPRB4osSRBMXHsNruXDl3nMYLaEbpYRAaIn6
 f8kwhFcn/APLSeNTUTdZsL4/m4Pg21wSqiCt9D1PC6mUZ7Xo+bWvrHB/N3HjXk+MrrLhQ/a48HXL
 nv+l0vg0yYcTdznMxhdpfFvHbpj1lyv0N8oq+jdhrr/b/A5Yo79R9G9ERX8XbXgLrNHfav7/G1Hd
@@ -22,6 +22,16 @@ nv+l0vg0yYcTdznMxhdpfFvHbpj1lyv0N8oq+jdhrr/b/A5Yo79R9G9ERX8XbXgLrNHfav7/G1Hd
 pRjbXgkAAAAAAFjVyc1Idc6U1lYGgbSmL0Mjpe248+PYjY87I91x/UGeb3udAAAAAACgfh+fAAAA
 AADgr/t5/sPFTZ5cb/38D19Lzn9pRHX/zR4CtEZ/o+nfiEX9N3kI0Gr9vWl/W0z0BwAAAAAAAAAA
 AAAAAAAAqPAFyOvcKA==
+""".decode('base64').decode('zlib')
+
+# dumbdbm format
+dumbdbm_cache_tar = """\
+eJzt191qgzAYBmCPvYqc2UGx+ZKY6A3scCe7gJKoha6binOD3f2yn5Ouf3TTlNH3AQlEJcE3nyGV
+W0RT457Jsq9W6632W0Se0JI49/1E0vCIZZPPzHt5HmzPWNQ91M1r/XbwuVP3/6nKLcq2Gey6qftl
+5Z6mWA3n56/IKOQfwk7+dvwV8Iv8FSH/IPbkb4uRl8BZ+fvg/WUE8g9if/62UDZf1VlZOiqc1VSq
+kudGVrKgushNkYuVc5VM/Rups5vjY3wErJU6nD+Z7fyFNFpEjIf4AFeef7Jq22TOZnzOpLiJLz0d
+CGyE+q/scHyMk/Wv+E79G0L9hzC7JSFMpv0PN0+J4rv7xNk+iTuKh07E6aXnB9Mao/7X/fExzt//
+FecS9R8C9v/r9rP+l49tubnk+e/z/J8JjvMfAAAAAAAAAADAn70DFJAAwQ==
 """.decode('base64').decode('zlib')
 
 def simple_app(environ, start_response):
@@ -204,18 +214,24 @@ def test_legacy_cache():
     
 
 def test_upgrade():
-    dir = tempfile.mkdtemp()
-    fd, name = tempfile.mkstemp(dir=dir)
-    fp = os.fdopen(fd, 'w')
-    fp.write(old_cache_tar)
-    fp.close()
-    tar = tarfile.open(name)
-    tar.extractall(dir)
-    tar.close()
-    try:
-        _test_upgrade(os.path.join(dir, 'db'))
-    finally:
-        shutil.rmtree(dir)
+    for mod, tar in (('dbm', dbm_cache_tar),
+                     ('dumbdbm', dumbdbm_cache_tar)):
+        try:
+            __import__(mod)
+        except ImportError:
+            continue
+        dir = tempfile.mkdtemp()
+        fd, name = tempfile.mkstemp(dir=dir)
+        fp = os.fdopen(fd, 'w')
+        fp.write(tar)
+        fp.close()
+        tar = tarfile.open(name)
+        tar.extractall(dir)
+        tar.close()
+        try:
+            _test_upgrade(os.path.join(dir, 'db'))
+        finally:
+            shutil.rmtree(dir)
 
 def _test_upgrade(dir):
     cache = Cache('test', data_dir=dir, type='dbm')
