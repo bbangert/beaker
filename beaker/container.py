@@ -224,7 +224,7 @@ class Value(object):
         try:
             has_value = self.has_value()
             if has_value:
-                self.storedtime, self.expiretime, value = self.namespace[self.key]
+                value = self.__get_value()
                 if not self._is_expired():
                     return value
 
@@ -253,7 +253,7 @@ class Value(object):
             self.namespace.acquire_read_lock()
             try:
                 if self.has_value():
-                    self.storedtime, self.expiretime, value = self.namespace[self.key]
+                    value = self.__get_value()
                     if not self._is_expired():
                         return value
             finally:
@@ -266,6 +266,22 @@ class Value(object):
         finally:
             creation_lock.release()
             debug("released create lock")
+
+    def __get_value(self):
+        value = self.namespace[self.key]
+        try:
+            self.storedtime, self.expiretime, value = value
+        except ValueError:
+            if not len(value) == 2:
+                raise
+            # Old format: upgrade
+            self.storedtime, value = value
+            self.expiretime = self.expire_argument = None
+            debug("get_value upgrading time %r expire time %r", self.storedtime, self.expire_argument)
+            self.namespace.release_read_lock()
+            self.set_value(value)
+            self.namespace.acquire_read_lock()
+        return value
 
     def set_value(self, value):
         self.namespace.acquire_write_lock()

@@ -1,8 +1,28 @@
 # coding: utf-8
+import os
+import shutil
+import tarfile
+import tempfile
 import time
 from beaker.middleware import CacheMiddleware
 from beaker.cache import Cache
 from webtest import TestApp
+
+# Tarball of the output of:
+# >>> from beaker.cache import Cache
+# >>> c = Cache('test', data_dir='db', type='dbm')
+# >>> c['foo'] = 'bar'
+# at [24f57102d310]
+old_cache_tar = """\
+eJzt3EtOwkAAgOEBjTHEBDfu2ekKZ6bTTnsBL+ABzPRB4osSRBMXHsNruXDl3nMYLaEbpYRAaIn6
+f8kwhFcn/APLSeNTUTdZsL4/m4Pg21wSqiCt9D1PC6mUZ7Xo+bWvrHB/N3HjXk+MrrLhQ/a48HXL
+nv+l0vg0yYcTdznMxhdpfFvHbpj1lyv0N8oq+jdhrr/b/A5Yo79R9G9ERX8XbXgLrNHfav7/G1Hd
+30XGhYPMT5JYRbELVGISGVov9SKVRaGNQj2I49TrF+8oxpJrTAMHxizob+b7ay+Y/v5lE1/AP+8v
+9o5ccdsWYvdViMPpIwdCtMRsiP3yTrucd8r5pJxbz8On9/KT2uVo3H5rG1cFAAAAAOD3aIuP7lv3
+pRjbXgkAAAAAAFjVyc1Idc6U1lYGgbSmL0Mjpe248+PYjY87I91x/UGeb3udAAAAAACgfh+fAAAA
+AADgr/t5/sPFTZ5cb/38D19Lzn9pRHX/zR4CtEZ/o+nfiEX9N3kI0Gr9vWl/W0z0BwAAAAAAAAAA
+AAAAAAAAqPAFyOvcKA==
+""".decode('base64').decode('zlib')
 
 def simple_app(environ, start_response):
     clear = False
@@ -183,3 +203,21 @@ def test_legacy_cache():
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '12', type='file', data_dir='./cache') == '10'
     
 
+def test_upgrade():
+    dir = tempfile.mkdtemp()
+    fd, name = tempfile.mkstemp(dir=dir)
+    fp = os.fdopen(fd, 'w')
+    fp.write(old_cache_tar)
+    fp.close()
+    tar = tarfile.open(name)
+    tar.extractall(dir)
+    tar.close()
+    try:
+        _test_upgrade(os.path.join(dir, 'db'))
+    finally:
+        shutil.rmtree(dir)
+
+def _test_upgrade(dir):
+    cache = Cache('test', data_dir=dir, type='dbm')
+    assert cache['foo'] == 'bar'
+    assert cache['foo'] == 'bar'
