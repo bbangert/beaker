@@ -1,7 +1,9 @@
 Beaker Changelog
 ================
 
-1.1.1 (**tip**)
+1.1.1 (11/24/2008)
+* Fixed bug in Google extension which passed arguments it should no longer
+  pass to NamespaceManager.
 * Fixed bug involving lockfiles left open during cache "value creation"
   step.
 
