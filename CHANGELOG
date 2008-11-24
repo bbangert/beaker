@@ -1,6 +1,8 @@
 Beaker Changelog
 ================
 
+1.2 (**tip**)
+
 1.1.1 (11/24/2008)
 * Fixed bug in Google extension which passed arguments it should no longer
   pass to NamespaceManager.
