@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 version = '1.1.1'
 
-pycryptopp = 'pycryptopp>=0.5.7'
+pycryptopp = 'pycryptopp>=0.5.12'
 tests_require = ['nose', 'webtest']
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
     tests_require.extend([pycryptopp, 'SQLALchemy'])
