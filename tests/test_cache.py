@@ -214,26 +214,37 @@ def test_legacy_cache():
     
 
 def test_upgrade():
-    for mod, tar in (('dbm', dbm_cache_tar),
-                     ('dumbdbm', dumbdbm_cache_tar)):
-        try:
-            __import__(mod)
-        except ImportError:
-            continue
-        dir = tempfile.mkdtemp()
-        fd, name = tempfile.mkstemp(dir=dir)
-        fp = os.fdopen(fd, 'w')
-        fp.write(tar)
-        fp.close()
-        tar = tarfile.open(name)
-        tar.extractall(dir)
-        tar.close()
-        try:
-            _test_upgrade(os.path.join(dir, 'db'))
-        finally:
-            shutil.rmtree(dir)
+    for test in _test_upgrade_has_key, _test_upgrade_in, _test_upgrade_setitem:
+        for mod, tar in (('dbm', dbm_cache_tar),
+                         ('dumbdbm', dumbdbm_cache_tar)):
+            try:
+                __import__(mod)
+            except ImportError:
+                continue
+            dir = tempfile.mkdtemp()
+            fd, name = tempfile.mkstemp(dir=dir)
+            fp = os.fdopen(fd, 'w')
+            fp.write(tar)
+            fp.close()
+            tar = tarfile.open(name)
+            tar.extractall(dir)
+            tar.close()
+            try:
+                test(os.path.join(dir, 'db'))
+            finally:
+                shutil.rmtree(dir)
 
-def _test_upgrade(dir):
+def _test_upgrade_has_key(dir):
+    cache = Cache('test', data_dir=dir, type='dbm')
+    assert cache.has_key('foo')
+    assert cache.has_key('foo')
+
+def _test_upgrade_in(dir):
+    cache = Cache('test', data_dir=dir, type='dbm')
+    assert 'foo' in cache
+    assert 'foo' in cache
+
+def _test_upgrade_setitem(dir):
     cache = Cache('test', data_dir=dir, type='dbm')
     assert cache['foo'] == 'bar'
     assert cache['foo'] == 'bar'

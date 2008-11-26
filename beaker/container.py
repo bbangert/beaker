@@ -193,7 +193,7 @@ class Value(object):
         try:    
             has_value = self.namespace.has_key(self.key)
             if has_value:
-                self.storedtime, self.expiretime, value = self.namespace[self.key]
+                value = self.__get_value()
                 return not self._is_expired()
             else:
                 return False
