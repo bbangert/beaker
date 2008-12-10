@@ -7,7 +7,7 @@ class BeakerException(Exception):
 class CreationAbortedError(Exception):
     """deprecated."""
 
-class InvalidCacheBackendError(BeakerException):
+class InvalidCacheBackendError(BeakerException, ImportError):
     pass
 
 
