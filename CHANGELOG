@@ -1,7 +1,10 @@
 Beaker Changelog
 ================
 
-1.2 (**tip**)
+1.1.3 (12/18/2008)
+* Fix the 1.1.2 old cache/session upgrader to handle the has_current_value
+  method.
+* Make InvalidCacheBackendError an ImportError.
 
 1.1.2 (11/24/2008)
 * Upgrade Beaker pre-1.1 cache/session values to the new format rather than
