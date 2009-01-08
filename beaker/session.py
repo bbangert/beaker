@@ -136,18 +136,6 @@ class Session(dict):
         return self['_creation_time']
     created = property(created)
 
-    def delete(self):
-        """Deletes the session from the persistent storage, and sends
-        an expired cookie out"""
-        if self.use_cookies:
-            self._delete_cookie()
-        if hasattr(self, 'namespace'):
-            self.namespace.acquire_write_lock()
-            try:
-                self.namespace.remove()
-            finally:
-                self.namespace.release_write_lock()
-
     def _delete_cookie(self):
         self.request['set_cookie'] = True
         self.cookie[self.key] = self.id
@@ -162,54 +150,76 @@ class Session(dict):
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = True
 
+
+    def delete(self):
+        """Deletes the session from the persistent storage, and sends
+        an expired cookie out"""
+        if self.use_cookies:
+            self._delete_cookie()
+        self._remove_session_dict()
+
     def invalidate(self):
         """Invalidates this session, creates a new session id, returns
         to the is_new state"""
-        if hasattr(self, 'namespace'):
-            namespace = self.namespace
-            namespace.acquire_write_lock()
-            try:
-                namespace.remove()
-            finally:
-                namespace.release_write_lock()
-            
+
+        self._remove_session_dict()
         self.was_invalidated = True
         self._create_id()
         self.load()
- 
+
+    def _session_dict_from_namespace(self):
+        now = time.time()
+        try:
+            session_data = self.namespace['session']
+            self.accessed = session_data['_accessed_time']
+            session_data['_accessed_time'] = now
+        except KeyError:
+            session_data = {
+                '_creation_time':now
+            }
+            self.is_new = True
+            self.namespace['_accessed_time'] = self.accessed = now
+        return session_data
+
+    def _remove_session_dict(self):
+        if hasattr(self, 'namespace'):
+            self.namespace.acquire_write_lock()
+            try:
+                del self.namespace['session']
+            finally:
+                self.namespace.release_write_lock()
+    
+    def _persist_session_dict(self, session_dict):
+        self.namespace['session'] = session_dict
+        
     def load(self):
         "Loads the data from this session from persistent storage"
-        self.namespace = namespace = self.namespace_class(self.id,
+        self.namespace = self.namespace_class(self.id,
             data_dir=self.data_dir, digest_filenames=False,
             **self.namespace_args)
         
         self.request['set_cookie'] = True
         
-        namespace.acquire_write_lock()
+        self.namespace.acquire_write_lock()
         try:
             self.clear()
-            now = time.time()
             
-            if not '_creation_time' in namespace:
-                namespace['_creation_time'] = now
-                self.is_new = True
-            try:
-                self.accessed = namespace['_accessed_time']
-                namespace['_accessed_time'] = now
-            except KeyError:
-                namespace['_accessed_time'] = self.accessed = now
-            
+            session_data = self._session_dict_from_namespace()
+                
             if self.timeout is not None and now - self.accessed > self.timeout:
                 self.invalidate()
             else:
+                self.update(session_data)
                 for k in namespace.keys():
                     self[k] = namespace[k]
-        
+                    
+            self._persist_session_dict(session_data)        
         finally:
-            namespace.release_write_lock()
+            self.namespace.release_write_lock()
     
     def save(self):
         "Saves the data for this session to persistent storage"
+
         if not hasattr(self, 'namespace'):
             self.namespace = self.namespace_class(
                                     self.id, 
@@ -219,24 +229,22 @@ class Session(dict):
 
         self.namespace.acquire_write_lock()
         try:
-            if not '_creation_time' in self.namespace:
-                self.is_new = True
+            session_data = self._session_dict_from_namespace(self.namespace)
+            session_data.update(self)
             
-            keys = self.keys()
-            for k in Set(self.namespace.keys()).difference(keys):
-                del self.namespace[k]
-                    
-            for k in keys:
-                self.namespace[k] = self[k]
+            for key in list(session_data):
+                if key not in self and key not in ('_accessed_time', '_creation_time'):
+                    del session_data[key]
             
-            now = time.time()
-            self.namespace['_accessed_time'] = self['_accessed_time'] = now
-            self.namespace['_creation_time'] = self['_creation_time'] = now
+            self._persist_session_dict(session_data)        
         finally:
             self.namespace.release_write_lock()
         if self.is_new:
             self.request['set_cookie'] = True
     
+    # TODO: I think both these methods should be removed.  They're from
+    # the original mod_python code i was ripping off but they really
+    # have no use here.
     def lock(self):
         """Locks this session against other processes/threads.  This is
         automatic when load/save is called.
