@@ -161,7 +161,6 @@ class Session(dict):
     def invalidate(self):
         """Invalidates this session, creates a new session id, returns
         to the is_new state"""
-
         self._remove_session_dict()
         self.was_invalidated = True
         self._create_id()
@@ -175,10 +174,11 @@ class Session(dict):
             session_data['_accessed_time'] = now
         except KeyError:
             session_data = {
-                '_creation_time':now
+                '_creation_time':now,
+                '_accessed_time':now
             }
             self.is_new = True
-            self.namespace['_accessed_time'] = self.accessed = now
+            self.accessed = now
         return session_data
 
     def _remove_session_dict(self):
@@ -197,7 +197,7 @@ class Session(dict):
         self.namespace = self.namespace_class(self.id,
             data_dir=self.data_dir, digest_filenames=False,
             **self.namespace_args)
-        
+        now = time.time()
         self.request['set_cookie'] = True
         
         self.namespace.acquire_write_lock()
@@ -210,10 +210,8 @@ class Session(dict):
                 self.invalidate()
             else:
                 self.update(session_data)
-                for k in namespace.keys():
-                    self[k] = namespace[k]
                     
-            self._persist_session_dict(session_data)        
+            self._persist_session_dict(session_data)
         finally:
             self.namespace.release_write_lock()
     
@@ -229,7 +227,7 @@ class Session(dict):
 
         self.namespace.acquire_write_lock()
         try:
-            session_data = self._session_dict_from_namespace(self.namespace)
+            session_data = self._session_dict_from_namespace()
             session_data.update(self)
             
             for key in list(session_data):
