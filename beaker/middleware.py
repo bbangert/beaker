@@ -150,7 +150,8 @@ class SessionMiddleware(object):
         environ['beaker.get_session'] = self._get_session
         
         def session_start_response(status, headers, exc_info = None):
-            if session.__dict__['_sess'] is not None:
+            if session.dirty() or (session.accessed() and self.options.get('auto')):
+                session.persist()
                 if session.__dict__['_headers']['set_cookie']:
                     cookie = session.__dict__['_headers']['cookie_out']
                     if cookie:

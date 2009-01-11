@@ -150,18 +150,17 @@ class Session(dict):
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = True
 
-
     def delete(self):
         """Deletes the session from the persistent storage, and sends
         an expired cookie out"""
         if self.use_cookies:
             self._delete_cookie()
-        self._remove_session_dict()
+        self.clear()
 
     def invalidate(self):
         """Invalidates this session, creates a new session id, returns
         to the is_new state"""
-        self._remove_session_dict()
+        self.clear()
         self.was_invalidated = True
         self._create_id()
         self.load()
@@ -170,7 +169,6 @@ class Session(dict):
         now = time.time()
         try:
             session_data = self.namespace['session']
-            self.accessed = session_data['_accessed_time']
             session_data['_accessed_time'] = now
         except KeyError:
             session_data = {
@@ -178,19 +176,14 @@ class Session(dict):
                 '_accessed_time':now
             }
             self.is_new = True
-            self.accessed = now
+        self.accessed = session_data['_accessed_time']
         return session_data
-
-    def _remove_session_dict(self):
-        if hasattr(self, 'namespace'):
-            self.namespace.acquire_write_lock()
-            try:
-                del self.namespace['session']
-            finally:
-                self.namespace.release_write_lock()
     
     def _persist_session_dict(self, session_dict):
-        self.namespace['session'] = session_dict
+        if not session_dict:
+            del self.namespace['session']
+        else:
+            self.namespace['session'] = session_dict
         
     def load(self):
         "Loads the data from this session from persistent storage"
@@ -200,24 +193,27 @@ class Session(dict):
         now = time.time()
         self.request['set_cookie'] = True
         
-        self.namespace.acquire_write_lock()
+        self.namespace.acquire_read_lock()
         try:
             self.clear()
-            
             session_data = self._session_dict_from_namespace()
-                
+            
             if self.timeout is not None and now - self.accessed > self.timeout:
                 self.invalidate()
             else:
                 self.update(session_data)
-                    
-            self._persist_session_dict(session_data)
+            self.accessed_dict = session_data.copy()
         finally:
-            self.namespace.release_write_lock()
+            self.namespace.release_read_lock()
     
-    def save(self):
-        "Saves the data for this session to persistent storage"
-
+    def save(self, accessed_only=False):
+        """Saves the data for this session to persistent storage
+        
+        If accessed_only is True, then only the original data loaded
+        at the beginning of the request will be saved, with the updated
+        last accessed time.
+        
+        """
         if not hasattr(self, 'namespace'):
             self.namespace = self.namespace_class(
                                     self.id, 
@@ -227,18 +223,21 @@ class Session(dict):
 
         self.namespace.acquire_write_lock()
         try:
-            session_data = self._session_dict_from_namespace()
-            session_data.update(self)
-            
-            for key in list(session_data):
-                if key not in self and key not in ('_accessed_time', '_creation_time'):
-                    del session_data[key]
-            
-            self._persist_session_dict(session_data)        
+            if accessed_only:
+                data = dict(self.accessed_dict.items())
+            else:
+                data = dict(self.items())
+            self._persist_session_dict(data)
         finally:
             self.namespace.release_write_lock()
         if self.is_new:
             self.request['set_cookie'] = True
+    
+    def revert(self):
+        """Revert the session to its original state from its first
+        access in the request"""
+        self.clear()
+        self.update(self.accessed_dict)
     
     # TODO: I think both these methods should be removed.  They're from
     # the original mod_python code i was ripping off but they really
@@ -332,6 +331,7 @@ class CookieSession(Session):
             if self.timeout is not None and time.time() - \
                self['_accessed_time'] > self.timeout:
                 self.clear()
+            self.accessed_dict = self.copy()
             self._create_cookie()
     
     def created(self):
@@ -376,8 +376,11 @@ class CookieSession(Session):
             ).hexdigest()
         ).hexdigest()
     
-    def save(self):
+    def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage"""
+        if accessed_only:
+            self.clear()
+            self.update(self.accessed_dict)
         self._create_cookie()
     
     def expire(self):
@@ -391,7 +394,6 @@ class CookieSession(Session):
         if '_id' not in self:
             self['_id'] = self._make_id()
         self['_accessed_time'] = time.time()
-        
         
         if self.cookie_expires is not True:
             if self.cookie_expires is False:
@@ -497,6 +499,31 @@ class SessionObject(object):
         params = self.__dict__['_params']
         session = Session({}, use_cookies=False, id=id, **params)
         if session.is_new:
-            session.namespace.remove()
             return None
         return session
+    
+    def save(self):
+        self.__dict__['_dirty'] = True
+    
+    def persist(self):
+        """Persist the session to the storage
+        
+        If its set to autosave, then the entire session will be saved
+        regardless of if save() has been called. Otherwise, just the
+        accessed time will be updated if save() was not called, or
+        the session will be saved if save() was called.
+        
+        """
+        if self.__dict__['_params'].get('auto'):
+            self._session.save()
+        else:
+            if self.__dict__['_dirty']:
+                self._session().save()
+            else:
+                self._session().save(accessed_only=True)
+    
+    def dirty(self):
+        return self.__dict__.get('_dirty', False)
+    
+    def accessed(self):
+        return self.__dict__['_sess'] is not None

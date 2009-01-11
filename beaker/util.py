@@ -279,6 +279,7 @@ def coerce_session_params(params):
         ('secure', (bool, types.NoneType), "Session secure must be a boolean."),
         ('timeout', (int, types.NoneType), "Session timeout must be an "
          "integer."),
+        ('auto', (bool, types.NoneType), "Session is created if accessed."),
     ]
     return verify_rules(params, rules)
 
