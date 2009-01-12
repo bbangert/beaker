@@ -78,6 +78,7 @@ class Session(dict):
         self.secret = secret
         self.secure = secure
         self.id = id
+        self.accessed_dict = {}
             
         if self.use_cookies:
             cookieheader = request.get('cookie', '')
@@ -180,7 +181,7 @@ class Session(dict):
         return session_data
     
     def _persist_session_dict(self, session_dict):
-        if not session_dict:
+        if not session_dict and 'session' in self.namespace:
             del self.namespace['session']
         else:
             self.namespace['session'] = session_dict

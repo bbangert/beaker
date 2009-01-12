@@ -40,7 +40,7 @@ def simple_auto_app(environ, start_response):
     else:
         session.save()
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %d, session id is %s' % (session['value'],
+    return ['The current value is: %d, session id is %s' % (session.get('value', 0),
                                                             session.id)]
 
 
@@ -77,6 +77,20 @@ def test_different_sessions():
     assert 'current value is: 2' in res2
     assert 'current value is: 4' in res
 
+def test_different_sessions_auto():
+    app = TestApp(SessionMiddleware(simple_auto_app, auto=True))
+    app2 = TestApp(SessionMiddleware(simple_auto_app, auto=True))
+    res = app.get('/')
+    assert 'current value is: 1' in res
+    res = app2.get('/')
+    assert 'current value is: 1' in res
+    res = app2.get('/')
+    res = app2.get('/')
+    res = app2.get('/')
+    res2 = app.get('/')
+    assert 'current value is: 2' in res2
+    assert 'current value is: 4' in res
+
 def test_nosave():
     app = TestApp(SessionMiddleware(simple_app))
     res = app.get('/nosave')
@@ -89,6 +103,25 @@ def test_nosave():
     assert 'current value is: 1' in res
     assert len(res.headers.getall('Set-Cookie')) > 0
     res = app.get('/')
+    assert [] == res.headers.getall('Set-Cookie')
+    assert 'current value is: 2' in res
+
+def test_revert():
+    app = TestApp(SessionMiddleware(simple_auto_app, auto=True))
+    res = app.get('/nosave')
+    assert 'current value is: 0' in res
+    res = app.get('/nosave')
+    assert 'current value is: 0' in res
+    
+    res = app.get('/')
+    assert 'current value is: 1' in res
+    assert [] == res.headers.getall('Set-Cookie')
+    res = app.get('/')
+    assert [] == res.headers.getall('Set-Cookie')
+    assert 'current value is: 2' in res
+    
+    # Finally, ensure that reverting shows the proper one
+    res = app.get('/nosave')
     assert [] == res.headers.getall('Set-Cookie')
     assert 'current value is: 2' in res
 
