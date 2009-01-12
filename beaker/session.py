@@ -515,7 +515,7 @@ class SessionObject(object):
         
         """
         if self.__dict__['_params'].get('auto'):
-            self._session.save()
+            self._session().save()
         else:
             if self.__dict__['_dirty']:
                 self._session().save()

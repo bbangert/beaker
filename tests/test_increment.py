@@ -23,6 +23,27 @@ def simple_app(environ, start_response):
     return ['The current value is: %d, session id is %s' % (session['value'],
                                                             session.id)]
 
+def simple_auto_app(environ, start_response):
+    """Like the simple_app, but assume that sessions auto-save"""
+    session = environ['beaker.session']
+    sess_id = environ.get('SESSION_ID')
+    if sess_id:
+        session = session.get_by_id(sess_id)
+    if not session:
+        start_response('200 OK', [('Content-type', 'text/plain')])
+        return ["No session id of %s found." % sess_id]
+    if not session.has_key('value'):
+        session['value'] = 0
+    session['value'] += 1
+    if environ['PATH_INFO'].startswith('/nosave'):
+        session.revert()
+    else:
+        session.save()
+    start_response('200 OK', [('Content-type', 'text/plain')])
+    return ['The current value is: %d, session id is %s' % (session['value'],
+                                                            session.id)]
+
+
 def test_increment():
     app = TestApp(SessionMiddleware(simple_app))
     res = app.get('/')
@@ -31,6 +52,16 @@ def test_increment():
     assert 'current value is: 2' in res
     res = app.get('/')
     assert 'current value is: 3' in res
+
+def test_increment_auto():
+    app = TestApp(SessionMiddleware(simple_auto_app, auto=True))
+    res = app.get('/')
+    assert 'current value is: 1' in res
+    res = app.get('/')
+    assert 'current value is: 2' in res
+    res = app.get('/')
+    assert 'current value is: 3' in res
+
 
 def test_different_sessions():
     app = TestApp(SessionMiddleware(simple_app))
