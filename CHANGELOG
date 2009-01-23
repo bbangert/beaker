@@ -1,7 +1,7 @@
 Beaker Changelog
 ================
 
-1.2 (**tip**)
+1.2 (1/22/2009)
 * Updated session to only save to the storage *once* no under any/all
   conditions rather than every time save() is called.
 * Added session.revert() function that reverts the session to the state at
