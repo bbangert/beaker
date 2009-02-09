@@ -171,7 +171,7 @@ class Session(dict):
         try:
             session_data = self.namespace['session']
             session_data['_accessed_time'] = now
-        except KeyError:
+        except (KeyError, TypeError):
             session_data = {
                 '_creation_time':now,
                 '_accessed_time':now

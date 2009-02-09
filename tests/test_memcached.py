@@ -1,6 +1,8 @@
 # coding: utf-8
+import os
+
 from beaker.cache import clsmap, Cache
-from beaker.middleware import CacheMiddleware
+from beaker.middleware import CacheMiddleware, SessionMiddleware
 from nose import SkipTest
 from webtest import TestApp
 
@@ -9,6 +11,29 @@ if isinstance(clsmap.get('ext:memcached'), Exception):
                    "memcached backend")
 
 mc_url = '127.0.0.1:11211'
+loc = os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), 'sessions'])
+
+def simple_session_app(environ, start_response):
+    session = environ['beaker.session']
+    sess_id = environ.get('SESSION_ID')
+    if environ['PATH_INFO'].startswith('/invalid'):
+        # Attempt to access the session
+        id = session.id
+        session['value'] = 2
+    else:
+        if sess_id:
+            session = session.get_by_id(sess_id)
+        if not session:
+            start_response('200 OK', [('Content-type', 'text/plain')])
+            return ["No session id of %s found." % sess_id]
+        if not session.has_key('value'):
+            session['value'] = 0
+        session['value'] += 1
+        if not environ['PATH_INFO'].startswith('/nosave'):
+            session.save()
+    start_response('200 OK', [('Content-type', 'text/plain')])
+    return ['The current value is: %d, session id is %s' % (session['value'],
+                                                            session.id)]
 
 def simple_app(environ, start_response):
     extra_args = {}
@@ -28,6 +53,7 @@ def simple_app(environ, start_response):
     cache.set_value('value', value+1)
     start_response('200 OK', [('Content-type', 'text/plain')])
     return ['The current value is: %s' % cache.get_value('value')]
+
 
 def using_none_app(environ, start_response):
     extra_args = {}
@@ -64,6 +90,23 @@ def cache_manager_app(environ, start_response):
     else:
         yield "test_key wasn't cleared, is: %s\n" % \
             cm.get_cache('test')['test_key']
+
+
+def test_session():
+    app = TestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
+    res = app.get('/')
+    assert 'current value is: 1' in res
+    res = app.get('/')
+    assert 'current value is: 2' in res
+    res = app.get('/')
+    assert 'current value is: 3' in res
+
+
+def test_session_invalid():
+    app = TestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
+    res = app.get('/invalid', headers=dict(Cookie='beaker.session.id=df7324911e246b70b5781c3c58328442; Path=/'))
+    assert 'current value is: 2' in res
+
 
 def test_has_key():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')

@@ -1,6 +1,10 @@
 Beaker Changelog
 ================
 
+1.2.1 (**tip**)
+* Fix memcached behavior as memcached returns None on nonexistent key
+  fetch which broke invalid session checking.
+
 1.2 (1/22/2009)
 * Updated session to only save to the storage *once* no under any/all
   conditions rather than every time save() is called.
