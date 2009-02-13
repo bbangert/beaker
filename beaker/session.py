@@ -506,6 +506,10 @@ class SessionObject(object):
     def save(self):
         self.__dict__['_dirty'] = True
     
+    def delete(self):
+        self.__dict__['_dirty'] = True
+        self._session().delete()
+    
     def persist(self):
         """Persist the session to the storage
         
