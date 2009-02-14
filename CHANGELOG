@@ -1,8 +1,8 @@
 Beaker Changelog
 ================
 
-1.2.2 (**tip**)
-* Fix delete but reported by andres with session not being deleted.
+1.2.2 (2/14/2008)
+* Fix delete bug reported by andres with session not being deleted.
 
 1.2.1 (2/09/2008)
 * Fix memcached behavior as memcached returns None on nonexistent key
