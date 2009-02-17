@@ -1,10 +1,16 @@
 Beaker Changelog
 ================
+1.2.3
+* data_dir/lock_dir parameters are optional to most backends; if not
+  present, mutex-based locking will be used for creation functions
+* Adjustments to Container to better account for backends which
+  don't provide read/write locks, such as memcached.  As a result,
+  the plain "memory" cache no longer requires read/write mutexing.
 
-1.2.2 (2/14/2008)
+1.2.2 (2/14/2009)
 * Fix delete bug reported by andres with session not being deleted.
 
-1.2.1 (2/09/2008)
+1.2.1 (2/09/2009)
 * Fix memcached behavior as memcached returns None on nonexistent key
   fetch which broke invalid session checking.
 

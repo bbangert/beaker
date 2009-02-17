@@ -8,11 +8,12 @@ import time
 import beaker.util as util
 from beaker.exceptions import CreationAbortedError, MissingCacheParameter
 from beaker.synchronization import _threading, file_synchronizer, \
-     mutex_synchronizer, NameLock
+     mutex_synchronizer, NameLock, null_synchronizer
 
 __all__ = ['Value', 'Container', 'ContainerContext',
            'MemoryContainer', 'DBMContainer', 'NamespaceManager',
            'MemoryNamespaceManager', 'DBMNamespaceManager', 'FileContainer',
+           'OpenResourceNamespaceManager',
            'FileNamespaceManager', 'CreationAbortedError']
 
 
@@ -48,24 +49,24 @@ class NamespaceManager(object):
     """
     def __init__(self, namespace):
         self.namespace = namespace
-        self.openers = 0
-        self.mutex = _threading.Lock()
-        self.access_lock = self.get_access_lock()
         
     def get_creation_lock(self, key):
         raise NotImplementedError()
 
-    def get_access_lock(self):
-        raise NotImplementedError()
-        
-    def do_open(self, flags): 
-        raise NotImplementedError()
-        
-    def do_close(self): 
-        raise NotImplementedError()
-
     def do_remove(self):
         raise NotImplementedError()
+
+    def acquire_read_lock(self):
+        pass
+
+    def release_read_lock(self):
+        pass
+
+    def acquire_write_lock(self, wait=True):
+        return True
+
+    def release_write_lock(self):
+        pass
 
     def has_key(self, key):
         return self.__contains__(key)
@@ -93,6 +94,31 @@ class NamespaceManager(object):
         raise NotImplementedError()
     
     def keys(self):
+        raise NotImplementedError()
+    
+    def remove(self):
+        self.do_remove()
+        
+
+class OpenResourceNamespaceManager(NamespaceManager):
+    """A NamespaceManager where read/write operations require opening/
+    closing of a resource which is possibly mutexed.
+    
+    """
+
+    def __init__(self, namespace):
+        NamespaceManager.__init__(self, namespace)
+        self.access_lock = self.get_access_lock()
+        self.openers = 0
+        self.mutex = _threading.Lock()
+
+    def get_access_lock(self):
+        raise NotImplementedError()
+
+    def do_open(self, flags): 
+        raise NotImplementedError()
+
+    def do_close(self): 
         raise NotImplementedError()
 
     def acquire_read_lock(self): 
@@ -160,7 +186,6 @@ class NamespaceManager(object):
         finally:
             self.access_lock.release_write_lock()
 
-
 class Value(object):
     __slots__ = 'key', 'createfunc', 'expiretime', 'expire_argument', 'starttime', 'storedtime',\
                 'namespace'
@@ -224,10 +249,14 @@ class Value(object):
         try:
             has_value = self.has_value()
             if has_value:
-                value = self.__get_value()
-                if not self._is_expired():
-                    return value
-
+                try:
+                    value = self.__get_value()
+                    if not self._is_expired():
+                        return value
+                except KeyError:
+                    # guard against un-mutexed backends raising KeyError
+                    pass
+                    
             if not self.createfunc:
                 raise KeyError(self.key)
         finally:
@@ -253,9 +282,13 @@ class Value(object):
             self.namespace.acquire_read_lock()
             try:
                 if self.has_value():
-                    value = self.__get_value()
-                    if not self._is_expired():
-                        return value
+                    try:
+                        value = self.__get_value()
+                        if not self._is_expired():
+                            return value
+                    except KeyError:
+                        # guard against un-mutexed backends raising KeyError
+                        pass
             finally:
                 self.namespace.release_read_lock()
 
@@ -297,7 +330,11 @@ class Value(object):
         try:
             debug("clear_value")
             if self.namespace.has_key(self.key):
-                del self.namespace[self.key]
+                try:
+                    del self.namespace[self.key]
+                except KeyError:
+                    # guard against un-mutexed backends raising KeyError
+                    pass
             self.storedtime = -1
         finally:
             self.namespace.release_write_lock()
@@ -310,23 +347,12 @@ class MemoryNamespaceManager(NamespaceManager):
         NamespaceManager.__init__(self, namespace)
         self.dictionary = MemoryNamespaceManager.namespaces.get(self.namespace,
                                                                 dict)
-    
-    def get_access_lock(self):
-        return mutex_synchronizer(
-            identifier="memorycontainer/namespacelock/%s" % self.namespace)
-        
     def get_creation_lock(self, key):
         return NameLock(
             identifier="memorycontainer/funclock/%s/%s" % (self.namespace, key),
             reentrant=True
         )
-        
-    def open(self, *args, **kwargs):
-        pass
-        
-    def close(self, *args, **kwargs):
-        pass
-    
+
     def __getitem__(self, key): 
         return self.dictionary[key]
 
@@ -349,7 +375,7 @@ class MemoryNamespaceManager(NamespaceManager):
         return self.dictionary.keys()
 
 
-class DBMNamespaceManager(NamespaceManager):
+class DBMNamespaceManager(OpenResourceNamespaceManager):
     def __init__(self, namespace, dbmmodule=None, data_dir=None, 
             dbm_dir=None, lock_dir=None, digest_filenames=True, **kwargs):
         self.digest_filenames = digest_filenames
@@ -373,7 +399,7 @@ class DBMNamespaceManager(NamespaceManager):
         self.dbmmodule = dbmmodule or anydbm
 
         self.dbm = None
-        NamespaceManager.__init__(self, namespace)
+        OpenResourceNamespaceManager.__init__(self, namespace)
 
         self.file = util.encoded_path(root= self.dbm_dir,
                                       identifiers=[self.namespace],
@@ -451,7 +477,7 @@ class DBMNamespaceManager(NamespaceManager):
         return self.dbm.keys()
 
 
-class FileNamespaceManager(NamespaceManager):
+class FileNamespaceManager(OpenResourceNamespaceManager):
     def __init__(self, namespace, data_dir=None, file_dir=None, lock_dir=None,
                  digest_filenames=True, **kwargs):
         self.digest_filenames = digest_filenames
@@ -471,7 +497,7 @@ class FileNamespaceManager(NamespaceManager):
         else:
             self.lock_dir = data_dir + "/container_file_lock"
         util.verify_directory(self.lock_dir)
-        NamespaceManager.__init__(self, namespace)
+        OpenResourceNamespaceManager.__init__(self, namespace)
 
         self.file = util.encoded_path(root=self.file_dir, 
                                       identifiers=[self.namespace],

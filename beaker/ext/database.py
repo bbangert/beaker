@@ -2,7 +2,7 @@ import cPickle
 import logging
 from datetime import datetime
 
-from beaker.container import NamespaceManager, Container
+from beaker.container import OpenResourceNamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer, null_synchronizer
 from beaker.util import verify_directory, SyncDict
@@ -22,7 +22,7 @@ except ImportError:
 if not hasattr(sa, 'BoundMetaData'):
     sa_version = '0.4'
 
-class DatabaseNamespaceManager(NamespaceManager):
+class DatabaseNamespaceManager(OpenResourceNamespaceManager):
     metadatas = SyncDict()
     tables = SyncDict()
     
@@ -43,19 +43,17 @@ class DatabaseNamespaceManager(NamespaceManager):
         ``table_name``
             The table name to use in the database for the cache.
         """
-        NamespaceManager.__init__(self, namespace)
+        OpenResourceNamespaceManager.__init__(self, namespace)
         
         if sa_opts is None:
             sa_opts = params
-        
-        if lock_dir is not None:
+
+        if lock_dir:
             self.lock_dir = lock_dir
-        elif data_dir is None:
-            raise MissingCacheParameter("data_dir or lock_dir is required")
-        else:
+        elif data_dir:
             self.lock_dir = data_dir + "/container_db_lock"
-        
-        verify_directory(self.lock_dir)
+        if self.lock_dir:
+            verify_directory(self.lock_dir)            
         
         # Check to see if the table's been created before
         url = url or sa_opts['sa.url']
