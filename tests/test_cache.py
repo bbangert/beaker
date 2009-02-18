@@ -227,7 +227,8 @@ def test_upgrade():
             fp.write(tar)
             fp.close()
             tar = tarfile.open(name)
-            tar.extractall(dir)
+            for member in tar.getmembers():
+                tar.extract(member, dir)
             tar.close()
             try:
                 test(os.path.join(dir, 'db'))
