@@ -165,26 +165,7 @@ class Session(dict):
         self.was_invalidated = True
         self._create_id()
         self.load()
-
-    def _session_dict_from_namespace(self):
-        try:
-            session_data = self.namespace['session']
-        except (KeyError, TypeError):
-            now = time.time()
-            session_data = {
-                '_creation_time':now,
-                '_accessed_time':now
-            }
-            self.is_new = True
-        self.accessed = session_data['_accessed_time']
-        return session_data
     
-    def _persist_session_dict(self, session_dict):
-        if not session_dict and 'session' in self.namespace:
-            del self.namespace['session']
-        else:
-            self.namespace['session'] = session_dict
-        
     def load(self):
         "Loads the data from this session from persistent storage"
         self.namespace = self.namespace_class(self.id,
@@ -196,14 +177,30 @@ class Session(dict):
         self.namespace.acquire_read_lock()
         try:
             self.clear()
-            session_data = self._session_dict_from_namespace()
+            try:
+                session_data = self.namespace['session']
+
+                # Memcached always returns a key, its None when its not
+                # present
+                if session_data is None:
+                    session_data = {
+                        '_creation_time':now,
+                        '_accessed_time':now
+                    }
+                    self.is_new = True
+            except (KeyError, TypeError):
+                session_data = {
+                    '_creation_time':now,
+                    '_accessed_time':now
+                }
+                self.is_new = True
             
-            if self.timeout is not None and now - self.accessed > self.timeout:
+            if self.timeout is not None and now - session_data['_accessed_time'] > self.timeout:
                 self.invalidate()
             else:
+                session_data['_accessed_time'] = now
                 self.update(session_data)
-            self.accessed = self['_accessed_time'] = now
-            self.accessed_dict = session_data.copy()
+                self.accessed_dict = session_data.copy()
         finally:
             self.namespace.release_read_lock()
     
@@ -228,7 +225,12 @@ class Session(dict):
                 data = dict(self.accessed_dict.items())
             else:
                 data = dict(self.items())
-            self._persist_session_dict(data)
+            
+            # Save the data
+            if not data and 'session' in self.namespace:
+                del self.namespace['session']
+            else:
+                self.namespace['session'] = data
         finally:
             self.namespace.release_write_lock()
         if self.is_new:
