@@ -167,11 +167,10 @@ class Session(dict):
         self.load()
 
     def _session_dict_from_namespace(self):
-        now = time.time()
         try:
             session_data = self.namespace['session']
-            session_data['_accessed_time'] = now
         except (KeyError, TypeError):
+            now = time.time()
             session_data = {
                 '_creation_time':now,
                 '_accessed_time':now
@@ -203,6 +202,7 @@ class Session(dict):
                 self.invalidate()
             else:
                 self.update(session_data)
+            self.accessed = self['_accessed_time'] = now
             self.accessed_dict = session_data.copy()
         finally:
             self.namespace.release_read_lock()

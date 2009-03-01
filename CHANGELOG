@@ -1,6 +1,10 @@
 Beaker Changelog
 ================
 
+1.2.3 (**tip**)
+* Fix accessed increment to take place *after* the accessed time is checked
+  to see if it has expired. Fixes #580.
+
 1.2.2 (2/14/2008)
 * Fix delete bug reported by andres with session not being deleted.
 
