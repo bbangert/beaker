@@ -90,8 +90,7 @@ class Cache(object):
         kwargs.update(kw)
         c = Cache(self.namespace.namespace, type=type, **kwargs)
         return c._get_value(key, expiretime=expiretime, createfunc=createfunc, starttime=starttime)
-    _legacy_get_value = util.deprecated(_legacy_get_value, "Specifying a 'type' and other namespace configuration with cache.get()/put()/etc. is depreacted.  Specify 'type' and other namespace configuration to cache_manager.get_cache() and/or the Cache constructor instead.")
-    
+    _legacy_get_value = util.deprecated(_legacy_get_value, "Specifying a 'type' and other namespace configuration with cache.get()/put()/etc. is deprecated. Specify 'type' and other namespace configuration to cache_manager.get_cache() and/or the Cache constructor instead.")
     def clear(self):
         self.namespace.remove()
     

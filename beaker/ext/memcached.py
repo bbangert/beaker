@@ -19,30 +19,20 @@ class MemcachedNamespaceManager(NamespaceManager):
        
         if not url:
             raise MissingCacheParameter("url is required") 
-        if lock_dir is not None:
-            self.lock_dir = lock_dir
-        elif data_dir is None:
-            raise MissingCacheParameter("data_dir or lock_dir is required")
-        else:
-            self.lock_dir = data_dir + "/container_mcd_lock"
         
-        verify_directory(self.lock_dir)            
+        if lock_dir:
+            self.lock_dir = lock_dir
+        elif data_dir:
+            self.lock_dir = data_dir + "/container_mcd_lock"
+        if self.lock_dir:
+            verify_directory(self.lock_dir)            
         
         self.mc = MemcachedNamespaceManager.clients.get(url, 
             memcache.Client, url.split(';'), debug=0)
 
-    def get_access_lock(self):
-        return null_synchronizer()
-
     def get_creation_lock(self, key):
         return file_synchronizer(
             identifier="memcachedcontainer/funclock/%s" % self.namespace,lock_dir = self.lock_dir)
-
-    def open(self, *args, **params):
-        pass
-        
-    def close(self, *args, **params):
-        pass
 
     def _format_key(self, key):
         return self.namespace + '_' + key.replace(' ', '\302\267')

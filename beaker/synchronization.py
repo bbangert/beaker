@@ -72,7 +72,7 @@ def _synchronizer(identifier, cls, **kwargs):
 
 
 def file_synchronizer(identifier, **kwargs):
-    if not has_flock:
+    if not has_flock or 'lock_dir' not in kwargs:
         return mutex_synchronizer(identifier)
     else:
         return _synchronizer(identifier, FileSynchronizer, **kwargs)
