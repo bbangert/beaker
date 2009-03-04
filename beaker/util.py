@@ -293,3 +293,16 @@ def coerce_cache_params(params):
         ('type', (str,), "Session type must be a string."),
     ]
     return verify_rules(params, rules)
+
+
+def parse_cache_config_options(config):
+    # Load default cache options
+    options= dict(type='memory', data_dir=None, timeout=None, 
+                       log_file=None)
+    for key, val in config.iteritems():
+        if key.startswith('beaker.cache.'):
+            options[key[13:]] = val
+        if key.startswith('cache.'):
+            options[key[6:]] = val
+    coerce_cache_params(options)
+    return options
