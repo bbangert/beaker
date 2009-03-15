@@ -2,6 +2,8 @@ Beaker Changelog
 ================
 
 1.3 (**tip**)
+* Fix bug that caused a non-auto accessed session to not record the time it
+  was previously accessed resulting in session timeouts.
 * Add function to parse configuration dicts as appropriate for use with the
   CacheManager.
 

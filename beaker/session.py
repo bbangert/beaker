@@ -524,7 +524,7 @@ class SessionObject(object):
         if self.__dict__['_params'].get('auto'):
             self._session().save()
         else:
-            if self.__dict__['_dirty']:
+            if self.__dict__.get('_dirty'):
                 self._session().save()
             else:
                 self._session().save(accessed_only=True)
