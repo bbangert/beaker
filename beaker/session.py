@@ -111,6 +111,7 @@ class Session(dict):
                               getpid())).hexdigest(), 
         ).hexdigest()
         self.is_new = True
+        self.last_accessed = None
         if self.use_cookies:
             self.cookie[self.key] = self.id
             if self.cookie_domain:
@@ -197,7 +198,12 @@ class Session(dict):
             
             if self.timeout is not None and now - session_data['_accessed_time'] > self.timeout:
                 self.invalidate()
+                self.last_accessed = session['_accessed_time']
             else:
+                if self.is_new:
+                    self.last_accessed = None
+                else:
+                    self.last_accessed = session['_accessed_time']
                 session_data['_accessed_time'] = now
                 self.update(session_data)
                 self.accessed_dict = session_data.copy()
