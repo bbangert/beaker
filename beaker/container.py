@@ -321,7 +321,7 @@ class Value(object):
         try:
             self.storedtime = time.time()
             debug("set_value stored time %r expire time %r", self.storedtime, self.expire_argument)
-            self.namespace.set_value(self.key, (self.storedtime, self.expire_argument, value), expiretime=self.expire_argument)
+            self.namespace.set_value(self.key, (self.storedtime, self.expire_argument, value))
         finally:
             self.namespace.release_write_lock()
 
