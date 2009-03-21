@@ -96,6 +96,7 @@ class Session(dict):
         self.is_new = self.id is None
         if self.is_new:
             self._create_id()
+            self['_accessed_time'] = self['_creation_time'] = time.time()
         else:
             try:
                 self.load()
@@ -381,6 +382,8 @@ class CookieSession(Session):
     
     def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage"""
+        if accessed_only and self.is_new:
+            return
         if accessed_only:
             self.clear()
             self.update(self.accessed_dict)
