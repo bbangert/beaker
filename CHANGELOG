@@ -2,6 +2,9 @@ Beaker Changelog
 ================
 
 1.3 (**tip**)
+* Added cache.region decorator to the CacheManager object.
+* Added cache regions. Can be provided in a configuration INI type, or
+  by adding in a cache_regions arg to the CacheManager.
 * Fix bug with timeout not being saved properly.
 * Fix bug with cookie-only sessions sending cookies for new sessions even
   if they weren't supposed to be saved.
@@ -9,6 +12,11 @@ Beaker Changelog
   was previously accessed resulting in session timeouts.
 * Add function to parse configuration dicts as appropriate for use with the
   CacheManager.
+* The "expiretime" is no longer passed to the memcached backend - since
+  if memcached makes the expired item unavailable at the same time the
+  container expires it, then all actors must block until the new value
+  is available (i.e. breaks the anti-dogpile logic).
+
 
 1.2.3 (3/2/2009)
 * Fix accessed increment to take place *after* the accessed time is checked

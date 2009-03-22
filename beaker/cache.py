@@ -6,7 +6,7 @@ specifying an alternate type when used.
 
 """
 import beaker.container as container
-from beaker.exceptions import InvalidCacheBackendError
+from beaker.exceptions import BeakerException, InvalidCacheBackendError
 import beaker.util as util
 
 
@@ -115,8 +115,63 @@ class CacheManager(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.caches = {}
+        self.regions = kwargs.pop('cache_regions', {})
     
     def get_cache(self, name, **kwargs):
         kw = self.kwargs.copy()
         kw.update(kwargs)
         return self.caches.setdefault(name + str(kw), Cache(name, **kw))
+    
+    def get_cache_region(self, name, region):
+        if region not in self.regions:
+            raise BeakerException('Cache region not configured: %s' % region)
+        kw = self.regions[region]
+        return self.caches.setdefault(name + str(kw), Cache(name, **kw))
+    
+    def region(self, region, *args):
+        """Decorate a function to cache itself using a cache region
+        
+        The arguments are used as the key for the function.
+        
+        
+        Example::
+            
+            # Assuming a cache object is available like:
+            cache = CacheManager(dict_of_config_options)
+            
+            
+            def populate_things():
+                
+                @cache.region('short_term', 'some_data')
+                def load(search_term, limit, offset):
+                    return load_the_data(search_term, limit, offset)
+                
+                return load('some_term', 20, 0)
+        
+        .. note::
+            
+            The function being decorated must only be called with
+            positional arguments.
+        
+        """
+        cache = [None]
+        key = " ".join(str(x) for x in args)
+        
+        def decorate(func):
+            def cached(*args):
+                reg = self.regions[region]
+                if not reg.get('enabled', True):
+                    return func(*args)
+                
+                if not cache[0]:
+                    namespace = util.func_namespace(func)
+                    cache[0] = self.get_cache_region(namespace, region)
+                
+                cache_key = key + " " + " ".join(str(x) for x in args)
+                def go():
+                    return func(*args)
+                
+                return cache[0].get_value(cache_key, createfunc=go,
+                                          expiretime=reg['expire'])
+            return cached
+        return decorate

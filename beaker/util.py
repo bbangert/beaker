@@ -238,9 +238,12 @@ def verify_options(opt, types, error):
         coerced = False
         for typ in types:
             try:
-                if typ == bool:
-                    typ = asbool
-                opt = typ(opt)
+                if typ in (list, tuple):
+                    opt = [x.strip() for x in opt.split(',')]
+                else:
+                    if typ == bool:
+                        typ = asbool
+                    opt = typ(opt)
                 coerced = True
             except:
                 pass
@@ -290,14 +293,20 @@ def coerce_cache_params(params):
          "referring to a directory."),
         ('lock_dir', (str,), "lock_dir must be a string referring to a "
          "directory."),
-        ('type', (str,), "Session type must be a string."),
+        ('type', (str,), "Cache type must be a string."),
+        ('enabled', (bool, types.NoneType), "enabled must be true/false "
+         "if present."),
+        ('expire', (int, types.NoneType), "expire must be an integer representing "
+         "how many seconds the cache is valid for"),
+        ('regions', (list, tuple, types.NoneType), "Regions must be a "
+         "comma seperated list of valid regions")
     ]
     return verify_rules(params, rules)
 
 
 def parse_cache_config_options(config):
     # Load default cache options
-    options= dict(type='memory', data_dir=None, timeout=None, 
+    options= dict(type='memory', data_dir=None, expire=None, 
                        log_file=None)
     for key, val in config.iteritems():
         if key.startswith('beaker.cache.'):
@@ -305,4 +314,39 @@ def parse_cache_config_options(config):
         if key.startswith('cache.'):
             options[key[6:]] = val
     coerce_cache_params(options)
+    
+    # Set cache to enabled if not turned off
+    if 'enabled' not in options:
+        options['enabled'] = True
+    
+    # Configure region dict if regions are available
+    regions = options.pop('regions', None)
+    if regions:
+        region_configs = {}
+        for region in regions:
+            # Setup the default cache options
+            region_options = dict(data_dir=options.get('data_dir'),
+                                  lock_dir=options.get('lock_dir'),
+                                  type=options.get('type'),
+                                  enabled=options['enabled'],
+                                  expire=options.get('expire'))
+            region_len = len(region) + 1
+            for key in options.keys():
+                if key.startswith('%s.' % region):
+                    region_options[key[region_len:]] = options.pop(key)
+            coerce_cache_params(region_options)
+            region_configs[region] = region_options
+        options['cache_regions'] = region_configs
     return options
+
+def func_namespace(func):
+    """Generates a unique namespace for a function"""
+    kls = None
+    if hasattr(func, 'im_func'):
+        kls = func.im_class
+        func = func.im_func
+    
+    if kls:
+        return '%s.%s' % (kls.__module__, kls.__name__)
+    else:
+        return func.__module__
