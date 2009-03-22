@@ -131,7 +131,10 @@ class CacheManager(object):
     def region(self, region, *args):
         """Decorate a function to cache itself using a cache region
         
-        The arguments are used as the key for the function.
+        The region decorator requires arguments if there are more than
+        2 of the same named function, in the same module. This is
+        because the namespace used for the functions cache is based on
+        the functions name and the module.
         
         
         Example::
