@@ -149,7 +149,7 @@ class CacheManager(object):
                 def load(search_term, limit, offset):
                     return load_the_data(search_term, limit, offset)
                 
-                return load('some_term', 20, 0)
+                return load('rabbits', 20, 0)
         
         .. note::
             
