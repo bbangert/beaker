@@ -79,7 +79,7 @@ class Session(dict):
         self.secure = secure
         self.id = id
         self.accessed_dict = {}
-            
+        
         if self.use_cookies:
             cookieheader = request.get('cookie', '')
             if secret:
@@ -176,6 +176,7 @@ class Session(dict):
         self.request['set_cookie'] = True
         
         self.namespace.acquire_read_lock()
+        timed_out = False
         try:
             self.clear()
             try:
@@ -197,13 +198,15 @@ class Session(dict):
                 self.is_new = True
             
             if self.timeout is not None and now - session_data['_accessed_time'] > self.timeout:
-                self.invalidate()
+                timed_out= True
             else:
                 session_data['_accessed_time'] = now
                 self.update(session_data)
                 self.accessed_dict = session_data.copy()
         finally:
             self.namespace.release_read_lock()
+        if timed_out:
+            self.invalidate()
     
     def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage
