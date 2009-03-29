@@ -197,7 +197,8 @@ class Session(dict):
                 }
                 self.is_new = True
             
-            if self.timeout is not None and now - session_data['_accessed_time'] > self.timeout:
+            if self.timeout is not None and \
+               now - session_data['_accessed_time'] > self.timeout:
                 timed_out= True
             else:
                 session_data['_accessed_time'] = now
