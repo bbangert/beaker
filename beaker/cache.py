@@ -5,17 +5,45 @@ associated backend. The backends can be rotated on the fly by
 specifying an alternate type when used.
 
 """
+import pkg_resources
+import warnings
+
 import beaker.container as container
-from beaker.exceptions import BeakerException, InvalidCacheBackendError
 import beaker.util as util
+from beaker.exceptions import BeakerException, InvalidCacheBackendError
 
-
+# Initialize the basic available backends
 clsmap = {
           'memory':container.MemoryNamespaceManager,
           'dbm':container.DBMNamespaceManager,
           'file':container.FileNamespaceManager,
           }
 
+
+# Load up the additional entry point defined backends
+for entry_point in pkg_resources.iter_entry_points('beaker.backends'):
+    try:
+        NamespaceManager = entry_point.load()
+        name = entry_point.name
+        if name in clsmap:
+            raise BeakerException("NamespaceManager name conflict,'%s' "
+                                  "already loaded" % name)
+        clsmap[name] = NamespaceManager
+    except:
+        import sys
+        from pkg_resources import DistributionNotFound
+        # Warn when there's a problem loading a NamespaceManager
+        if not isinstance(sys.exc_info()[1], DistributionNotFound):
+            import traceback
+            from StringIO import StringIO
+            tb = StringIO()
+            traceback.print_exc(file=tb)
+            warnings.warn("Unable to load NamespaceManager entry point: '%s': "
+                          "%s" % (entry_point, tb.getvalue()), RuntimeWarning,
+                          2)
+
+
+# Load legacy-style backends
 try:
     import beaker.ext.memcached as memcached
     clsmap['ext:memcached'] = memcached.MemcachedNamespaceManager
@@ -43,8 +71,8 @@ except (InvalidCacheBackendError, SyntaxError), e:
 
 class Cache(object):
     """Front-end to the containment API implementing a data cache."""
-
-    def __init__(self, namespace, type='memory', expiretime=None, starttime=None, **nsargs):
+    def __init__(self, namespace, type='memory', expiretime=None,
+                 starttime=None, **nsargs):
         try:
             cls = clsmap[type]
             if isinstance(cls, InvalidCacheBackendError):
@@ -89,8 +117,13 @@ class Cache(object):
         kwargs = self.nsargs.copy()
         kwargs.update(kw)
         c = Cache(self.namespace.namespace, type=type, **kwargs)
-        return c._get_value(key, expiretime=expiretime, createfunc=createfunc, starttime=starttime)
-    _legacy_get_value = util.deprecated(_legacy_get_value, "Specifying a 'type' and other namespace configuration with cache.get()/put()/etc. is deprecated. Specify 'type' and other namespace configuration to cache_manager.get_cache() and/or the Cache constructor instead.")
+        return c._get_value(key, expiretime=expiretime, createfunc=createfunc, 
+                            starttime=starttime)
+    _legacy_get_value = util.deprecated(_legacy_get_value, "Specifying a "
+        "'type' and other namespace configuration with cache.get()/put()/etc. "
+        "is deprecated. Specify 'type' and other namespace configuration to "
+        "cache_manager.get_cache() and/or the Cache constructor instead.")
+    
     def clear(self):
         self.namespace.remove()
     

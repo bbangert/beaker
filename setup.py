@@ -146,7 +146,14 @@ The latest developer version is available in a `Mercurial repository
       entry_points="""
           [paste.filter_factory]
           beaker_session = beaker.middleware:session_filter_factory
+          
           [paste.filter_app_factory]
           beaker_session = beaker.middleware:session_filter_app_factory
+          
+          [beaker.backends]
+          database = beaker.ext.database:DatabaseNamespaceManager
+          memcached = beaker.ext.memcached:MemcachedNamespaceManager
+          google = beaker.ext.google:GoogleNamespaceManager
+          sqla = beaker.ext.sqla:SqlaNamespaceManager
       """,
 )
