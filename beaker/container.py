@@ -105,7 +105,6 @@ class OpenResourceNamespaceManager(NamespaceManager):
     closing of a resource which is possibly mutexed.
     
     """
-
     def __init__(self, namespace):
         NamespaceManager.__init__(self, namespace)
         self.access_lock = self.get_access_lock()
