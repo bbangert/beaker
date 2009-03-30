@@ -237,6 +237,25 @@ class CacheManager(object):
         ``kwargs``
             parameters to be passed to get_cache(), will override defaults
 
+        Example::
+
+            # Assuming a cache object is available like:
+            cache = CacheManager(dict_of_config_options)
+            
+            
+            def populate_things():
+                
+                @cache.cache('mycache', expire=15)
+                def load(search_term, limit, offset):
+                    return load_the_data(search_term, limit, offset)
+                
+                return load('rabbits', 20, 0)
+        
+        .. note::
+            
+            The function being decorated must only be called with
+            positional arguments. 
+
         """
         cache = [None]
         key = " ".join(str(x) for x in args)
