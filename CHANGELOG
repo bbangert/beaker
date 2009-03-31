@@ -2,6 +2,8 @@ Beaker Changelog
 ================
 
 1.3 (**tip**)
+* Added last_accessed attribute to session to indicate the previous time the
+  session was last accessed.
 * Added setuptools entry points to dynamically discover additional namespace
   backends.
 * Fixed bug with invalidate and locks, fixes #594.
