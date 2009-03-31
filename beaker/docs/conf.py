@@ -189,3 +189,6 @@ latex_preamble = '''
 
 # If false, no module index is generated.
 latex_use_modindex = False
+
+# Added to handle docs in middleware.py
+autoclass_content = "both"
