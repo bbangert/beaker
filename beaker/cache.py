@@ -73,9 +73,25 @@ except (InvalidCacheBackendError, SyntaxError), e:
 
 
 class Cache(object):
-    """Front-end to the containment API implementing a data cache."""
+    """Front-end to the containment API implementing a data cache.
+
+    ``namespace``
+        the namespace of this Cache
+
+    ``type``
+        type of cache to use
+
+    ``expire``
+        seconds to keep cached data
+
+    ``expiretime``
+        seconds to keep cached data (legacy support)
+
+    ``starttime``
+        time when cache was cache was
+    """
     def __init__(self, namespace, type='memory', expiretime=None,
-                 starttime=None, **nsargs):
+                 starttime=None, expire=None, **nsargs):
         try:
             cls = clsmap[type]
             if isinstance(cls, InvalidCacheBackendError):
@@ -84,7 +100,7 @@ class Cache(object):
             raise TypeError("Unknown cache implementation %r" % type)
             
         self.namespace = cls(namespace, **nsargs)
-        self.expiretime = expiretime
+        self.expiretime = expiretime or expire
         self.starttime = starttime
         self.nsargs = nsargs
         
@@ -210,7 +226,52 @@ class CacheManager(object):
                 def go():
                     return func(*args)
                 
-                return cache[0].get_value(cache_key, createfunc=go,
-                                          expiretime=reg['expire'])
+                return cache[0].get_value(cache_key, createfunc=go)
+            return cached
+        return decorate
+
+    def cache(self, *args, **kwargs):
+        """Decorate a function to cache itself with supplied parameters
+
+        ``args`` 
+            used to make the key unique for this function, as in region()
+            above.
+
+        ``kwargs``
+            parameters to be passed to get_cache(), will override defaults
+
+        Example::
+
+            # Assuming a cache object is available like:
+            cache = CacheManager(dict_of_config_options)
+            
+            
+            def populate_things():
+                
+                @cache.cache('mycache', expire=15)
+                def load(search_term, limit, offset):
+                    return load_the_data(search_term, limit, offset)
+                
+                return load('rabbits', 20, 0)
+        
+        .. note::
+            
+            The function being decorated must only be called with
+            positional arguments. 
+
+        """
+        cache = [None]
+        key = " ".join(str(x) for x in args)
+        
+        def decorate(func):
+            def cached(*args):
+                if not cache[0]:
+                    namespace = util.func_namespace(func)
+                    cache[0] = self.get_cache(namespace, **kwargs)
+                cache_key = key + " " + " ".join(str(x) for x in args)
+                def go():
+                    return func(*args)
+
+                return cache[0].get_value(cache_key, createfunc=go)
             return cached
         return decorate
