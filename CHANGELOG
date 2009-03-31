@@ -7,6 +7,7 @@ Beaker Changelog
 * Added setuptools entry points to dynamically discover additional namespace
   backends.
 * Fixed bug with invalidate and locks, fixes #594.
+* Added cache.cache decorator for arbitrary caching.
 * Added cache.region decorator to the CacheManager object.
 * Added cache regions. Can be provided in a configuration INI type, or
   by adding in a cache_regions arg to the CacheManager.
