@@ -43,7 +43,8 @@ def simple_auto_app(environ, start_response):
 
 
 def test_increment():
-    app = TestApp(SessionMiddleware(simple_app))
+    options = {'session.data_dir':loc, 'session.secret':'blah'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -52,7 +53,8 @@ def test_increment():
     assert 'current value is: 3' in res
 
 def test_increment_auto():
-    app = TestApp(SessionMiddleware(simple_auto_app, auto=True))
+    options = {'session.data_dir':loc, 'session.secret':'blah'}
+    app = TestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -62,8 +64,9 @@ def test_increment_auto():
 
 
 def test_different_sessions():
-    app = TestApp(SessionMiddleware(simple_app))
-    app2 = TestApp(SessionMiddleware(simple_app))
+    options = {'session.data_dir':loc, 'session.secret':'blah'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    app2 = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app2.get('/')
@@ -76,8 +79,9 @@ def test_different_sessions():
     assert 'current value is: 4' in res
 
 def test_different_sessions_auto():
-    app = TestApp(SessionMiddleware(simple_auto_app, auto=True))
-    app2 = TestApp(SessionMiddleware(simple_auto_app, auto=True))
+    options = {'session.data_dir':loc, 'session.secret':'blah'}
+    app = TestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
+    app2 = TestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app2.get('/')
@@ -90,7 +94,8 @@ def test_different_sessions_auto():
     assert 'current value is: 4' in res
 
 def test_nosave():
-    app = TestApp(SessionMiddleware(simple_app))
+    options = {'session.data_dir':loc, 'session.secret':'blah'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/nosave')
     assert 'current value is: 1' in res
     res = app.get('/nosave')
@@ -102,7 +107,8 @@ def test_nosave():
     assert 'current value is: 2' in res
 
 def test_revert():
-    app = TestApp(SessionMiddleware(simple_auto_app, auto=True))
+    options = {'session.data_dir':loc, 'session.secret':'blah'}
+    app = TestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
     res = app.get('/nosave')
     assert 'current value is: 0' in res
     res = app.get('/nosave')

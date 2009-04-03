@@ -71,10 +71,7 @@ class Session(dict):
         self.data_dir = data_dir
         self.key = key
         
-        if timeout:
-            self.timeout = timedelta(seconds=timeout)
-        else:
-            self.timeout = None
+        self.timeout = timeout
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
         self.cookie_domain = cookie_domain
@@ -208,10 +205,10 @@ class Session(dict):
             else:
                 # Properly set the last_accessed time, which is different
                 # than the *currently* _accessed_time
-                if self.is_new:
+                if self.is_new or '_accessed_time' not in session_data:
                     self.last_accessed = None
                 else:
-                    self.last_accessed = session['_accessed_time']
+                    self.last_accessed = session_data['_accessed_time']
                 
                 # Update the current _accessed_time
                 session_data['_accessed_time'] = now
@@ -221,7 +218,6 @@ class Session(dict):
             self.namespace.release_read_lock()
         if timed_out:
             self.invalidate()
-            self.last_accessed = session['_accessed_time']
     
     def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage
