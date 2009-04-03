@@ -70,7 +70,11 @@ class Session(dict):
         self.request = request
         self.data_dir = data_dir
         self.key = key
-        self.timeout = timeout
+        
+        if timeout:
+            self.timeout = timedelta(seconds=timeout)
+        else:
+            self.timeout = None
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
         self.cookie_domain = cookie_domain
