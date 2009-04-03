@@ -125,7 +125,7 @@ def runtest(s):
                 break
 
     if failed:
-        raise "test failed"
+        raise Exception("test failed")
 
     print "total object creates %d" % totalcreates
     print "total object gets %d" % totalgets
