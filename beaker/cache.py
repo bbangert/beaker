@@ -4,6 +4,8 @@ The Cache object is used to manage a set of cache files and their
 associated backend. The backends can be rotated on the fly by
 specifying an alternate type when used.
 
+Advanced users can add new backends in beaker.backends
+
 """
 import pkg_resources
 import warnings
