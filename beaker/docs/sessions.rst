@@ -127,6 +127,24 @@ used::
     
     session.invalidate()
 
+Removing Expired/Old Sessions
+-----------------------------
+
+Beaker does **not** automatically delete expired or old cookies on any of its
+back-ends. This task is left up to the developer based on how sessions are
+being used, and on what back-end.
+
+The database backend records the last accessed time as a column in the database
+so a script could be run to delete session rows in the database that haven't
+been used in a long time.
+
+When using the file-based sessions, a script could run to remove files that
+haven't been touched in a long time, for example (in the session's data dir):
+
+.. code-block:: bash
+    
+    find . -mtime +3 -exec rm {} \;
+
 
 Cookie-Based
 ============
