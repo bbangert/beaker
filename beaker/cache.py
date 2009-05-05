@@ -167,6 +167,13 @@ class Cache(object):
 
 class CacheManager(object):
     def __init__(self, **kwargs):
+        """Initialize a CacheManager object with a set of options
+        
+        Options should be parsed with the
+        :func:`~beaker.util.parse_cache_config_options` function to
+        ensure only valid options are used.
+        
+        """
         self.kwargs = kwargs
         self.caches = {}
         self.regions = kwargs.pop('cache_regions', {})

@@ -305,6 +305,8 @@ def coerce_cache_params(params):
 
 
 def parse_cache_config_options(config):
+    """Parse configuration options and validate for use with the
+    CacheManager"""
     # Load default cache options
     options= dict(type='memory', data_dir=None, expire=None, 
                        log_file=None)

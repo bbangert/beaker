@@ -106,7 +106,7 @@ class SessionMiddleware(object):
             environ
         
         ``**kwargs``
-            All keyword arguments are assumed to be cache settings and
+            All keyword arguments are assumed to be session settings and
             will override any settings found in ``config``
 
         """

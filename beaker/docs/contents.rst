@@ -7,6 +7,7 @@ Beaker Documentation
    configuration
    sessions
    caching
+   changes
    
 
 Indices and tables
@@ -33,3 +34,5 @@ Module Listing
     modules/memcached
     modules/sqla
     modules/pbkdf2
+    
+    glossary
