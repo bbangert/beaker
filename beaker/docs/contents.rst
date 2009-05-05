@@ -7,6 +7,10 @@ Beaker Documentation
    configuration
    sessions
    caching
+
+.. toctree::
+   :maxdepth: 1
+
    changes
    
 
@@ -16,6 +20,7 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+* :ref:`glossary`
 
 Module Listing
 --------------
@@ -35,4 +40,4 @@ Module Listing
     modules/sqla
     modules/pbkdf2
     
-    glossary
+    

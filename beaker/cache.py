@@ -111,6 +111,7 @@ class Cache(object):
     set_value = put
     
     def get(self, key, **kw):
+        """Retrieve a cached value from the container"""
         return self._get_value(key, **kw).get_value()
     get_value = get
     
@@ -118,6 +119,7 @@ class Cache(object):
         mycontainer = self._get_value(key, **kw)
         if mycontainer.has_current_value():
             mycontainer.clear_value()
+    remove = remove_value
 
     def _get_value(self, key, **kw):
         if isinstance(key, unicode):
@@ -146,6 +148,7 @@ class Cache(object):
         "cache_manager.get_cache() and/or the Cache constructor instead.")
     
     def clear(self):
+        """Clear all the values from the namespace"""
         self.namespace.remove()
     
     # dict interface

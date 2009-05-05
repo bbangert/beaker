@@ -450,12 +450,15 @@ class CookieSession(Session):
         self.request['set_cookie'] = True
     
     def delete(self):
+        """Delete the cookie, and clear the session"""
         # Send a delete cookie request
         self._delete_cookie()
         self.clear()
     
-    # Alias invalidate to delete
-    invalidate = delete
+    def invalidate(self):
+        """Clear the contents and start a new session"""
+        self.delete()
+        self['_id'] = self._make_id()
 
 
 class SessionObject(object):

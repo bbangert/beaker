@@ -7,9 +7,9 @@ Module Contents
 ---------------
 
 .. autoclass:: CookieSession
-   :members: save, expire, delete
+   :members: save, expire, delete, invalidate
 .. autoclass:: Session
-   :members: save, revert, lock, unlock
+   :members: save, revert, lock, unlock, delete, invalidate
 .. autoclass:: SessionObject
    :members: persist
 .. autoclass:: SignedCookie

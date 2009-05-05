@@ -171,6 +171,9 @@ To use Beaker's cookie-based session encryption, `pycryptopp`_ must be
 installed. These options should then be used *instead* of the ``secret``
 option listed above.
 
+Since 256-bit AES encryption is used, **both of these keys must be
+16 characters in length**.
+
 encrypt_key (**required**, string)
     Encryption key to use for the AES cipher. This should be a fairly long
     randomly generated string.
@@ -203,6 +206,8 @@ expire (**optional**, integer)
 
 Cache Region Options
 --------------------
+
+.. _cache_region_options:
 
 Starting in Beaker 1.3, cache regions are now supported. These can be thought
 of as bundles of configuration options to apply, rather than specifying the

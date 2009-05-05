@@ -9,6 +9,8 @@
       any Python based application.</p>
   
   <ul>
+      <li><b>Lazy-Loading Sessions:</b> No performance hit for having sessions active in
+          a request unless they're actually used</li>
       <li><b>Performance:</b> Utilizes a multiple-reader / single-writer locking
           system to prevent the 
           <a href="http://hype-free.blogspot.com/2008/05/avoiding-dogpile-effect.html">Dog Pile effect</a>
@@ -32,6 +34,21 @@
       <li><a href="http://groovie.org/2007/12/17/beaker-0-9-cookie-stored-sessions-and-crypto">Beaker 0.9, cookie-stored sessions, and crypto</a></li>
   </ul>
 
+  <h2>Documentation</h2>
+  <table class="contentstable" align="center" style="margin-left: 30px"><tr>
+    <td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("contents") }}">Contents</a><br/>
+         <span class="linkdescr">for a complete overview</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("search") }}">Search page</a><br/>
+         <span class="linkdescr">search the documentation</span></p>
+    </td><td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("genindex") }}">General Index</a><br/>
+         <span class="linkdescr">all functions, classes, terms</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("modindex") }}">Module Index</a><br/>
+         <span class="linkdescr">quick access to all documented modules</span></p>
+    </td></tr>
+  </table>
+  
   <p>Download <a href="http://beaker.groovie.org/beaker.pdf">Beaker PDF documentation</a>.</p>
 
   <h2>Source</h2>

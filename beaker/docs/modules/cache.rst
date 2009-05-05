@@ -7,5 +7,6 @@ Module Contents
 ---------------
 
 .. autoclass:: Cache
+    :members: get, clear
 .. autoclass:: CacheManager
-   :members: region, cache
+    :members: region, cache
