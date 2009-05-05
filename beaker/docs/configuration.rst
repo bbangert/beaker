@@ -228,7 +228,6 @@ regions (**optional**, list, tuple)
             'cache.short_term.expire': '3600',
             'cache.long_term.type': 'file',
             'cache.long_term.expire': '86400',
-        }
 
 
 .. _Pylons: http://pylonshq.com/
