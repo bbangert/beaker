@@ -10,7 +10,8 @@ except:
 
 from beaker.cache import CacheManager
 from beaker.session import Session, SessionObject
-from beaker.util import coerce_cache_params, coerce_session_params
+from beaker.util import coerce_cache_params, coerce_session_params, \
+    parse_cache_config_options
 
 
 class CacheMiddleware(object):
@@ -44,24 +45,12 @@ class CacheMiddleware(object):
         self.app = app
         config = config or {}
         
-        # Load up the default params
-        self.options= dict(type='memory', data_dir=None, timeout=None, 
-                           log_file=None)
+        self.options = {}
         
         # Pull out any config args starting with beaker cache. if there are any
         for dct in [config, kwargs]:
-            for key, val in dct.iteritems():
-                if key.startswith('beaker.cache.'):
-                    self.options[key[13:]] = val
-                if key.startswith('cache.'):
-                    self.options[key[6:]] = val
-                if key.startswith('cache_'):
-                    warnings.warn('Cache options should start with cache. '
-                                  'instead of cache_', DeprecationWarning, 2)
-                    self.options[key[6:]] = val
-        
-        # Coerce and validate cache params
-        coerce_cache_params(self.options)
+            parsed_opts = parse_cache_config_options(dct)
+            self.options.update(parsed_opts)
         
         # Assume all keys are intended for cache if none are prefixed with
         # 'cache.'
