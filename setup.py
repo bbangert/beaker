@@ -37,6 +37,7 @@ Beaker includes Cache and Session WSGI middleware to ease integration with
 WSGI capable frameworks, and is automatically used by `Pylons 
 <http://pylonshq.com/>`_.
 
+
 Features
 ========
 
@@ -55,66 +56,13 @@ Features
   expiration
 * Fine-grained toggling of back-ends, keys, and expiration per Cache object
 
+
 Documentation
 =============
 
 Documentation can be found on the `Official Beaker Docs site
-<http://wiki.pylonshq.com/display/beaker/Home>`_.
+<http://beaker.groovie.org/>`_.
 
-Examples
-========
-
-Caching
--------
-
-Basic Example::
-    
-    from beaker.cache import CacheManager
-    cm = CacheManager(type='dbm', data_dir='./cache')
-    
-    cache = cm.get_cache('mytemplate')
-    
-    def somethingslow():
-        # slow stuff
-        db_lookups()
-    
-    # Get the value, this will create the cache copy the first time
-    # and any time it expires (in seconds, so 3600 = one hour)
-    result = mycache.get_value(day, createfunc=somethingslow, expiretime=3600)
-
-Using WSGI::
-    
-    from beaker.middleware import CacheMiddleware
-    
-    def simple_app(environ, start_response):
-        cache = environ['beaker.cache'].get_cache('testcache')
-        try:
-            value = cache.get_value('value')
-        except KeyError:
-            value = 0
-        cache.set_value('value', value+1)
-        start_response('200 OK', [('Content-type', 'text/plain')])
-        return ['The current value is: %s' % cache.get_value('value')]
-    
-    app = CacheMiddleware(simple_app, type='dbm', data_dir='./cache')
-
-Sessions
---------
-
-Using WSGI::
-    
-    from beaker.middleware import SessionMiddleware
-    
-    def simple_app(environ, start_response):
-        session = environ['beaker.session']
-        if not session.has_key('value'):
-            session['value'] = 0
-        session['value'] += 1
-        session.save()
-        start_response('200 OK', [('Content-type', 'text/plain')])
-        return ['The current value is: %d' % session['value']]
-    
-    wsgi_app = SessionMiddleware(simple_app, type='dbm', data_dir='./cache')
 
 Source
 ======

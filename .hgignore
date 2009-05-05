@@ -4,5 +4,7 @@ syntax:glob
 .svn
 *.pyc
 *.egg-info
+beaker/docs/build
 container_file
 container_dbm
+tests/*/container_*
