@@ -70,7 +70,13 @@ To store data for a cache value, first, a NamespaceManager has to be
 retrieved to manage the keys for a ``thing`` to be cached::
     
     # Assuming that cache is an already created CacheManager instance
-    tmpl_cache = cache.get_cache('mytemplate.html', expire=3600)
+    tmpl_cache = cache.get_cache('mytemplate.html', type='dbm', expire=3600)
+
+.. note::
+    In addition to the defaults supplied to the
+    :class:`~beaker.cache.CacheManager` instance, any of the Cache options
+    can be changed on a per-namespace basis, as this example demonstrates
+    by setting a ``type``, and ``expire`` option.
 
 Individual values should be stored using a creation function, which will
 be called anytime the cache has expired or a new copy needs to be made. The
