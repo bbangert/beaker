@@ -111,7 +111,7 @@ def verify_directory(dir):
     while not os.access(dir, os.F_OK):
         try:
             tries += 1
-            os.makedirs(dir, 0750)
+            os.makedirs(dir)
         except:
             if tries > 5:
                 raise
