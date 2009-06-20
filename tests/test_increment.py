@@ -153,8 +153,6 @@ def test_load_session_by_id():
     res = app.get('/')
     assert 'current value is: 2' in res
 
-    
-    
 
 if __name__ == '__main__':
     from paste import httpserver

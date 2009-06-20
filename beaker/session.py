@@ -74,7 +74,10 @@ class Session(dict):
         self.timeout = timeout
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
-        self.cookie_domain = cookie_domain
+        
+        # Default cookie domain/path
+        self._domain = cookie_domain
+        self._path = '/'
         self.was_invalidated = False
         self.secret = secret
         self.secure = secure
@@ -116,11 +119,11 @@ class Session(dict):
         self.last_accessed = None
         if self.use_cookies:
             self.cookie[self.key] = self.id
-            if self.cookie_domain:
-                self.cookie[self.key]['domain'] = self.cookie_domain
+            if self._domain:
+                self.cookie[self.key]['domain'] = self._domain
             if self.secure:
                 self.cookie[self.key]['secure'] = True
-            self.cookie[self.key]['path'] = '/'
+            self.cookie[self.key]['path'] = self._path
             if self.cookie_expires is not True:
                 if self.cookie_expires is False:
                     expires = datetime.fromtimestamp( 0x7FFFFFFF )
@@ -139,6 +142,28 @@ class Session(dict):
     def created(self):
         return self['_creation_time']
     created = property(created)
+    
+    def _set_domain(self, domain):
+        self['_domain'] = domain
+        self.cookie[self.key]['domain'] = domain
+        self.request['cookie_out'] = self.cookie[self.key].output(header='')
+        self.request['set_cookie'] = True
+    
+    def _get_domain(self, domain):
+        return self._domain
+    
+    domain = property(_get_domain, _set_domain)
+    
+    def _set_path(self, path):
+        self['_path'] = path
+        self.cookie[self.key]['path'] = path
+        self.request['cookie_out'] = self.cookie[self.key].output(header='')
+        self.request['set_cookie'] = True
+    
+    def _get_domain(self, domain):
+        return self._domain
+    
+    domain = property(_get_domain, _set_domain)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -213,7 +238,7 @@ class Session(dict):
                 # Update the current _accessed_time
                 session_data['_accessed_time'] = now
                 self.update(session_data)
-                self.accessed_dict = session_data.copy()
+                self.accessed_dict = session_data.copy()                
         finally:
             self.namespace.release_read_lock()
         if timed_out:
@@ -316,11 +341,12 @@ class CookieSession(Session):
         self.key = key
         self.timeout = timeout
         self.cookie_expires = cookie_expires
-        self.cookie_domain = cookie_domain
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
         self.request['set_cookie'] = False
         self.secure = secure
+        self._domain = cookie_domain
+        self._path = '/'
         
         try:
             cookieheader = request['cookie']
@@ -359,6 +385,14 @@ class CookieSession(Session):
     def id(self):
         return self['_id']
     id = property(id)
+
+    def _set_domain(self, domain):
+        self['_domain'] = domain
+        self._domain = domain
+        
+    def _set_path(self, path):
+        self['_path'] = path
+        self._path = path
     
     def _encrypt_data(self):
         """Serialize, encipher, and base64 the session dict"""
@@ -436,12 +470,14 @@ class CookieSession(Session):
             raise BeakerException("Cookie value is too long to store")
         
         self.cookie[self.key] = val
-        if self.cookie_domain:
-            self.cookie[self.key]['domain'] = self.cookie_domain
+        if '_domain' in self:
+            self.cookie[self.key]['domain'] = self['_domain']
+        elif self._domain:
+            self.cookie[self.key]['domain'] = self._domain
         if self.secure:
             self.cookie[self.key]['secure'] = True
         
-        self.cookie[self.key]['path'] = '/'
+        self.cookie[self.key]['path'] = self.get('_path', '/')
         
         if expires:
             self.cookie[self.key]['expires'] = \
