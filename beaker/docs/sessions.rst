@@ -74,6 +74,24 @@ Complete example using a basic WSGI app with sessions::
     Adding the :meth:`~beaker.session.Session.save` call explained below is
     required, or having the session set to auto-save.
 
+.. _cookie_attributes:
+
+Session Attributes / Keys
+-------------------------
+
+Sessions have several special attributes that can be used as needed by an
+application.
+
+* id - Unique 40 char SHA-generated session ID
+* last_accessed - The last time the session was accessed before the current
+  access, will be None if the session was just made
+
+There's several special session keys populated as well:
+
+* _accessed_time - Current accessed time of the session, when it was loaded
+* _creation_time - When the session was created
+
+
 Saving
 ======
 
@@ -144,6 +162,20 @@ haven't been touched in a long time, for example (in the session's data dir):
 .. code-block:: bash
     
     find . -mtime +3 -exec rm {} \;
+
+
+Cookie Domain and Path
+======================
+
+In addition to setting a default cookie domain with the 
+:ref:`cookie domain setting <cookie_domain_config>`, the cookie's domain and
+path can be set dynamically for a session with the domain and path properties.
+
+Example::
+    
+    # Setting the session's cookie domain and path
+    session.domain = '.domain.com'
+    session.path = '/admin'
 
 
 Cookie-Based

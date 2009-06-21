@@ -1,3 +1,10 @@
+Release 1.4 (**tip**)
+=====================
+
+* Added domain/path properties to the session. This allows one to
+  dynamically set the cookie's domain and/or path on the fly, which
+  will then be set on the cookie for the session.
+
 Release 1.3.1 (5/5/2009)
 ===============================
 

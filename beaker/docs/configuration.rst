@@ -134,6 +134,9 @@ cookie_expires (**optional**, bool, datetime, timedelta)
     
     Defaults to never expiring.
 
+
+.. _cookie_domain_config:
+
 cookie_domain (**optional**, string)
     What domain the cookie should be set to. When using sub-domains, this
     should be set to the main domain the cookie should be valid for. For
@@ -141,6 +144,9 @@ cookie_domain (**optional**, string)
     ``files.nowhere.com`` then it should be set to ``.nowhere.com``.
     
     Defaults to the current domain in its entirety.
+    
+    Alternatively, the domain can be set dynamically on the session by
+    calling, see :ref:`cookie_attributes`.
 
 key (**required**, string)
     Name of the cookie key used to save the session under.
