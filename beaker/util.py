@@ -304,12 +304,15 @@ def coerce_cache_params(params):
     return verify_rules(params, rules)
 
 
-def parse_cache_config_options(config):
+def parse_cache_config_options(config, include_defaults=True):
     """Parse configuration options and validate for use with the
     CacheManager"""
     # Load default cache options
-    options= dict(type='memory', data_dir=None, expire=None, 
-                       log_file=None)
+    if include_defaults:
+        options= dict(type='memory', data_dir=None, expire=None, 
+                           log_file=None)
+    else:
+        options = {}
     for key, val in config.iteritems():
         if key.startswith('beaker.cache.'):
             options[key[13:]] = val

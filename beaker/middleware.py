@@ -47,11 +47,14 @@ class CacheMiddleware(object):
         
         self.options = {}
         
-        # Pull out any config args starting with beaker cache. if there are any
-        for dct in [config, kwargs]:
-            parsed_opts = parse_cache_config_options(dct)
-            self.options.update(parsed_opts)
+        # Update the options with the parsed config
+        self.options.update(parse_cache_config_options(config))
         
+        # Add any options from kwargs, but leave out the defaults this
+        # time
+        self.options.update(
+            parse_cache_config_options(kwargs, include_defaults=False))
+                
         # Assume all keys are intended for cache if none are prefixed with
         # 'cache.'
         if not self.options and config:
