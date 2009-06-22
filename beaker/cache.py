@@ -31,7 +31,7 @@ for entry_point in pkg_resources.iter_entry_points('beaker.backends'):
             raise BeakerException("NamespaceManager name conflict,'%s' "
                                   "already loaded" % name)
         clsmap[name] = NamespaceManager
-    except InvalidCacheBackendError:
+    except (InvalidCacheBackendError, SyntaxError):
         # Ignore invalid backends
         pass
     except:

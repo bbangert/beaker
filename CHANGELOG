@@ -1,6 +1,8 @@
 Release 1.4 (**tip**)
 =====================
 
+* Fix bug with SyntaxError not being caught properly in entry point
+  discovery.
 * Changed to using BlobProperty for Google Datastore.
 * Added domain/path properties to the session. This allows one to
   dynamically set the cookie's domain and/or path on the fly, which
