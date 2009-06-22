@@ -26,7 +26,7 @@ class GoogleNamespaceManager(OpenResourceNamespaceManager):
         def make_cache():
             table_dict = dict(created=db.DateTimeProperty(),
                               accessed=db.DateTimeProperty(),
-                              data=db.TextProperty())
+                              data=db.BlobProperty())
             table = type(table_name, (db.Model,), table_dict)
             return table
         self.table_name = table_name

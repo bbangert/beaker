@@ -1,6 +1,7 @@
 Release 1.4 (**tip**)
 =====================
 
+* Changed to using BlobProperty for Google Datastore.
 * Added domain/path properties to the session. This allows one to
   dynamically set the cookie's domain and/or path on the fly, which
   will then be set on the cookie for the session.
