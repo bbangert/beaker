@@ -168,8 +168,8 @@ class Session(dict):
     def _delete_cookie(self):
         self.request['set_cookie'] = True
         self.cookie[self.key] = self.id
-        if self.cookie_domain:
-            self.cookie[self.key]['domain'] = self.cookie_domain
+        if self._domain:
+            self.cookie[self.key]['domain'] = self._domain
         if self.secure:
             self.cookie[self.key]['secure'] = True
         self.cookie[self.key]['path'] = '/'
