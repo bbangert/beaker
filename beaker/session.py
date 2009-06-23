@@ -15,8 +15,7 @@ except ImportError:
 
 # Check for pycryptopp encryption for AES
 try:
-    from pycryptopp.cipher import aes
-    from beaker.crypto import generateCryptoKeys
+    from beaker.crypto import generateCryptoKeys, aesEncrypt
     crypto_ok = True
 except:
     crypto_ok = False
@@ -400,11 +399,10 @@ class CookieSession(Session):
             nonce = b64encode(os.urandom(40))[:8]
             encrypt_key = generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
-            ctrcipher = aes.AES(encrypt_key)
-            data = cPickle.dumps(self.copy(), protocol=2)
-            return nonce + b64encode(ctrcipher.process(data))
+            data = cPickle.dumps(self.copy(), 2)
+            return nonce + b64encode(aesEncrypt(data, encrypt_key))
         else:
-            data = cPickle.dumps(self.copy(), protocol=2)
+            data = cPickle.dumps(self.copy(), 2)
             return b64encode(data)
     
     def _decrypt_data(self):
@@ -414,9 +412,8 @@ class CookieSession(Session):
             nonce = self.cookie[self.key].value[:8]
             encrypt_key = generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
-            ctrcipher = aes.AES(encrypt_key)
             payload = b64decode(self.cookie[self.key].value[8:])
-            data = ctrcipher.process(payload)
+            data = aesEncrypt(payload, encrypt_key)
             return cPickle.loads(data)
         else:
             data = b64decode(self.cookie[self.key].value)
