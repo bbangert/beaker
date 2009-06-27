@@ -227,7 +227,7 @@ class FileSynchronizer(SynchronizerImpl):
         
     def _open(self, mode):
         filedescriptor = self._filedesc
-        if not filedescriptor:
+        if filedescriptor is None:
             filedescriptor = os.open(self.filename, mode)
             self._filedescriptor.put(filedescriptor)
         return filedescriptor
@@ -268,7 +268,7 @@ class FileSynchronizer(SynchronizerImpl):
     
     def _release_all_locks(self):
         filedescriptor = self._filedesc
-        if filedescriptor:
+        if filedescriptor is not None:
             fcntl.flock(filedescriptor, fcntl.LOCK_UN)
             os.close(filedescriptor)
             self._filedescriptor.remove()
