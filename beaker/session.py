@@ -94,7 +94,7 @@ class Session(dict):
             else:
                 self.cookie = Cookie.SimpleCookie(input=cookieheader)
             
-            if not self.id and self.cookie.has_key(self.key):
+            if not self.id and self.key in self.cookie:
                 self.id = self.cookie[self.key].value
         
         self.is_new = self.id is None
@@ -252,13 +252,18 @@ class Session(dict):
         last accessed time.
         
         """
+        # Look to see if its a new session that was only accessed
+        # Don't save it under that case
+        if accessed_only and self.is_new:
+            return None
+        
         if not hasattr(self, 'namespace'):
             self.namespace = self.namespace_class(
                                     self.id, 
                                     data_dir=self.data_dir,
                                     digest_filenames=False, 
                                     **self.namespace_args)
-
+        
         self.namespace.acquire_write_lock()
         try:
             if accessed_only:

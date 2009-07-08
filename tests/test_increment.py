@@ -6,6 +6,13 @@ from webtest import TestApp
 
 loc = os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), 'sessions'])
 
+def no_save_app(environ, start_response):
+    session = environ['beaker.session']
+    sess_id = environ.get('SESSION_ID')
+    start_response('200 OK', [('Content-type', 'text/plain')])
+    return ['The current value is: %s, session id is %s' % (session.get('value'),
+                                                            session.id)]
+    
 def simple_app(environ, start_response):
     session = environ['beaker.session']
     sess_id = environ.get('SESSION_ID')
@@ -40,6 +47,13 @@ def simple_auto_app(environ, start_response):
     start_response('200 OK', [('Content-type', 'text/plain')])
     return ['The current value is: %d, session id is %s' % (session.get('value', 0),
                                                             session.id)]
+
+def test_no_save():
+    options = {'session.data_dir':loc, 'session.secret':'blah'}
+    app = TestApp(SessionMiddleware(no_save_app, **options))
+    res = app.get('/')
+    assert 'current value is: None' in res
+    assert [] == res.headers.getall('Set-Cookie')
 
 
 def test_increment():

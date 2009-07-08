@@ -1,6 +1,8 @@
 Release 1.4 (**tip**)
 =====================
 
+* Fixed bug with session files being saved despite being new and not
+  saved.
 * Fixed bug with CacheMiddleware overwriting configuration with default
   arguments despite prior setting.
 * Fixed bug with SyntaxError not being caught properly in entry point
