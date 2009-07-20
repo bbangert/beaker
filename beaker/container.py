@@ -524,7 +524,7 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
             fh = open(self.file, 'rb')
             try:
                 self.hash = cPickle.load(fh)
-            except (IOError, OSError, EOFError, cPickle.PickleError):
+            except (IOError, OSError, EOFError, cPickle.PickleError, ValueError):
                 pass
             fh.close()
 

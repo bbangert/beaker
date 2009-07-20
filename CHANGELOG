@@ -1,6 +1,8 @@
 Release 1.4 (**tip**)
 =====================
 
+* Fix bug with occasional ValueError from FileNamespaceManager.do_open.
+  Fixes #10.
 * Fixed bug with session files being saved despite being new and not
   saved.
 * Fixed bug with CacheMiddleware overwriting configuration with default
