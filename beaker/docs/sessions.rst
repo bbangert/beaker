@@ -199,6 +199,7 @@ Cookie-based sessions scale easily in a clustered environment as there's no
 need for a shared storage system when different servers handle the same
 session.
 
+.. _encryption:
 
 Encryption
 ----------
@@ -217,9 +218,9 @@ On Jython, no additional packages are required, but at least on the Sun JRE,
 the size of the encryption key is by default limited to 128 bits, which causes
 generated sessions to be incompatible with those generated in CPython, and vice
 versa. To overcome this limitation, you need to install the unlimited strength
-crypto policy files from Sun:
+juristiction policy files from Sun:
 
-`Policy files for Java 5 <https://cds.sun.com/is-bin/INTERSHOP.enfinity/WFS/CDS-CDS_Developer-Site/en_US/-/USD/ViewProductDetail-Start?ProductRef=jce_policy-1.5.0-oth-JPR@CDS-CDS_Developer>`
-`Policy files for Java 6 <https://cds.sun.com/is-bin/INTERSHOP.enfinity/WFS/CDS-CDS_Developer-Site/en_US/-/USD/ViewProductDetail-Start?ProductRef=jce_policy-6-oth-JPR@CDS-CDS_Developer>`
+* `Policy files for Java 5 <https://cds.sun.com/is-bin/INTERSHOP.enfinity/WFS/CDS-CDS_Developer-Site/en_US/-/USD/ViewProductDetail-Start?ProductRef=jce_policy-1.5.0-oth-JPR@CDS-CDS_Developer>`_
+* `Policy files for Java 6 <https://cds.sun.com/is-bin/INTERSHOP.enfinity/WFS/CDS-CDS_Developer-Site/en_US/-/USD/ViewProductDetail-Start?ProductRef=jce_policy-6-oth-JPR@CDS-CDS_Developer>`_
 
 .. _pycryptopp: http://pypi.python.org/pypi/pycryptopp

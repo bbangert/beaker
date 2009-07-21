@@ -185,9 +185,9 @@ validate_key (**required**, string)
 
 .. note::
 
-You may need to install additional libraries to use Beaker's
-cookie-based session encryption. See the :ref:`encryption` section for
-more information.
+	You may need to install additional libraries to use Beaker's
+	cookie-based session encryption. See the :ref:`encryption` section for
+	more information.
 
 Cache Options
 =============
