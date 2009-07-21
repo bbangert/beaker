@@ -18,6 +18,6 @@ class MissingCacheParameter(BeakerException):
 class LockError(BeakerException):
     pass
 
-class NoCryptoError(Exception):
+class InvalidCryptoBackendError(BeakerException, ImportError):
     def __init__(self):
         Exception.__init__('No supported crypto implementation was found')

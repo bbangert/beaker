@@ -1,7 +1,7 @@
 from warnings import warn
 
 from beaker.crypto.pbkdf2 import PBKDF2, strxor
-from beaker.exceptions import NoCryptoError
+from beaker.exceptions import InvalidCryptoBackendError
 
 _implementations = ('pycrypto', 'jcecrypto')
 
@@ -18,7 +18,7 @@ for impl_name in _implementations:
         pass
 
 if not keyLength:
-    raise NoCryptoError
+    raise InvalidCryptoBackendError
 
 if keyLength < 32:
     warn('Crypto implementation only supports key lengths up to %d bits. '
