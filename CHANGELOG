@@ -1,4 +1,4 @@
-Release 1.4 (**tip**)
+Release 1.4 (7/24/2009)
 =====================
 
 * Fix bug with hmac on Python 2.4. Patch from toshio, closes ticket #2133
