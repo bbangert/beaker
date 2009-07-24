@@ -6,12 +6,26 @@ import random
 import time
 from datetime import datetime, timedelta
 try:
-    from hashlib import md5, sha1
+    from hashlib import md5
 except ImportError:
     from md5 import md5
-    # NOTE: We have to use the callable with hashlib (hashlib.sha1),
-    # otherwise hmac only accepts the sha module object itself
-    import sha as sha1
+try:
+    # Use PyCrypto (if available)
+    from Crypto.Hash import HMAC, SHA as SHA1
+
+except ImportError:
+    # PyCrypto not available.  Use the Python standard library.
+    import hmac as HMAC
+    import sys
+    # When using the stdlib, we have to make sure the hmac version and sha
+    # version are compatible
+    if sys.version_info[0:2] <= (2,4):
+        # hmac in python2.4 or less require the sha module
+        import sha as SHA1
+    else:
+        # NOTE: We have to use the callable with hashlib (hashlib.sha1),
+        # otherwise hmac only accepts the sha module object itself
+        from hashlib import sha1 as SHA1
 
 # Check for pycryptopp encryption for AES
 try:
@@ -36,14 +50,14 @@ class SignedCookie(Cookie.BaseCookie):
     
     def value_decode(self, val):
         val = val.strip('"')
-        sig = hmac.new(self.secret, val[40:], sha1).hexdigest()
+        sig = HMAC.new(self.secret, val[40:], SHA1).hexdigest()
         if sig != val[:40]:
             return None, val
         else:
             return val[40:], val
     
     def value_encode(self, val):
-        sig = hmac.new(self.secret, val, sha1).hexdigest()
+        sig = HMAC.new(self.secret, val, SHA1).hexdigest()
         return str(val), ("%s%s" % (sig, val))
 
 

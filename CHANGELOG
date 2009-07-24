@@ -1,6 +1,8 @@
 Release 1.4 (**tip**)
 =====================
 
+* Fix bug with hmac on Python 2.4. Patch from toshio, closes ticket #2133
+  from the TurboGears2 Trac.
 * Fix bug with occasional ValueError from FileNamespaceManager.do_open.
   Fixes #10.
 * Fixed bug with session files being saved despite being new and not
