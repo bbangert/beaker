@@ -173,12 +173,8 @@ timeout (**optional**, integer)
 Encryption Options
 ------------------
 
-To use Beaker's cookie-based session encryption, `pycryptopp`_ must be
-installed. These options should then be used *instead* of the ``secret``
+These options should then be used *instead* of the ``secret``
 option listed above.
-
-Since 256-bit AES encryption is used, **both of these keys must be
-16 characters in length**.
 
 encrypt_key (**required**, string)
     Encryption key to use for the AES cipher. This should be a fairly long
@@ -187,6 +183,11 @@ encrypt_key (**required**, string)
 validate_key (**required**, string)
     Validation key used to sign the AES encrypted data.
 
+.. note::
+
+	You may need to install additional libraries to use Beaker's
+	cookie-based session encryption. See the :ref:`encryption` section for
+	more information.
 
 Cache Options
 =============

@@ -201,6 +201,7 @@ Cookie-based sessions scale easily in a clustered environment as there's no
 need for a shared storage system when different servers handle the same
 session.
 
+.. _encryption:
 
 Encryption
 ----------
@@ -210,9 +211,18 @@ prevent the user from being able to decode the data (in addition to not
 being able to tamper with it), Beaker can use 256-bit AES encryption to
 secure the contents of the cookie.
 
-Beaker utilizes the `pycryptopp`_ library to provide AES encryption, since
-256-bit AES encryption is used, both the ``encrypt_key`` and ``validate_key``
-need to 16 characters in length.
+Depending on the Python implementation used, Beaker may require an additional
+library to provide AES encryption.
 
+On CPython (the regular Python), the `pycryptopp`_ library is required.
+
+On Jython, no additional packages are required, but at least on the Sun JRE,
+the size of the encryption key is by default limited to 128 bits, which causes
+generated sessions to be incompatible with those generated in CPython, and vice
+versa. To overcome this limitation, you need to install the unlimited strength
+juristiction policy files from Sun:
+
+* `Policy files for Java 5 <https://cds.sun.com/is-bin/INTERSHOP.enfinity/WFS/CDS-CDS_Developer-Site/en_US/-/USD/ViewProductDetail-Start?ProductRef=jce_policy-1.5.0-oth-JPR@CDS-CDS_Developer>`_
+* `Policy files for Java 6 <https://cds.sun.com/is-bin/INTERSHOP.enfinity/WFS/CDS-CDS_Developer-Site/en_US/-/USD/ViewProductDetail-Start?ProductRef=jce_policy-6-oth-JPR@CDS-CDS_Developer>`_
 
 .. _pycryptopp: http://pypi.python.org/pypi/pycryptopp

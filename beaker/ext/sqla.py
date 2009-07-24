@@ -1,5 +1,6 @@
 import cPickle
 import logging
+import pickle
 from datetime import datetime
 
 from beaker.container import OpenResourceNamespaceManager, Container
@@ -67,8 +68,9 @@ class SqlaNamespaceManager(OpenResourceNamespaceManager):
         else:
             self._is_new = False
             try:
-                self.hash = cPickle.loads(str(result['data']))
-            except (IOError, OSError, EOFError, cPickle.PickleError):
+                self.hash = result['data']
+            except (IOError, OSError, EOFError, cPickle.PickleError,
+                    pickle.PickleError):
                 log.debug("Couln't load pickle data, creating new storage")
                 self.hash = {}
                 self._is_new = True
@@ -77,16 +79,14 @@ class SqlaNamespaceManager(OpenResourceNamespaceManager):
 
     def do_close(self):
         if self.flags is not None and (self.flags == 'c' or self.flags == 'w'):
-            data = cPickle.dumps(self.hash)
             if self._is_new:
                 insert = self.table.insert()
-                self.bind.execute(insert, namespace=self.namespace, data=data,
-                                  accessed=datetime.now(),
-                                  created=datetime.now())
+                self.bind.execute(insert, namespace=self.namespace, data=self.hash,
+                                  accessed=datetime.now(), created=datetime.now())
                 self._is_new = False
             else:
                 update = self.table.update(self.table.c.namespace == self.namespace)
-                self.bind.execute(update, data=data, accessed=datetime.now())
+                self.bind.execute(update, data=self.hash, accessed=datetime.now())
         self.flags = None
 
     def do_remove(self):
@@ -121,4 +121,4 @@ def make_cache_table(metadata, table_name='beaker_cache'):
                     sa.Column('namespace', sa.String(255), primary_key=True),
                     sa.Column('accessed', sa.DateTime, nullable=False),
                     sa.Column('created', sa.DateTime, nullable=False),
-                    sa.Column('data', sa.BLOB(), nullable=False))
+                    sa.Column('data', sa.PickleType, nullable=False))

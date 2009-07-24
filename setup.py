@@ -68,7 +68,7 @@ Source
 ======
 
 The latest developer version is available in a `Mercurial repository
-<https://www.knowledgetap.com/hg/beaker/archive/tip.tar.gz#egg=Beaker-dev>`_.
+<http://bitbucket.org/bbangert/beaker/get/tip.gz#egg=Beaker-dev>`_.
 """,
       classifiers=[
       'Development Status :: 5 - Production/Stable',
