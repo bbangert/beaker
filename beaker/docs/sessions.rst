@@ -171,6 +171,8 @@ In addition to setting a default cookie domain with the
 :ref:`cookie domain setting <cookie_domain_config>`, the cookie's domain and
 path can be set dynamically for a session with the domain and path properties.
 
+These settings will persist as long as the cookie exists, or until changed.
+
 Example::
     
     # Setting the session's cookie domain and path
