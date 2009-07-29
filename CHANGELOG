@@ -1,3 +1,9 @@
+Release 1.4.1 (**tip**)
+=====================
+
+* Fix the InvalidCryptoBackendError exception triggering a TypeError. Patch
+  from dz, fixes #13.
+
 Release 1.4 (7/24/2009)
 =====================
 
