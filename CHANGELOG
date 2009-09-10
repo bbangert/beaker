@@ -1,6 +1,8 @@
 Release 1.4.1 (**tip**)
 =======================
 
+* Fix verification of options to throw an error if a beaker param is an
+  empty string.
 * Add CacheManager.invalidate function to easily invalidate cache
   spaces created by the use of the cache decorator.
 * Add CacheManager.region_invalidate function to easily invalidate cache

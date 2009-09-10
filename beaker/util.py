@@ -244,17 +244,15 @@ def verify_options(opt, types, error):
                     if typ == bool:
                         typ = asbool
                     opt = typ(opt)
-                if typ == str and not opt:
-                    coerced = False
-                    error = "String is empty"
-                else:
-                    coerced = True
+                coerced = True
             except:
                 pass
             if coerced:
                 break
         if not coerced:
             raise Exception(error)
+    elif isinstance(opt, str) and not opt.strip():
+        raise Exception("Empty strings are invalid for: %s" % error)
     return opt
 
 
