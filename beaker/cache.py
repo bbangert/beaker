@@ -244,8 +244,8 @@ class CacheManager(object):
             return cached
         return decorate
 
-    def invalidate(self, region, namespace, *args):
-        """Invalidate a cache namespace or decorated function
+    def region_invalidate(self, region, namespace, *args):
+        """Invalidate a cache region namespace or decorated function
         
         This function only invalidates cache spaces created with the
         cache_region decorator.
@@ -276,7 +276,7 @@ class CacheManager(object):
                 
                 # If the results should be invalidated first
                 if invalidate:
-                    cache.invalidate(None, load, 'some_data',
+                    cache.region_invalidate(None, load, 'some_data',
                                      'rabbits', 20, 0)
                 return load('rabbits', 20, 0)
             

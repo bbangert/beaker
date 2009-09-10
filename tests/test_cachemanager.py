@@ -62,7 +62,7 @@ def test_check_invalidate():
     
     result2 = func('Fred')
     assert result == result2
-    _cache_obj.invalidate(None, func, 'region_loader', 'Fred')
+    _cache_obj.region_invalidate(None, func, 'region_loader', 'Fred')
     
     result3 = func('Fred')
     assert result3 != result2
@@ -71,5 +71,5 @@ def test_check_invalidate():
     assert result3 == result2
     
     # Invalidate a non-existent key
-    _cache_obj.invalidate(None, func, 'region_loader', 'Fredd')
+    _cache_obj.region_invalidate(None, func, 'region_loader', 'Fredd')
     assert result3 == result2
