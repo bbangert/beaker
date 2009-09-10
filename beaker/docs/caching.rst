@@ -95,10 +95,19 @@ scope on the creation function::
     # instance from the prior example
     results = tmpl_cache.get(key=search_param, createfunc=get_results)
 
+Invalidating
+------------
+
 All of the values for a particular namespace can be removed by calling the
 :meth:`~beaker.cache.Cache.clear` method::
     
     tmpl_cache.clear()
+
+Note that this only clears the key's in the namespace that this particular
+Cache instance is aware of. Therefore its recommend to manually clear out
+specific keys in a cache namespace that should be removed::
+
+    tmpl_cache.remove_value(key=search_param)
 
 
 Decorator API
@@ -141,6 +150,39 @@ the data generated.
 .. warning::
     These arguments can **not** be keyword arguments.
 
+Invalidating
+------------
+
+Since the :meth:`~beaker.cache.CacheManager.cache` decorator hides the
+namespace used, manually removing the key requires the use of the
+:meth:`~beaker.cache.CacheManager.invalidate` function. To invalidate
+the 'gophers' result that the prior example referred to::
+    
+    cache.invalidate(get_results, 'my_search_func', 'gophers')
+
+If however, a type was specified for the cached function, the type must
+also be given to the :meth:`~beaker.cache.CacheManager.invalidate`
+function so that it can remove the value from the appropriate back-end.
+
+Example::
+    
+    # Assuming that cache is an already created CacheManager instance
+    @cache.cache('my_search_func', type="file", expire=3600)
+    def get_results(search_param):
+        # do something to retrieve data
+        data = get_data(search_param)
+        return data
+    
+    cache.invalidate(get_results, 'my_search_func', 'gophers', type="file")
+
+.. note::
+    Both the arguments used to specify the additional namespace info to the
+    cache decorator **and** the arguments sent to the function need to be
+    given to the :meth:`~beaker.cache.CacheManager.region_invalidate`
+    function so that it can properly locate the namespace and cache key
+    to remove.
+
+
 Cache Regions
 =============
 
@@ -169,6 +211,22 @@ Assuming a ``long_term`` and ``short_term`` region were setup, the
     
     results = get_results('gophers')
 
+Invalidating
+------------
+
+Since the :meth:`~beaker.cache.CacheManager.region` decorator hides the
+namespace used, manually removing the key requires the use of the
+:meth:`~beaker.cache.CacheManager.region_invalidate` function. To invalidate
+the 'gophers' result that the prior example referred to::
+    
+    cache.region_invalidate(get_results, None, 'my_search_func', 'gophers')
+
+.. note::
+    Both the arguments used to specify the additional namespace info to the
+    cache decorator **and** the arguments sent to the function need to be
+    given to the :meth:`~beaker.cache.CacheManager.region_invalidate`
+    function so that it can properly locate the namespace and cache key
+    to remove.
 
 
 .. _Myghty: http://www.myghty.org/

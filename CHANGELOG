@@ -1,6 +1,8 @@
 Release 1.4.1 (**tip**)
 =======================
 
+* Add CacheManager.invalidate function to easily invalidate cache
+  spaces created by the use of the cache decorator.
 * Add CacheManager.region_invalidate function to easily invalidate cache
   spaces created by the use of the cache_region decorator.
 * Fix the InvalidCryptoBackendError exception triggering a TypeError. Patch

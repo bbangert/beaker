@@ -244,19 +244,19 @@ class CacheManager(object):
             return cached
         return decorate
 
-    def region_invalidate(self, region, namespace, *args):
+    def region_invalidate(self, namespace, region, *args):
         """Invalidate a cache region namespace or decorated function
         
         This function only invalidates cache spaces created with the
         cache_region decorator.
         
-        region
-            The region the function was cached to. If the function was
-            cached to a single region then this argument can be None
-        
         namespace
             Either the namespace of the result to invalidate, or the
             name of the cached function
+        
+        region
+            The region the function was cached to. If the function was
+            cached to a single region then this argument can be None
         
         args
             Arguments that were used to differentiate the cached
@@ -276,8 +276,8 @@ class CacheManager(object):
                 
                 # If the results should be invalidated first
                 if invalidate:
-                    cache.region_invalidate(None, load, 'some_data',
-                                     'rabbits', 20, 0)
+                    cache.region_invalidate(load, None, 'some_data',
+                                            'rabbits', 20, 0)
                 return load('rabbits', 20, 0)
             
         
@@ -299,12 +299,12 @@ class CacheManager(object):
     def cache(self, *args, **kwargs):
         """Decorate a function to cache itself with supplied parameters
 
-        ``args`` 
-            used to make the key unique for this function, as in region()
+        args
+            Used to make the key unique for this function, as in region()
             above.
 
-        ``kwargs``
-            parameters to be passed to get_cache(), will override defaults
+        kwargs
+            Parameters to be passed to get_cache(), will override defaults
 
         Example::
 
@@ -341,3 +341,45 @@ class CacheManager(object):
             cached._arg_namespace = namespace
             return cached
         return decorate
+
+    def invalidate(self, func, *args, **kwargs):
+        """Invalidate a cache decorated function
+        
+        This function only invalidates cache spaces created with the
+        cache decorator.
+        
+        func
+            Decorated function to invalidate
+        
+        args
+            Used to make the key unique for this function, as in region()
+            above.
+
+        kwargs
+            Parameters that were passed for use by get_cache(), note that
+            this is only required if a ``type`` was specified for the
+            function
+
+        Example::
+            
+            # Assuming a cache object is available like:
+            cache = CacheManager(dict_of_config_options)
+            
+            
+            def populate_things(invalidate=False):
+                
+                @cache.cache('mycache', type="file", expire=15)
+                def load(search_term, limit, offset):
+                    return load_the_data(search_term, limit, offset)
+                
+                # If the results should be invalidated first
+                if invalidate:
+                    cache.invalidate(load, 'mycache', 'rabbits', 20, 0, type="file")
+                return load('rabbits', 20, 0)
+        
+        """
+        namespace = func._arg_namespace
+
+        cache = self.get_cache(namespace, **kwargs)
+        cache_key = " ".join(str(x) for x in args)
+        cache.remove_value(cache_key)
