@@ -13,6 +13,7 @@ def make_cache_obj(**kwargs):
     return cache
 
 def make_region_cached_func():
+    global _cache_obj
     opts = {}
     opts['cache.regions'] = 'short_term, long_term'
     opts['cache.short_term.expire'] = '2'
@@ -22,6 +23,7 @@ def make_region_cached_func():
     def load(person):
         now = datetime.now()
         return "Hi there %s, its currently %s" % (person, now)
+    _cache_obj = cache
     return load
 
 def make_cached_func():
@@ -39,7 +41,7 @@ def test_decorators():
 
 def check_decorator(func):
     result = func('Fred')
-    assert 'Fred in result'
+    assert 'Fred' in result
     
     result2 = func('Fred')
     assert result == result2
@@ -53,3 +55,21 @@ def check_decorator(func):
     result2 = func('Fred')
     assert result != result2
 
+def test_check_invalidate():
+    func = make_region_cached_func()
+    result = func('Fred')
+    assert 'Fred' in result
+    
+    result2 = func('Fred')
+    assert result == result2
+    _cache_obj.invalidate(None, func, 'region_loader', 'Fred')
+    
+    result3 = func('Fred')
+    assert result3 != result2
+    
+    result2 = func('Fred')
+    assert result3 == result2
+    
+    # Invalidate a non-existent key
+    _cache_obj.invalidate(None, func, 'region_loader', 'Fredd')
+    assert result3 == result2

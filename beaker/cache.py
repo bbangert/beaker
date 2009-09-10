@@ -225,13 +225,13 @@ class CacheManager(object):
         key = " ".join(str(x) for x in args)
         
         def decorate(func):
+            namespace = util.func_namespace(func)
             def cached(*args):
                 reg = self.regions[region]
                 if not reg.get('enabled', True):
                     return func(*args)
                 
                 if not cache[0]:
-                    namespace = util.func_namespace(func)
                     cache[0] = self.get_cache_region(namespace, region)
                 
                 cache_key = key + " " + " ".join(str(x) for x in args)
@@ -239,8 +239,62 @@ class CacheManager(object):
                     return func(*args)
                 
                 return cache[0].get_value(cache_key, createfunc=go)
+            cached._arg_namespace = namespace
+            cached._arg_region = region
             return cached
         return decorate
+
+    def invalidate(self, region, namespace, *args):
+        """Invalidate a cache namespace or decorated function
+        
+        This function only invalidates cache spaces created with the
+        cache_region decorator.
+        
+        region
+            The region the function was cached to. If the function was
+            cached to a single region then this argument can be None
+        
+        namespace
+            Either the namespace of the result to invalidate, or the
+            name of the cached function
+        
+        args
+            Arguments that were used to differentiate the cached
+            function as well as the arguments passed to the decorated
+            function
+
+        Example::
+            
+            # Assuming a cache object is available like:
+            cache = CacheManager(dict_of_config_options)
+            
+            def populate_things(invalidate=False):
+                
+                @cache.region('short_term', 'some_data')
+                def load(search_term, limit, offset):
+                    return load_the_data(search_term, limit, offset)
+                
+                # If the results should be invalidated first
+                if invalidate:
+                    cache.invalidate(None, load, 'some_data',
+                                     'rabbits', 20, 0)
+                return load('rabbits', 20, 0)
+            
+        
+        """
+        if callable(namespace):
+            if not region:
+                region = namespace._arg_region
+            namespace = namespace._arg_namespace
+
+        if not region:
+            raise BeakerException("Region or callable function namespace is required")
+        else:
+            region = self.regions[region]
+        
+        cache = self.get_cache(namespace, **region)
+        cache_key = " ".join(str(x) for x in args)
+        cache.remove_value(cache_key)
 
     def cache(self, *args, **kwargs):
         """Decorate a function to cache itself with supplied parameters
@@ -276,14 +330,14 @@ class CacheManager(object):
         key = " ".join(str(x) for x in args)
         
         def decorate(func):
+            namespace = util.func_namespace(func)
             def cached(*args):
                 if not cache[0]:
-                    namespace = util.func_namespace(func)
                     cache[0] = self.get_cache(namespace, **kwargs)
                 cache_key = key + " " + " ".join(str(x) for x in args)
                 def go():
                     return func(*args)
-
                 return cache[0].get_value(cache_key, createfunc=go)
+            cached._arg_namespace = namespace
             return cached
         return decorate
