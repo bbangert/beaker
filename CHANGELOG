@@ -1,5 +1,5 @@
-Release 1.4.1 (**tip**)
-=======================
+Release 1.4.1 (9/10/2009)
+=========================
 
 * Fix verification of options to throw an error if a beaker param is an
   empty string.
