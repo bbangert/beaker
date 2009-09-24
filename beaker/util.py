@@ -128,20 +128,25 @@ def deprecated(func, message):
     deprecated_method.__doc__ = "%s\n\n%s" % (message, func.__doc__)
     return deprecated_method
 
-class ThreadLocal(_tlocal):
+class ThreadLocal(object):
     """stores a value on a per-thread basis"""
+
+    __slots__ = 'tlocal'
+
+    def __init__(self):
+        self.tlocal = _tlocal()
     
     def put(self, value):
-        self.value = value
+        self.tlocal.value = value
     
     def has(self):
-        return hasattr(self, 'value')
+        return hasattr(self.tlocal, 'value')
             
     def get(self, default=None):
-        return getattr(self, 'value', default)
+        return getattr(self.tlocal, 'value', default)
             
     def remove(self):
-        del self.value
+        del self.tlocal.value
     
 class SyncDict(object):
     """
