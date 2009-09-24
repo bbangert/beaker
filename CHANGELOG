@@ -1,6 +1,9 @@
 Release 1.4.1 (**tip**)
 =======================
 
+* Fix the 'TypeError: argument must be an int, or have a fileno()
+  method' erorr sporadically emitted by FileSynchronizer under moderate
+  load.
 * Fix verification of options to throw an error if a beaker param is an
   empty string.
 * Add CacheManager.invalidate function to easily invalidate cache
