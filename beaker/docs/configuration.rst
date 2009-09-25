@@ -165,7 +165,8 @@ secure (**optional**, bool)
 
 timeout (**optional**, integer)
     Seconds until the session is considered invalid, after which it will
-    be ignored and invalidated.
+    be ignored and invalidated. This number is based on the time since
+    the session was last accessed, not from when the session was created.
     
     Defaults to never expiring.
 
