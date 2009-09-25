@@ -173,10 +173,10 @@ class Session(dict):
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = True
     
-    def _get_domain(self, domain):
-        return self._domain
+    def _get_path(self, domain):
+        return self._path
     
-    domain = property(_get_domain, _set_domain)
+    path = property(_get_path, _set_path)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -408,10 +408,20 @@ class CookieSession(Session):
         self['_domain'] = domain
         self._domain = domain
         
+    def _get_domain(self, domain):
+        return self._domain
+    
+    domain = property(_get_domain, _set_domain)
+    
     def _set_path(self, path):
         self['_path'] = path
         self._path = path
     
+    def _get_path(self, domain):
+        return self._path
+    
+    path = property(_get_path, _set_path)
+
     def _encrypt_data(self):
         """Serialize, encipher, and base64 the session dict"""
         if self.encrypt_key:

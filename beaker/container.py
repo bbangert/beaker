@@ -313,6 +313,11 @@ class Value(object):
             self.namespace.release_read_lock()
             self.set_value(value)
             self.namespace.acquire_read_lock()
+        except TypeError:
+            # occurs when the value is None.  memcached 
+            # may yank the rug from under us in which case 
+            # that's the result
+            raise KeyError(self.key)            
         return value
 
     def set_value(self, value):

@@ -1,9 +1,16 @@
-Release 1.4.1 (9/10/2009)
+Release 1.4.2 (9/25/2009)
 =========================
 
+* Fix bug where memcached may yank a value after the has_value but before
+  the value can be fetched.
+* Fix properties for setting the path. Fixes #15.
 * Fix the 'TypeError: argument must be an int, or have a fileno()
   method' erorr sporadically emitted by FileSynchronizer under moderate
   load.
+
+Release 1.4.1 (9/10/2009)
+=========================
+
 * Fix verification of options to throw an error if a beaker param is an
   empty string.
 * Add CacheManager.invalidate function to easily invalidate cache

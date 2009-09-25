@@ -2,7 +2,7 @@ import sys
 
 from setuptools import setup, find_packages
 
-version = '1.4.1'
+version = '1.4.2'
 
 pycryptopp = 'pycryptopp>=0.5.12'
 tests_require = ['nose', 'webtest']
