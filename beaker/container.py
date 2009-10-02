@@ -254,7 +254,7 @@ class Value(object):
                         return value
                 except KeyError:
                     # guard against un-mutexed backends raising KeyError
-                    pass
+                    has_value = False
                     
             if not self.createfunc:
                 raise KeyError(self.key)
