@@ -131,22 +131,22 @@ def deprecated(func, message):
 class ThreadLocal(object):
     """stores a value on a per-thread basis"""
 
-    __slots__ = 'tlocal'
+    __slots__ = '_tlocal'
 
     def __init__(self):
-        self.tlocal = _tlocal()
+        self._tlocal = _tlocal()
     
     def put(self, value):
-        self.tlocal.value = value
+        self._tlocal.value = value
     
     def has(self):
-        return hasattr(self.tlocal, 'value')
+        return hasattr(self._tlocal, 'value')
             
     def get(self, default=None):
-        return getattr(self.tlocal, 'value', default)
+        return getattr(self._tlocal, 'value', default)
             
     def remove(self):
-        del self.tlocal.value
+        del self._tlocal.value
     
 class SyncDict(object):
     """
