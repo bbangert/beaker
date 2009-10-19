@@ -1,149 +1,90 @@
 from beaker.util import SyncDict, WeakValuedRegistry
-import gc, random, sys, time, weakref
-
-# this script tests SyncDict for its thread safety, 
-# ability to always return a value even for a dictionary 
-# that loses data randomly,  and
-# insures that when used as a registry, only one instance
-# of a particular key/value exists at any one time.
-
-import thread
+import random, time, weakref
+import threading
     
-jython = sys.platform.startswith('java')
-
-def collect():
-    """The tests assume CPython GC behavior in regard to weakrefs, but
-    we can coerce Jython into passing by triggering GC when we expect
-    it to have happened on CPython
-    """
-    if jython:
-        gc.collect()
-
-
-class item:
+class Value(object):
+    values = {}
     
-    def __init__(self, id):
-        self.id = id
+    def do_something(self, id):
+        Value.values[id] = self
         
-    def __str__(self):
-        return "item id %d" % self.id
+    def stop_doing_something(self, id):
+        del Value.values[id]
 
-# keep running indicator
-running = False
-
-# one item is referenced at a time (to insure singleton pattern)
-theitem = weakref.ref(item(0))
-
-# creation func entrance detector to detect non-synchronized access
-# to the create function
-baton = None
-
+mutex = threading.Lock()
 
 def create(id):
-    global baton
-    assert baton is None, "baton is not none !"
-
-    baton = True
-    try:    
-        global theitem
-        collect()
+    assert not Value.values, "values still remain"
+    global totalcreates
+    totalcreates += 1
+    return Value()
         
-        assert theitem() is None, "create %d old item is still referenced" % id
-            
-        i = item(id)
-        theitem = weakref.ref(i)
-
-        global totalcreates
-        totalcreates += 1
-
-        return i
-    finally:
-        baton = None
-        
-def threadtest(s, id, statusdict):
+def threadtest(s, id):
     print "create thread %d starting" % id
-    statusdict[id] = True
 
-    try:
-        global running
-        global totalgets
+    global running
+    global totalgets
+    while running:
         try:
-            while running:
-                s.get('test', lambda: create(id))
-                totalgets += 1
-                time.sleep(random.random() * .00001)
-        except:
-            e = sys.exc_info()[0]
+            value = s.get('test', lambda: create(id))
+            value.do_something(id)
+        except Exception, e:
+            print "Error", e
             running = False
-            print e
-    finally:
-        print "create thread %d exiting" % id
-        statusdict[id] = False
-
+            break
+        else:
+            totalgets += 1
+            time.sleep(random.random() * .01)
+            value.stop_doing_something(id)
+            del value
+            time.sleep(random.random() * .01)
+        
 def runtest(s):
 
-    statusdict = {}
+    global values
+    values = {}
+    
     global totalcreates
     totalcreates = 0
-
-    global totalremoves
-    totalremoves = 0
-
+    
     global totalgets
     totalgets = 0
 
     global running
-    running = True    
-    for t in range(1, 10):
-        thread.start_new_thread(threadtest, (s, t, statusdict))
-        
-    time.sleep(1)
+    running = True
+
+    threads = []
+    for id_ in range(1, 20):
+        t = threading.Thread(target=threadtest, args=(s, id_))
+        t.start()
+        threads.append(t)
     
-    for x in range (0,10):
+    for i in range(0, 10):
         if not running:
             break
-        print "Removing item"
-        try: 
-            del s['test']
-            totalremoves += 1
-        except KeyError:
-            pass
-        sleeptime = random.random() * .89
-        time.sleep(sleeptime)
-
+        time.sleep(1)
+    
     failed = not running
 
     running = False
 
-    pause = True
-    while pause:
-        time.sleep(1)    
-        pause = False
-        for v in statusdict.values():
-            if v:
-                pause = True
-                break
+    for t in threads:
+        t.join()
 
-    if failed:
-        raise Exception("test failed")
+    assert not failed, "test failed"
 
     print "total object creates %d" % totalcreates
     print "total object gets %d" % totalgets
-    print "total object removes %d" % totalremoves
 
     
 def test_dict():
     # normal dictionary test, where we will remove the value
     # periodically. the number of creates should be equal to
     # the number of removes plus one.    
-    collect()
     print "\ntesting with normal dict"
     runtest(SyncDict())
 
-    assert(totalremoves + 1 == totalcreates)
-
 
 def test_weakdict():
-    collect()
     print "\ntesting with weak dict"
     runtest(WeakValuedRegistry())

@@ -156,8 +156,8 @@ class SyncDict(object):
     
         exists && isvalid ? get : create
 
-    Works with weakref dictionaries and the LRUCache to handle items
-    asynchronously disappearing from the dictionary.  
+    Designed to work with weakref dictionaries to expect items
+    to asynchronously disappear from the dictionary.  
 
     Use python 2.3.3 or greater !  a major bug was just fixed in Nov.
     2003 that was driving me nuts with garbage collection/weakrefs in
