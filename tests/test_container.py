@@ -23,7 +23,7 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
     CachedWidget.delay = delay
     
     # allow for python overhead when checking current time against expire times
-    fudge = .5
+    fudge = 1
     
     starttime = time.time()
     
@@ -50,7 +50,7 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
                         currenttime = time.time()
                         itemtime = item.time
                         assert itemtime + expiretime + delay + fudge >= currenttime, \
-                            "created: %d expire: %d delay: %d currenttime: %d" % (itemtime, expiretime, delay, currenttime)
+                            "created: %f expire: %f delay: %f currenttime: %f" % (itemtime, expiretime, delay, currenttime)
                     time.sleep(random.random() * .00001)
             except:
                 running[0] = False
@@ -68,7 +68,7 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
     else:
         value = None
     
-    threads = [RunThread() for i in range(1, 20)]
+    threads = [RunThread() for i in range(1, 8)]
     
     for t in threads:
         t.start()
@@ -85,7 +85,7 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
     if expiretime is None:
         expected = 1
     else:
-        expected = totaltime / expiretime
+        expected = totaltime / expiretime + 1
     assert CachedWidget.totalcreates <= expected, \
             "Number of creates %d exceeds expected max %d" % (CachedWidget.totalcreates, expected)
 
