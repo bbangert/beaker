@@ -217,29 +217,24 @@ class Value(object):
         try:    
             has_value = self.namespace.has_key(self.key)
             if has_value:
-                value = self.__get_value()
-                return not self._is_expired()
+                stored, expired, value = self._get_value()
+                return not self._is_expired(stored, expired)
             else:
                 return False
         finally:
             self.namespace.release_read_lock()
 
-    def _is_expired(self):
-        """Return true if this container's value is expired.
-        
-        Note that this method is only correct if has_current_value()
-        or get_value() have been called already.
-        
-        """
+    def _is_expired(self, storedtime, expiretime):
+        """Return true if this container's value is expired."""
         return (
             (
                 self.starttime is not None and
-                self.storedtime < self.starttime
+                storedtime < self.starttime
             )
             or
             (
-                self.expiretime is not None and
-                time.time() >= self.expiretime + self.storedtime
+                expiretime is not None and
+                time.time() >= expiretime + storedtime
             )
         )
 
@@ -249,8 +244,8 @@ class Value(object):
             has_value = self.has_value()
             if has_value:
                 try:
-                    value = self.__get_value()
-                    if not self._is_expired():
+                    stored, expired, value = self._get_value()
+                    if not self._is_expired(stored, expired):
                         return value
                 except KeyError:
                     # guard against un-mutexed backends raising KeyError
@@ -282,8 +277,8 @@ class Value(object):
             try:
                 if self.has_value():
                     try:
-                        value = self.__get_value()
-                        if not self._is_expired():
+                        stored, expired, value = self._get_value()
+                        if not self._is_expired(stored, expired):
                             return value
                     except KeyError:
                         # guard against un-mutexed backends raising KeyError
@@ -299,33 +294,34 @@ class Value(object):
             creation_lock.release()
             debug("released create lock")
 
-    def __get_value(self):
+    def _get_value(self):
         value = self.namespace[self.key]
         try:
-            self.storedtime, self.expiretime, value = value
+            stored, expired, value = value
         except ValueError:
             if not len(value) == 2:
                 raise
             # Old format: upgrade
-            self.storedtime, value = value
-            self.expiretime = self.expire_argument = None
-            debug("get_value upgrading time %r expire time %r", self.storedtime, self.expire_argument)
+            stored, value = value
+            expired = self.expire_argument
+            debug("get_value upgrading time %r expire time %r", stored, self.expire_argument)
             self.namespace.release_read_lock()
-            self.set_value(value)
+            self.set_value(value, stored)
             self.namespace.acquire_read_lock()
         except TypeError:
             # occurs when the value is None.  memcached 
             # may yank the rug from under us in which case 
             # that's the result
             raise KeyError(self.key)            
-        return value
+        return stored, expired, value
 
-    def set_value(self, value):
+    def set_value(self, value, storedtime=None):
         self.namespace.acquire_write_lock()
         try:
-            self.storedtime = time.time()
-            debug("set_value stored time %r expire time %r", self.storedtime, self.expire_argument)
-            self.namespace.set_value(self.key, (self.storedtime, self.expire_argument, value))
+            if storedtime is None:
+                storedtime = time.time()
+            debug("set_value stored time %r expire time %r", storedtime, self.expire_argument)
+            self.namespace.set_value(self.key, (storedtime, self.expire_argument, value))
         finally:
             self.namespace.release_write_lock()
 

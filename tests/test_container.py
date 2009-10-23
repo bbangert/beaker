@@ -1,111 +1,103 @@
 import os
 import random
 import time
-import unittest
 from beaker.container import *
 from beaker.synchronization import _synchronizers
 from beaker.cache import clsmap
-import thread
+from threading import Thread
 
-def create(delay=0):
-    global baton, totalcreates
-    assert baton is None, "baton is not none , ident %r, this thread %r" % (baton, thread.get_ident())
+class CachedWidget(object):
+    totalcreates = 0
+    delay = 0
+    
+    def __init__(self):
+        CachedWidget.totalcreates += 1
+        time.sleep(CachedWidget.delay)
+        self.time = time.time()
 
-    baton = thread.get_ident()
-    try:    
-        obj = object()
-        time.sleep(delay)
-        totalcreates += 1
-        return obj
-    finally:
-        baton = None
-        
-def runthread(cls, id, runningids, value, delay, kwargs):
-    print "create thread %d starting" % id
-    runningids.add(id)
-
-    try:
-        if not value:
-            expiretime = kwargs.pop('expiretime', None)
-            starttime = kwargs.pop('starttime', None)
-            value = Value('test', cls('test', **kwargs), createfunc=lambda:create(delay), expiretime=expiretime, starttime=starttime)
-            
-        global running, totalgets
-        try:
-            while running:
-                item = value.get_value()
-                assert item is not None
-                item = None
-                totalgets += 1
-                time.sleep(random.random() * .00001)
-        except:
-            running = False
-            raise
-    finally:
-        print "create thread %d exiting" % id
-        runningids.remove(id)
-
-def _runtest(cls, totaltime, expiretime, delay, threadlocal):
+def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
     print "\ntesting %s for %d secs with expiretime %s delay %d" % (
         cls, totaltime, expiretime, delay)
 
-    global running, starttime, baton, totalcreates, totalgets
+    CachedWidget.totalcreates = 0
+    CachedWidget.delay = delay
     
-    running = False
+    # allow for python overhead when checking current time against expire times
+    fudge = .5
+    
     starttime = time.time()
-    baton = None
-
-    runningids = set()
-    totalcreates = 0
-
-    totalgets = 0
     
-    kwargs = dict(
-        expiretime=expiretime, 
-        starttime = starttime,
-        data_dir='./cache'
-        )
-    
+    running = [True]
+    class RunThread(Thread):
+        def run(self):
+            print "%s starting" % self
+            
+            if threadlocal:
+                localvalue = Value(
+                                'test', 
+                                cls('test', data_dir='./cache'), 
+                                createfunc=CachedWidget, 
+                                expiretime=expiretime, 
+                                starttime=starttime)
+                localvalue.clear_value()
+            else:
+                localvalue = value
+                
+            try:
+                while running[0]:
+                    item = localvalue.get_value()
+                    if expiretime is not None:
+                        currenttime = time.time()
+                        itemtime = item.time
+                        assert itemtime + expiretime + delay + fudge >= currenttime, \
+                            "created: %d expire: %d delay: %d currenttime: %d" % (itemtime, expiretime, delay, currenttime)
+                    time.sleep(random.random() * .00001)
+            except:
+                running[0] = False
+                raise
+            print "%s finishing" % self
+                
     if not threadlocal:
-        expiretime = kwargs.pop('expiretime', None)
-        starttime = kwargs.pop('starttime', None)
-        value = Value('test', cls('test', **kwargs), createfunc=lambda:create(delay), expiretime=expiretime, starttime=starttime)
+        value = Value(
+                    'test', 
+                    cls('test', data_dir='./cache'), 
+                    createfunc=CachedWidget, 
+                    expiretime=expiretime, 
+                    starttime=starttime)
         value.clear_value()
     else:
         value = None
-        
-    running = True    
-    for t in range(1, 20):
-        thread.start_new_thread(runthread, (cls, t, runningids, value, delay, kwargs))
+    
+    threads = [RunThread() for i in range(1, 20)]
+    
+    for t in threads:
+        t.start()
         
     time.sleep(totaltime)
+
+    failed = not running[0]
+    running[0] = False
     
-    failed = not running
-
-    running = False
-
-    while runningids:
-        time.sleep(1)
-
-    assert not failed
-
-    print "total object creates %d" % totalcreates
-    print "total object gets %d" % totalgets
+    for t in threads:
+        t.join()
     
+    assert not failed, "One or more threads failed"
     if expiretime is None:
-        assert totalcreates == 1
+        expected = 1
     else:
-        assert abs(totaltime / expiretime - totalcreates) <= 2
+        expected = totaltime / expiretime
+    assert CachedWidget.totalcreates <= expected, \
+            "Number of creates %d exceeds expected max %d" % (CachedWidget.totalcreates, expected)
 
 def test_memory_container(totaltime=10, expiretime=None, delay=0, threadlocal=False):
-    _runtest(clsmap['memory'],
+    _run_container_test(clsmap['memory'],
                   totaltime, expiretime, delay, threadlocal)
 
 def test_dbm_container(totaltime=10, expiretime=None, delay=0):
-    _runtest(clsmap['dbm'], totaltime, expiretime, delay, False)
+    _run_container_test(clsmap['dbm'], totaltime, expiretime, delay, False)
 
 def test_file_container(totaltime=10, expiretime=None, delay=0, threadlocal=False):
-    _runtest(clsmap['file'], totaltime, expiretime, delay, threadlocal)
+    _run_container_test(clsmap['file'], totaltime, expiretime, delay, threadlocal)
 
 def test_memory_container_tlocal():
     test_memory_container(expiretime=5, delay=2, threadlocal=True)

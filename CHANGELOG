@@ -2,6 +2,9 @@ Release 1.4.3 (**tip**)
 =======================
 
 * Fix bug where has_value sees the value before its removed.
+* Improved accuracy of "dogpile" checker by removing dependency
+  on "self" attributes, which seem to be slightly unreliable
+  in highly concurrent scenarios.
 
 Release 1.4.2 (9/25/2009)
 =========================
