@@ -21,6 +21,8 @@ clsmap = {
           'file':container.FileNamespaceManager,
           }
 
+# Initialize the cache region dict
+cache_regions = {}
 
 # Load up the additional entry point defined backends
 for entry_point in pkg_resources.iter_entry_points('beaker.backends'):
@@ -72,6 +74,110 @@ try:
     clsmap['ext:google'] = google.GoogleNamespaceManager
 except (InvalidCacheBackendError, SyntaxError), e:
     clsmap['ext:google'] = e
+
+
+def cache_region(region, *args):
+    """Decorate a function to cache itself using a cache region
+    
+    The region decorator requires arguments if there are more than
+    2 of the same named function, in the same module. This is
+    because the namespace used for the functions cache is based on
+    the functions name and the module.
+    
+    
+    Example::
+        
+        # Add cache region settings to beaker:
+        beaker.cache.cache_regions.update(dict_of_config_region_options))
+        
+        @cache_region('short_term', 'some_data')
+        def populate_things(search_term, limit, offset):
+            return load_the_data(search_term, limit, offset)
+        
+        return load('rabbits', 20, 0)
+    
+    .. note::
+        
+        The function being decorated must only be called with
+        positional arguments.
+    
+    """
+    cache = [None]
+    key = " ".join(str(x) for x in args)
+    
+    def decorate(func):
+        namespace = util.func_namespace(func)
+        def cached(*args):
+            reg = self.regions[region]
+            if not reg.get('enabled', True):
+                return func(*args)
+            
+            if not cache[0]:
+                if region not in cache_regions:
+                    raise BeakerException('Cache region not configured: %s' % region)
+                cache[0] = Cache(namespace, **cache_regions[region])
+            
+            cache_key = key + " " + " ".join(str(x) for x in args)
+            def go():
+                return func(*args)
+            
+            return cache[0].get_value(cache_key, createfunc=go)
+        cached._arg_namespace = namespace
+        cached._arg_region = region
+        return cached
+    return decorate
+
+
+def region_invalidate(namespace, region, *args):
+    """Invalidate a cache region namespace or decorated function
+    
+    This function only invalidates cache spaces created with the
+    cache_region decorator.
+    
+    namespace
+        Either the namespace of the result to invalidate, or the
+        name of the cached function
+    
+    region
+        The region the function was cached to. If the function was
+        cached to a single region then this argument can be None
+    
+    args
+        Arguments that were used to differentiate the cached
+        function as well as the arguments passed to the decorated
+        function
+
+    Example::
+        
+        # Add cache region settings to beaker:
+        beaker.cache.cache_regions.update(dict_of_config_region_options))
+        
+        def populate_things(invalidate=False):
+            
+            @cache_region('short_term', 'some_data')
+            def load(search_term, limit, offset):
+                return load_the_data(search_term, limit, offset)
+            
+            # If the results should be invalidated first
+            if invalidate:
+                region_invalidate(load, None, 'some_data',
+                                        'rabbits', 20, 0)
+            return load('rabbits', 20, 0)
+    
+    """
+    if callable(namespace):
+        if not region:
+            region = namespace._arg_region
+        namespace = namespace._arg_namespace
+
+    if not region:
+        raise BeakerException("Region or callable function namespace is required")
+    else:
+        region = cache_regions[region]
+    
+    cache = Cache(namespace, **region)
+    cache_key = " ".join(str(x) for x in args)
+    cache.remove_value(cache_key)
 
 
 class Cache(object):
@@ -180,6 +286,9 @@ class CacheManager(object):
         self.kwargs = kwargs
         self.caches = {}
         self.regions = kwargs.pop('cache_regions', {})
+        
+        # Add these regions to the module global
+        _cache_regions.update(self.regions)
     
     def get_cache(self, name, **kwargs):
         kw = self.kwargs.copy()
