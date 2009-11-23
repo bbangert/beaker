@@ -217,10 +217,12 @@ class Value(object):
         try:    
             has_value = self.namespace.has_key(self.key)
             if has_value:
-                stored, expired, value = self._get_value()
-                return not self._is_expired(stored, expired)
-            else:
-                return False
+                try:
+                    stored, expired, value = self._get_value()
+                    return not self._is_expired(stored, expired)
+                except KeyError:
+                    pass
+            return False
         finally:
             self.namespace.release_read_lock()
 

@@ -1,6 +1,8 @@
 Release 1.5 (11/23/2009)
 ========================
 
+* Fix bug when cache value doesn't exist causing has_key to throw
+  an exception rather than return False. Fixes #24.
 * Fix bug where getpid under GAE is used improperly to assume it
   should be a non-string. Fixes #22.
 * Add cache_region decorator that works *before* configuration of
