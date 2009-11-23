@@ -23,6 +23,7 @@ clsmap = {
 
 # Initialize the cache region dict
 cache_regions = {}
+cache_managers = {}
 
 # Load up the additional entry point defined backends
 for entry_point in pkg_resources.iter_entry_points('beaker.backends'):
@@ -115,7 +116,7 @@ def cache_region(region, *args):
             if not cache[0]:
                 if region not in cache_regions:
                     raise BeakerException('Cache region not configured: %s' % region)
-                cache[0] = Cache(namespace, **cache_regions[region])
+                cache[0] = cache_managers.setdefault(namespace + str(reg), Cache(namespace, **reg))
             
             cache_key = key + " " + " ".join(str(x) for x in args)
             def go():
@@ -175,7 +176,7 @@ def region_invalidate(namespace, region, *args):
     else:
         region = cache_regions[region]
     
-    cache = Cache(namespace, **region)
+    cache = cache_managers.setdefault(namespace + str(region), Cache(namespace, **region))
     cache_key = " ".join(str(x) for x in args)
     cache.remove_value(cache_key)
 
@@ -284,7 +285,6 @@ class CacheManager(object):
         
         """
         self.kwargs = kwargs
-        self.caches = {}
         self.regions = kwargs.pop('cache_regions', {})
         
         # Add these regions to the module global
@@ -293,13 +293,13 @@ class CacheManager(object):
     def get_cache(self, name, **kwargs):
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        return self.caches.setdefault(name + str(kw), Cache(name, **kw))
+        return cache_managers.setdefault(name + str(kw), Cache(name, **kw))
     
     def get_cache_region(self, name, region):
         if region not in self.regions:
             raise BeakerException('Cache region not configured: %s' % region)
         kw = self.regions[region]
-        return self.caches.setdefault(name + str(kw), Cache(name, **kw))
+        return cache_managers.setdefault(name + str(kw), Cache(name, **kw))
     
     def region(self, region, *args):
         """Decorate a function to cache itself using a cache region

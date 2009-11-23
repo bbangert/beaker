@@ -30,7 +30,7 @@ class MemcachedNamespaceManager(NamespaceManager):
         elif data_dir:
             self.lock_dir = data_dir + "/container_mcd_lock"
         if self.lock_dir:
-            verify_directory(self.lock_dir)
+            verify_directory(self.lock_dir)            
         
         self.mc = MemcachedNamespaceManager.clients.get(url, memcache.Client, url.split(';'))
 
