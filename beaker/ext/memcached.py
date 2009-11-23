@@ -2,14 +2,19 @@ from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer, null_synchronizer
 from beaker.util import verify_directory, SyncDict
+import warnings
 
 try:
-    import cmemcache as memcache
+    import pylibmc as memcache
 except ImportError:
     try:
-        import memcache
+        import cmemcache as memcache
+        warnings.warn("cmemcache is known to have serious concurrency issues; consider using 'memcache' or 'pylibmc'")
     except ImportError:
-        raise InvalidCacheBackendError("Memcached cache backend requires either the 'memcache' or 'cmemcache' library")
+        try:
+            import memcache
+        except ImportError:
+            raise InvalidCacheBackendError("Memcached cache backend requires either the 'memcache' or 'cmemcache' library")
 
 class MemcachedNamespaceManager(NamespaceManager):
     clients = SyncDict()
@@ -25,10 +30,9 @@ class MemcachedNamespaceManager(NamespaceManager):
         elif data_dir:
             self.lock_dir = data_dir + "/container_mcd_lock"
         if self.lock_dir:
-            verify_directory(self.lock_dir)            
+            verify_directory(self.lock_dir)
         
-        self.mc = MemcachedNamespaceManager.clients.get(url, 
-            memcache.Client, url.split(';'), debug=0)
+        self.mc = MemcachedNamespaceManager.clients.get(url, memcache.Client, url.split(';'))
 
     def get_creation_lock(self, key):
         return file_synchronizer(
