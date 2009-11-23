@@ -541,7 +541,12 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
         self.flags = None
                 
     def do_remove(self):
-        os.remove(self.file)
+        try:
+            os.remove(self.file)
+        except OSError, err:
+            # for instance, because we haven't yet used this cache,
+            # but client code has asked for a clear() operation...
+            pass
         self.hash = {}
         
     def __getitem__(self, key): 
