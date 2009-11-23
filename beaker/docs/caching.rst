@@ -219,6 +219,20 @@ Assuming a ``long_term`` and ``short_term`` region were setup, the
     
     results = get_results('gophers')
 
+Or using the :func:`beaker.cache.cache_region` decorator::
+    
+    @cache_region('short_term', 'my_search_func')
+    def get_results(search_param):
+        # do something to retrieve data
+        data = get_data(search_param)
+        return data
+    
+    results = get_results('gophers')
+
+The only difference with the :func:`beaker.cache.cache_region` decorator is
+that the cache does not need to be configured when its used. This allows one
+to decorate functions in a module before the Beaker cache is configured.
+
 Invalidating
 ------------
 
@@ -228,6 +242,11 @@ namespace used, manually removing the key requires the use of the
 the 'gophers' result that the prior example referred to::
     
     cache.region_invalidate(get_results, None, 'my_search_func', 'gophers')
+
+Or when using the :func:`beaker.cache.cache_region` decorator, the
+:func:`beaker.cache.region_invalidate` function should be used::
+    
+    region_invalidate(get_results, None, 'my_search_func', 'gophers')
 
 .. note::
     Both the arguments used to specify the additional namespace info to the

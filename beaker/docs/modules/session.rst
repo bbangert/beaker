@@ -11,6 +11,6 @@ Module Contents
 .. autoclass:: Session
    :members: save, revert, lock, unlock, delete, invalidate
 .. autoclass:: SessionObject
-   :members: persist
+   :members: persist, get_by_id, accessed
 .. autoclass:: SignedCookie
    

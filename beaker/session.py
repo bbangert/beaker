@@ -581,6 +581,7 @@ class SessionObject(object):
         return self._session().has_key(key)
     
     def get_by_id(self, id):
+        """Loads a session given a session ID"""
         params = self.__dict__['_params']
         session = Session({}, use_cookies=False, id=id, **params)
         if session.is_new:
@@ -615,4 +616,5 @@ class SessionObject(object):
         return self.__dict__.get('_dirty', False)
     
     def accessed(self):
+        """Returns whether or not the session has been accessed"""
         return self.__dict__['_sess'] is not None
