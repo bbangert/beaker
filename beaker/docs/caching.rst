@@ -27,7 +27,7 @@ for example a template might need several different copies of itself stored
 depending on whether a user is logged in or not. Each one of these copies
 is then ``keyed`` under the NamespaceManager and stored in a Container.
 
-There are two schemes for using Beaker's caching, the first and more 
+There are three schemes for using Beaker's caching, the first and more 
 traditional style is the programmatic API. This exposes the namespace's
 and retrieves a :class:`~beaker.cache.Cache` object that handles storing
 keyed values in a NamespaceManager with Container objects.
@@ -35,6 +35,12 @@ keyed values in a NamespaceManager with Container objects.
 The more elegant system, introduced in Beaker 1.3, is to use the
 :ref:`cache decorators <decorator_api>`, these also support the
 use of :term:`Cache Regions`.
+
+Introduced in Beaker 1.5 is a more flexible
+ :func:`~beaker.cache.cache_region` decorator capable of decorating functions
+ for use with Beaker's :ref:`cache_regions` **before** Beaker has been
+configured. This makes it possible to easily use Beaker's region caching
+decorator on functions in the module level.
 
 
 Creating the CacheManager Instance
@@ -185,6 +191,8 @@ Example::
 
 Cache Regions
 =============
+
+.. _cache_regions:
 
 Rather than having to specify the expiration, or toggle the type used for
 caching different functions, commonly used cache parameters can be defined

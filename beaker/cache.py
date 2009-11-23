@@ -108,7 +108,7 @@ def cache_region(region, *args):
     def decorate(func):
         namespace = util.func_namespace(func)
         def cached(*args):
-            reg = self.regions[region]
+            reg = cache_regions[region]
             if not reg.get('enabled', True):
                 return func(*args)
             
@@ -136,7 +136,7 @@ def region_invalidate(namespace, region, *args):
     
     namespace
         Either the namespace of the result to invalidate, or the
-        name of the cached function
+        cached function reference
     
     region
         The region the function was cached to. If the function was
@@ -288,7 +288,7 @@ class CacheManager(object):
         self.regions = kwargs.pop('cache_regions', {})
         
         # Add these regions to the module global
-        _cache_regions.update(self.regions)
+        cache_regions.update(self.regions)
     
     def get_cache(self, name, **kwargs):
         kw = self.kwargs.copy()
