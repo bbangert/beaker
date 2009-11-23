@@ -1,6 +1,11 @@
-Release 1.4.3 (**tip**)
-=======================
+Release 1.5 (11/23/2009)
+========================
 
+* Fix bug where getpid under GAE is used improperly to assume it
+  should be a non-string. Fixes #22.
+* Add cache_region decorator that works *before* configuration of
+  the cache regions have been completed for use in module-level
+  decorations.
 * Fix bug where has_value sees the value before its removed.
 * Improved accuracy of "dogpile" checker by removing dependency
   on "self" attributes, which seem to be slightly unreliable

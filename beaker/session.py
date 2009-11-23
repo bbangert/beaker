@@ -450,7 +450,7 @@ class CookieSession(Session):
     
     def _make_id(self):
         return md5(md5(
-            "%f%s%f%d" % (time.time(), id({}), random.random(), getpid())
+            "%f%s%f%s" % (time.time(), id({}), random.random(), getpid())
             ).hexdigest()
         ).hexdigest()
     
