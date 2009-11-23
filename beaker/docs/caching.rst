@@ -36,11 +36,11 @@ The more elegant system, introduced in Beaker 1.3, is to use the
 :ref:`cache decorators <decorator_api>`, these also support the
 use of :term:`Cache Regions`.
 
-Introduced in Beaker 1.5 is a more flexible
- :func:`~beaker.cache.cache_region` decorator capable of decorating functions
- for use with Beaker's :ref:`cache_regions` **before** Beaker has been
-configured. This makes it possible to easily use Beaker's region caching
-decorator on functions in the module level.
+Introduced in Beaker 1.5 is a more flexible :func:`~beaker.cache.cache_region`
+decorator capable of decorating functions for use with Beaker's
+:ref:`caching_with_regions` **before** Beaker has been configured. This makes
+it possible to easily use Beaker's region caching decorator on functions in
+the module level.
 
 
 Creating the CacheManager Instance
@@ -189,10 +189,10 @@ Example::
     to remove.
 
 
+.. _caching_with_regions:
+
 Cache Regions
 =============
-
-.. _cache_regions:
 
 Rather than having to specify the expiration, or toggle the type used for
 caching different functions, commonly used cache parameters can be defined
@@ -219,7 +219,7 @@ Assuming a ``long_term`` and ``short_term`` region were setup, the
     
     results = get_results('gophers')
 
-Or using the :func:`beaker.cache.cache_region` decorator::
+Or using the :func:`~beaker.cache.cache_region` decorator::
     
     @cache_region('short_term', 'my_search_func')
     def get_results(search_param):
@@ -229,7 +229,7 @@ Or using the :func:`beaker.cache.cache_region` decorator::
     
     results = get_results('gophers')
 
-The only difference with the :func:`beaker.cache.cache_region` decorator is
+The only difference with the :func:`~beaker.cache.cache_region` decorator is
 that the cache does not need to be configured when its used. This allows one
 to decorate functions in a module before the Beaker cache is configured.
 
@@ -243,7 +243,7 @@ the 'gophers' result that the prior example referred to::
     
     cache.region_invalidate(get_results, None, 'my_search_func', 'gophers')
 
-Or when using the :func:`beaker.cache.cache_region` decorator, the
+Or when using the :func:`~beaker.cache.cache_region` decorator, the
 :func:`beaker.cache.region_invalidate` function should be used::
     
     region_invalidate(get_results, None, 'my_search_func', 'gophers')
