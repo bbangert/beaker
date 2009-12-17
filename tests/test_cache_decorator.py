@@ -7,6 +7,14 @@ from beaker.util import parse_cache_config_options
 
 defaults = {'cache.data_dir':'./cache', 'cache.type':'dbm', 'cache.expire': 2}
 
+@cache_region('short_term')
+def fred(x):
+    return time.time()
+
+@cache_region('short_term')
+def george(x):
+    return time.time()
+
 def make_cache_obj(**kwargs):
     opts = defaults.copy()
     opts.update(kwargs)
@@ -40,6 +48,11 @@ def test_check_decorator():
     
     time.sleep(2)
     result2 = func('Fred')
+    assert result != result2
+
+def test_different_default_names():
+    result = fred(1)
+    result2 = george(1)
     assert result != result2
 
 def test_check_invalidate_region():

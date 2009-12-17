@@ -361,4 +361,4 @@ def func_namespace(func):
     if kls:
         return '%s.%s' % (kls.__module__, kls.__name__)
     else:
-        return func.__module__
+        return '%s.%s' % (func.__module__, func.__name__)
