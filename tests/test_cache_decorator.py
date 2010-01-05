@@ -33,6 +33,18 @@ def make_region_cached_func():
         return "Hi there %s, its currently %s" % (person, now)
     return load
 
+def make_region_cached_func_2():
+    opts = {}
+    opts['cache.regions'] = 'short_term, long_term'
+    opts['cache.short_term.expire'] = '2'
+    cache = make_cache_obj(**opts)
+    
+    @cache_region('short_term')
+    def load_person(person):
+        now = datetime.now()
+        return "Hi there %s, its currently %s" % (person, now)
+    return load_person
+
 def test_check_decorator():
     func = make_region_cached_func()
     result = func('Fred')
@@ -72,4 +84,24 @@ def test_check_invalidate_region():
     
     # Invalidate a non-existent key
     region_invalidate(func, None, 'region_loader', 'Fredd')
+    assert result3 == result2
+
+
+def test_check_invalidate_region_2():
+    func = make_region_cached_func_2()
+    result = func('Fred')
+    assert 'Fred' in result
+    
+    result2 = func('Fred')
+    assert result == result2
+    region_invalidate(func, None, 'Fred')
+    
+    result3 = func('Fred')
+    assert result3 != result2
+    
+    result2 = func('Fred')
+    assert result3 == result2
+    
+    # Invalidate a non-existent key
+    region_invalidate(func, None, 'Fredd')
     assert result3 == result2
