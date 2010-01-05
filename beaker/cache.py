@@ -118,7 +118,7 @@ def cache_region(region, *args):
                     raise BeakerException('Cache region not configured: %s' % region)
                 cache[0] = cache_managers.setdefault(namespace + str(reg), Cache(namespace, **reg))
             
-            cache_key = key + " " + " ".join(str(x) for x in args)
+            cache_key = key + " ".join(str(x) for x in args)
             def go():
                 return func(*args)
             
