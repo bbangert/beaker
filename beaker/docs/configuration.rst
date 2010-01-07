@@ -21,10 +21,13 @@ Frameworks using Beaker usually allow both caching and sessions to be
 configured in the same spot, Beaker assumes this condition as well and
 requires options for caching and sessions to be prefixed appropriately.
 
-For example, to configure the ``cookie_expires`` options for Beaker sessions
+For example, to configure the ``cookie_expires`` option for Beaker sessions
 below, an appropriate entry in a `Pylons`_ INI file would be::
-    
-    beaker.session.cookie_expires = 300
+
+    # Ironically, setting cookie_expires = true causes Beaker to omit the
+    # expires= field from the Set-Cookie: header, signaling the cookie 
+    # should be discarded when the browser closes.
+    beaker.session.cookie_expires = true
 
 .. note::
 
@@ -41,7 +44,7 @@ Or when using stand-alone with the :class:`~beaker.middleware.SessionMiddleware`
     from beaker.middleware import SessionMiddleware
     
     session_opts = {
-        'session.cookie_expires': 300
+        'session.cookie_expires': True
     }
     
     app = SomeWSGIAPP()
