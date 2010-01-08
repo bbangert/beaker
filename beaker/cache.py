@@ -77,7 +77,7 @@ except (InvalidCacheBackendError, SyntaxError), e:
     clsmap['ext:google'] = e
 
 
-def cache_region(region, *args):
+def cache_region(region, *deco_args):
     """Decorate a function to cache itself using a cache region
     
     The region decorator requires arguments if there are more than
@@ -104,7 +104,6 @@ def cache_region(region, *args):
     
     """
     cache = [None]
-    key = " ".join(str(x) for x in args)
     
     def decorate(func):
         namespace = util.func_namespace(func)
@@ -118,7 +117,7 @@ def cache_region(region, *args):
                     raise BeakerException('Cache region not configured: %s' % region)
                 cache[0] = cache_managers.setdefault(namespace + str(reg), Cache(namespace, **reg))
             
-            cache_key = key + " ".join(str(x) for x in args)
+            cache_key = " ".join(map(str, deco_args + args))
             def go():
                 return func(*args)
             
