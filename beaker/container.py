@@ -341,17 +341,34 @@ class Value(object):
         finally:
             self.namespace.release_write_lock()
 
+class AbstractDictionaryNSManager(NamespaceManager):
+    """A subclassable NamespaceManager that places data in a dictionary.
+    
+    Subclasses should provide a "dictionary" attribute or descriptor
+    which returns a dict-like object.   The dictionary will store keys
+    that are local to the "namespace" attribute of this manager, so
+    ensure that the dictionary will not be used by any other namespace.
 
-class MemoryNamespaceManager(NamespaceManager):
-    namespaces = util.SyncDict()
-
-    def __init__(self, namespace, **kwargs):
-        NamespaceManager.__init__(self, namespace)
-        self.dictionary = MemoryNamespaceManager.namespaces.get(self.namespace,
-                                                                dict)
+    e.g.::
+    
+        import collections
+        cached_data = collections.defaultdict(dict)
+        
+        class MyDictionaryManager(AbstractDictionaryNSManager):
+            def __init__(self, namespace):
+                AbstractDictionaryNSManager.__init__(self, namespace)
+                self.dictionary = cached_data[self.namespace]
+                
+    The above stores data in a global dictionary called "cached_data",
+    which is structured as a dictionary of dictionaries, keyed
+    first on namespace name to a sub-dictionary, then on actual
+    cache key to value.
+    
+    """
+    
     def get_creation_lock(self, key):
         return NameLock(
-            identifier="memorycontainer/funclock/%s/%s" % (self.namespace, key),
+            identifier="memorynamespace/funclock/%s/%s" % (self.namespace, key),
             reentrant=True
         )
 
@@ -375,7 +392,14 @@ class MemoryNamespaceManager(NamespaceManager):
         
     def keys(self):
         return self.dictionary.keys()
+    
+class MemoryNamespaceManager(AbstractDictionaryNSManager):
+    namespaces = util.SyncDict()
 
+    def __init__(self, namespace, **kwargs):
+        AbstractDictionaryNSManager.__init__(self, namespace)
+        self.dictionary = MemoryNamespaceManager.namespaces.get(self.namespace,
+                                                                dict)
 
 class DBMNamespaceManager(OpenResourceNamespaceManager):
     def __init__(self, namespace, dbmmodule=None, data_dir=None, 
