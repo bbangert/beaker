@@ -43,7 +43,7 @@ Adding data to the session::
     session['name'] = 'Fred Smith'
 
 Complete example using a basic WSGI app with sessions::
-    
+
     from beaker.middleware import SessionMiddleware
 
     def simple_app(environ, start_response):
@@ -65,7 +65,7 @@ Complete example using a basic WSGI app with sessions::
     # Configure the SessionMiddleware
     session_opts = {
         'session.type': 'file',
-        'session.cookie_expires': 300
+        'session.cookie_expires': True,
     }
     wsgi_app = SessionMiddleware(simple_app, session_opts)
 

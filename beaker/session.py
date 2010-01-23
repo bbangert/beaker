@@ -72,7 +72,19 @@ class SignedCookie(Cookie.BaseCookie):
 
 
 class Session(dict):
-    """Session object that uses container package for storage"""
+    """Session object that uses container package for storage.
+    
+    ``key``
+        The name the cookie should be set to.
+    ``timeout``
+        How long session data is considered valid. This is used 
+        regardless of the cookie being present or not to determine
+        whether session data is still valid.
+    ``cookie_domain``
+        Domain to use for the cookie.
+    ``secure``
+        Whether or not the cookie should only be sent over SSL.
+    """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
                  key='beaker.session.id', timeout=None, cookie_expires=True,
