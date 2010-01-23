@@ -51,7 +51,17 @@ class SignedCookie(Cookie.BaseCookie):
     def value_decode(self, val):
         val = val.strip('"')
         sig = HMAC.new(self.secret, val[40:], SHA1).hexdigest()
-        if sig != val[:40]:
+        
+        # Avoid timing attacks
+        invalid_bits = 0
+        input_sig = val[:40]
+        if len(sig) != len(input_sig):
+            return None, val
+        
+        for a, b in zip(sig, input_sig):
+            invalid_bits += a != b
+        
+        if invalid_bits:
             return None, val
         else:
             return val[40:], val
