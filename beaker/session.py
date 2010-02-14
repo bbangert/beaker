@@ -184,7 +184,7 @@ class Session(dict):
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = True
     
-    def _get_domain(self, domain):
+    def _get_domain(self):
         return self._domain
     
     domain = property(_get_domain, _set_domain)
@@ -195,7 +195,7 @@ class Session(dict):
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = True
     
-    def _get_path(self, domain):
+    def _get_path(self):
         return self._path
     
     path = property(_get_path, _set_path)
