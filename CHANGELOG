@@ -1,3 +1,17 @@
+Release 1.5.2 (**tip**)
+=======================
+
+* Avoid timing attacks on hash comparison.
+* Provide abstract base for MemoryNamespaceManager that deals with
+  "dictionaries".
+* Added tests for invalidating cache, and fixed bug with function cache when
+  no args are present.
+
+Release 1.5.1
+=============
+
+* Fix cache namespacing.
+
 Release 1.5 (11/23/2009)
 ========================
 
