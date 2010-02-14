@@ -7,8 +7,8 @@ Release 1.5.2 (**tip**)
 * Added tests for invalidating cache, and fixed bug with function cache when
   no args are present.
 
-Release 1.5.1
-=============
+Release 1.5.1 (12/17/2009)
+==========================
 
 * Fix cache namespacing.
 
