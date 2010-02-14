@@ -329,28 +329,7 @@ class CacheManager(object):
             positional arguments.
         
         """
-        cache = [None]
-        key = " ".join(str(x) for x in args)
-        
-        def decorate(func):
-            namespace = util.func_namespace(func)
-            def cached(*args):
-                reg = self.regions[region]
-                if not reg.get('enabled', True):
-                    return func(*args)
-                
-                if not cache[0]:
-                    cache[0] = self.get_cache_region(namespace, region)
-                
-                cache_key = key + " " + " ".join(str(x) for x in args)
-                def go():
-                    return func(*args)
-                
-                return cache[0].get_value(cache_key, createfunc=go)
-            cached._arg_namespace = namespace
-            cached._arg_region = region
-            return cached
-        return decorate
+        return cache_region(region, *args)
 
     def region_invalidate(self, namespace, region, *args):
         """Invalidate a cache region namespace or decorated function
@@ -390,6 +369,7 @@ class CacheManager(object):
             
         
         """
+        return region_invalidate(namespace, region, *args)
         if callable(namespace):
             if not region:
                 region = namespace._arg_region
