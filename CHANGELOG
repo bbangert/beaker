@@ -1,6 +1,8 @@
 Release 1.5.2 (**tip**)
 =======================
 
+* pkg_resources scanning for additional Beaker back-ends gracefully handles
+  situations where its not present (GAE). Fixes #36.
 * Avoid timing attacks on hash comparison.
 * Provide abstract base for MemoryNamespaceManager that deals with
   "dictionaries".

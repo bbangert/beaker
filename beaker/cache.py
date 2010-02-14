@@ -7,7 +7,12 @@ specifying an alternate type when used.
 Advanced users can add new backends in beaker.backends
 
 """
-import pkg_resources
+try:
+    package_scan = True
+    import pkg_resources
+except ImportError:
+    package_scan = False
+    
 import warnings
 
 import beaker.container as container
@@ -25,30 +30,31 @@ clsmap = {
 cache_regions = {}
 cache_managers = {}
 
-# Load up the additional entry point defined backends
-for entry_point in pkg_resources.iter_entry_points('beaker.backends'):
-    try:
-        NamespaceManager = entry_point.load()
-        name = entry_point.name
-        if name in clsmap:
-            raise BeakerException("NamespaceManager name conflict,'%s' "
-                                  "already loaded" % name)
-        clsmap[name] = NamespaceManager
-    except (InvalidCacheBackendError, SyntaxError):
-        # Ignore invalid backends
-        pass
-    except:
-        import sys
-        from pkg_resources import DistributionNotFound
-        # Warn when there's a problem loading a NamespaceManager
-        if not isinstance(sys.exc_info()[1], DistributionNotFound):
-            import traceback
-            from StringIO import StringIO
-            tb = StringIO()
-            traceback.print_exc(file=tb)
-            warnings.warn("Unable to load NamespaceManager entry point: '%s': "
-                          "%s" % (entry_point, tb.getvalue()), RuntimeWarning,
-                          2)
+if package_scan:
+    # Load up the additional entry point defined backends
+    for entry_point in pkg_resources.iter_entry_points('beaker.backends'):
+        try:
+            NamespaceManager = entry_point.load()
+            name = entry_point.name
+            if name in clsmap:
+                raise BeakerException("NamespaceManager name conflict,'%s' "
+                                      "already loaded" % name)
+            clsmap[name] = NamespaceManager
+        except (InvalidCacheBackendError, SyntaxError):
+            # Ignore invalid backends
+            pass
+        except:
+            import sys
+            from pkg_resources import DistributionNotFound
+            # Warn when there's a problem loading a NamespaceManager
+            if not isinstance(sys.exc_info()[1], DistributionNotFound):
+                import traceback
+                from StringIO import StringIO
+                tb = StringIO()
+                traceback.print_exc(file=tb)
+                warnings.warn("Unable to load NamespaceManager entry point: '%s': "
+                              "%s" % (entry_point, tb.getvalue()), RuntimeWarning,
+                              2)
 
 
 # Load legacy-style backends
