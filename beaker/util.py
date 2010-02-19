@@ -201,7 +201,7 @@ def coerce_session_params(params):
     rules = [
         ('data_dir', (str, types.NoneType), "data_dir must be a string "
          "referring to a directory."),
-        ('lock_dir', (str,), "lock_dir must be a string referring to a "
+        ('lock_dir', (str, types.NoneType), "lock_dir must be a string referring to a "
          "directory."),
         ('type', (str, types.NoneType), "Session type must be a string."),
         ('cookie_expires', (bool, datetime, timedelta), "Cookie expires was "
@@ -227,7 +227,7 @@ def coerce_cache_params(params):
     rules = [
         ('data_dir', (str, types.NoneType), "data_dir must be a string "
          "referring to a directory."),
-        ('lock_dir', (str,), "lock_dir must be a string referring to a "
+        ('lock_dir', (str, types.NoneType), "lock_dir must be a string referring to a "
          "directory."),
         ('type', (str,), "Cache type must be a string."),
         ('enabled', (bool, types.NoneType), "enabled must be true/false "
@@ -243,6 +243,7 @@ def coerce_cache_params(params):
 def parse_cache_config_options(config, include_defaults=True):
     """Parse configuration options and validate for use with the
     CacheManager"""
+    
     # Load default cache options
     if include_defaults:
         options= dict(type='memory', data_dir=None, expire=None, 

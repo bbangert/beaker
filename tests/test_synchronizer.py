@@ -3,9 +3,13 @@ from beaker.synchronization import *
 # TODO: spawn threads, test locking.
 
 
+def teardown():
+    import shutil
+    shutil.rmtree('./cache', True)
+
 def test_reentrant_file():
-    sync1 = file_synchronizer('test', lock_dir='./')
-    sync2 = file_synchronizer('test', lock_dir='./')
+    sync1 = file_synchronizer('test', lock_dir='./cache')
+    sync2 = file_synchronizer('test', lock_dir='./cache')
     sync1.acquire_write_lock()
     sync2.acquire_write_lock()
     sync2.release_write_lock()

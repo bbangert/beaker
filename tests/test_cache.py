@@ -249,3 +249,8 @@ def _test_upgrade_setitem(dir):
     cache = Cache('test', data_dir=dir, type='dbm')
     assert cache['foo'] == 'bar'
     assert cache['foo'] == 'bar'
+
+
+def teardown():
+    import shutil
+    shutil.rmtree('./cache', True)

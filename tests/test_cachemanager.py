@@ -6,6 +6,10 @@ from beaker.util import parse_cache_config_options
 
 defaults = {'cache.data_dir':'./cache', 'cache.type':'dbm', 'cache.expire': 2}
 
+def teardown():
+    import shutil
+    shutil.rmtree('./cache', True)
+
 def make_cache_obj(**kwargs):
     opts = defaults.copy()
     opts.update(kwargs)
@@ -36,6 +40,13 @@ def make_cached_func():
         return "Hi there %s, its currently %s" % (person, now)
     _cache_obj = cache
     return load
+
+def test_parse_doesnt_allow_none():
+    opts = {}
+    opts['cache.regions'] = 'short_term, long_term'
+    for region, params in parse_cache_config_options(opts)['cache_regions'].iteritems():
+        for k, v in params.iteritems():
+            assert v != 'None', k
 
 def test_decorators():
     for func in (make_region_cached_func, make_cached_func):

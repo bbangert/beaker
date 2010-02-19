@@ -7,11 +7,13 @@ from nose import SkipTest
 from webtest import TestApp
 
 if isinstance(clsmap.get('ext:memcached'), Exception):
-    raise SkipTest("'memcache' or 'cmemcache' is not installed, can't test "
-                   "memcached backend")
+    raise SkipTest("an appropriate memcached backend is not installed")
 
 mc_url = '127.0.0.1:11211'
-loc = os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), 'sessions'])
+
+def teardown():
+    import shutil
+    shutil.rmtree('./cache', True)
 
 def simple_session_app(environ, start_response):
     session = environ['beaker.session']

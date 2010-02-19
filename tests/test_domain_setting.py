@@ -4,7 +4,9 @@ import os
 from beaker.middleware import SessionMiddleware
 from webtest import TestApp
 
-loc = os.path.sep.join([os.path.dirname(os.path.abspath(__file__)), 'sessions'])
+def teardown():
+    import shutil
+    shutil.rmtree('./cache', True)
 
 def simple_app(environ, start_response):
     session = environ['beaker.session']
@@ -22,7 +24,7 @@ def simple_app(environ, start_response):
 
 
 def test_domain():
-    options = {'session.data_dir':loc, 'session.secret':'blah', 'session.cookie_domain': '.test.com'}
+    options = {'session.data_dir':'./cache', 'session.secret':'blah', 'session.cookie_domain': '.test.com'}
     app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/', extra_environ=dict(domain='.hoop.com'))
     assert 'current value is: 1' in res

@@ -7,6 +7,10 @@ from beaker.util import parse_cache_config_options
 
 defaults = {'cache.data_dir':'./cache', 'cache.type':'dbm', 'cache.expire': 2}
 
+def teardown():
+    import shutil
+    shutil.rmtree('./cache', True)
+
 @cache_region('short_term')
 def fred(x):
     return time.time()
