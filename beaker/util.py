@@ -12,91 +12,19 @@ import string
 import types
 import weakref
 import warnings
+import sys
 
-try:
-    Set = set
-except NameError:
-    from sets import Set
+py3k = getattr(sys, 'py3kwarning', False) or sys.version_info >= (3, 0)
+
 try:
     from hashlib import sha1
 except ImportError:
+    # py2.4
     from sha import sha as sha1
 
 from beaker.converters import asbool
-
-try:
-    from base64 import b64encode, b64decode
-except ImportError:
-    import binascii
-
-    _translation = [chr(_x) for _x in range(256)]
-
-    # From Python 2.5 base64.py
-    def _translate(s, altchars):
-        translation = _translation[:]
-        for k, v in altchars.items():
-            translation[ord(k)] = v
-        return s.translate(''.join(translation))
-
-    def b64encode(s, altchars=None):
-        """Encode a string using Base64.
-
-        s is the string to encode.  Optional altchars must be a string of at least
-        length 2 (additional characters are ignored) which specifies an
-        alternative alphabet for the '+' and '/' characters.  This allows an
-        application to e.g. generate url or filesystem safe Base64 strings.
-
-        The encoded string is returned.
-        """
-        # Strip off the trailing newline
-        encoded = binascii.b2a_base64(s)[:-1]
-        if altchars is not None:
-            return _translate(encoded, {'+': altchars[0], '/': altchars[1]})
-        return encoded
-
-    def b64decode(s, altchars=None):
-        """Decode a Base64 encoded string.
-
-        s is the string to decode.  Optional altchars must be a string of at least
-        length 2 (additional characters are ignored) which specifies the
-        alternative alphabet used instead of the '+' and '/' characters.
-
-        The decoded string is returned.  A TypeError is raised if s were
-        incorrectly padded or if there are non-alphabet characters present in the
-        string.
-        """
-        if altchars is not None:
-            s = _translate(s, {altchars[0]: '+', altchars[1]: '/'})
-        try:
-            return binascii.a2b_base64(s)
-        except binascii.Error, msg:
-            # Transform this exception for consistency
-            raise TypeError(msg)
-
-try:
-    from threading import local as _tlocal
-except ImportError:
-    try:
-        from dummy_threading import local as _tlocal
-    except ImportError:
-        class _tlocal(object):
-            def __init__(self):
-                self.__dict__['_tdict'] = {}
-
-            def __delattr__(self, key):
-                try:
-                    del self._tdict[(thread.get_ident(), key)]
-                except KeyError:
-                    raise AttributeError(key)
-
-            def __getattr__(self, key):
-                try:
-                    return self._tdict[(thread.get_ident(), key)]
-                except KeyError:
-                    raise AttributeError(key)
-
-            def __setattr__(self, key, value):
-                self._tdict[(thread.get_ident(), key)] = value
+from base64 import b64encode, b64decode
+from threading import local as _tlocal
 
 
 __all__  = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict",
@@ -121,10 +49,8 @@ def deprecated(func, message):
     def deprecated_method(*args, **kargs):
         warnings.warn(message, DeprecationWarning, 2)
         return func(*args, **kargs)
-    try:
-        deprecated_method.__name__ = func.__name__
-    except TypeError: # Python < 2.4
-        pass
+    # TODO: use decorator ?  functools.wrapper ?
+    deprecated_method.__name__ = func.__name__
     deprecated_method.__doc__ = "%s\n\n%s" % (message, func.__doc__)
     return deprecated_method
 
@@ -219,10 +145,13 @@ def encoded_path(root, identifiers, extension = ".enc", depth = 3,
                  digest_filenames=True):
     """Generate a unique file-accessible path from the given list of
     identifiers starting at the given root directory."""
-    ident = string.join(identifiers, "_")
+    ident = "_".join(identifiers)
 
     if digest_filenames:
-        ident = sha1(ident).hexdigest()
+        if py3k:
+            ident = sha1(ident.encode('utf-8')).hexdigest()
+        else:
+            ident = sha1(ident).hexdigest()
     
     ident = os.path.basename(ident)
 

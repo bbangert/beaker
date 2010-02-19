@@ -36,7 +36,7 @@ except:
 
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException
-from beaker.util import b64decode, b64encode, Set
+from beaker.util import b64decode, b64encode
 
 __all__ = ['SignedCookie', 'Session']
 

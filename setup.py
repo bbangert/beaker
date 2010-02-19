@@ -4,6 +4,12 @@ from setuptools import setup, find_packages
 
 version = '1.5.1'
 
+extra = {}
+if sys.version_info >= (3, 0):
+    extra.update(
+        use_2to3=True,
+    )
+
 pycryptopp = 'pycryptopp>=0.5.12'
 tests_require = ['nose', 'webtest']
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
@@ -104,4 +110,5 @@ The latest developer version is available in a `Mercurial repository
           google = beaker.ext.google:GoogleNamespaceManager
           sqla = beaker.ext.sqla:SqlaNamespaceManager
       """,
+      **extra
 )

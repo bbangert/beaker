@@ -50,7 +50,8 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
                         currenttime = time.time()
                         itemtime = item.time
                         assert itemtime + expiretime + delay + fudge >= currenttime, \
-                            "created: %f expire: %f delay: %f currenttime: %f" % (itemtime, expiretime, delay, currenttime)
+                            "created: %f expire: %f delay: %f currenttime: %f" % \
+                            (itemtime, expiretime, delay, currenttime)
                     time.sleep(random.random() * .00001)
             except:
                 running[0] = False
@@ -163,10 +164,18 @@ def test_removing_file_refreshes():
         x[0] += 1
         return x[0]
         
-    value = Value('test', clsmap['file']('refresh_test', data_dir='./cache'), createfunc=create, starttime=time.time())
+    value = Value('test', 
+                    clsmap['file']('refresh_test', data_dir='./cache'), 
+                    createfunc=create, starttime=time.time()
+                    )
     if os.path.exists(value.namespace.file):
         os.remove(value.namespace.file)
     assert value.get_value() == 1
     assert value.get_value() == 1
     os.remove(value.namespace.file)
     assert value.get_value() == 2
+
+
+def teardown():
+    import shutil
+    shutil.rmtree('./cache', True)
