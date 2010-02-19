@@ -8,25 +8,29 @@ from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer, null_synchronizer
 from beaker.util import verify_directory, SyncDict
 
-sa_version = None
-
 log = logging.getLogger(__name__)
 
-try:
-    import sqlalchemy as sa
-    import sqlalchemy.pool as pool
-    from sqlalchemy import types
-    sa_version = '0.3'
-except ImportError:
-    raise InvalidCacheBackendError("Database cache backend requires the 'sqlalchemy' library")
-
-if not hasattr(sa, 'BoundMetaData'):
-    sa_version = '0.4'
+sa = None
+pool = None
+types = None
 
 class DatabaseNamespaceManager(OpenResourceNamespaceManager):
     metadatas = SyncDict()
     tables = SyncDict()
-    
+
+    @classmethod
+    def _init_dependencies(cls):
+        global sa, pool, types
+        if sa is not None:
+            return
+        try:
+            import sqlalchemy as sa
+            import sqlalchemy.pool as pool
+            from sqlalchemy import types
+        except ImportError:
+            raise InvalidCacheBackendError("Database cache backend requires "
+                                            "the 'sqlalchemy' library")
+        
     def __init__(self, namespace, url=None, sa_opts=None, optimistic=False,
                  table_name='beaker_cache', data_dir=None, lock_dir=None,
                  **params):
@@ -63,18 +67,12 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
             # Check to see if we have a connection pool open already
             meta_key = url + table_name
             def make_meta():
-                if sa_version == '0.3':
-                    if url.startswith('mysql') and not sa_opts:
-                        sa_opts['poolclass'] = pool.QueuePool
-                    engine = sa.create_engine(url, **sa_opts)
-                    meta = sa.BoundMetaData(engine)
-                else:
-                    # SQLAlchemy pops the url, this ensures it sticks around
-                    # later
-                    sa_opts['sa.url'] = url
-                    engine = sa.engine_from_config(sa_opts, 'sa.')
-                    meta = sa.MetaData()
-                    meta.bind = engine
+                # SQLAlchemy pops the url, this ensures it sticks around
+                # later
+                sa_opts['sa.url'] = url
+                engine = sa.engine_from_config(sa_opts, 'sa.')
+                meta = sa.MetaData()
+                meta.bind = engine
                 return meta
             meta = DatabaseNamespaceManager.metadatas.get(meta_key, make_meta)
             # Create the table object and cache it now

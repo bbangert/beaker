@@ -47,7 +47,13 @@ class NamespaceManager(object):
     implementation.
 
     """
+    
+    @classmethod
+    def _init_dependencies(cls):
+        pass
+        
     def __init__(self, namespace):
+        self._init_dependencies()
         self.namespace = namespace
         
     def get_creation_lock(self, key):

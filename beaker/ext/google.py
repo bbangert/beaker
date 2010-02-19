@@ -9,15 +9,21 @@ from beaker.synchronization import null_synchronizer
 
 log = logging.getLogger(__name__)
 
-try:
-    from google.appengine.ext import db
-except ImportError:
-    raise InvalidCacheBackendError("Datastore cache backend requires the "
-                                   "'google.appengine.ext' library")
-
+db = None
 
 class GoogleNamespaceManager(OpenResourceNamespaceManager):
     tables = {}
+
+    @classmethod
+    def _init_dependencies(cls):
+        global db
+        if db is not None:
+            return
+        try:
+            from google.appengine.ext import db
+        except ImportError:
+            raise InvalidCacheBackendError("Datastore cache backend requires the "
+                                           "'google.appengine.ext' library")
     
     def __init__(self, namespace, table_name='beaker_cache', **params):
         """Creates a datastore namespace manager"""

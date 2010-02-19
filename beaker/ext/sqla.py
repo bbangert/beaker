@@ -8,16 +8,25 @@ from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer, null_synchronizer
 from beaker.util import verify_directory, SyncDict
 
-try:
-    import sqlalchemy as sa
-except ImportError:
-    raise InvalidCacheBackendError('SQLAlchemy, which is required by this backend, is not installed')
 
 log = logging.getLogger(__name__)
+
+sa = None
 
 class SqlaNamespaceManager(OpenResourceNamespaceManager):
     binds = SyncDict()
     tables = SyncDict()
+
+    @classmethod
+    def _init_dependencies(cls):
+        global sa
+        if sa is not None:
+            return
+        try:
+            import sqlalchemy as sa
+        except ImportError:
+            raise InvalidCacheBackendError("SQLAlchemy, which is required by "
+                                            "this backend, is not installed")
 
     def __init__(self, namespace, bind, table, data_dir=None, lock_dir=None,
                  **kwargs):

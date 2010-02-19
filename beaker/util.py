@@ -45,15 +45,17 @@ def verify_directory(dir):
                 raise
 
     
-def deprecated(func, message):
-    def deprecated_method(*args, **kargs):
-        warnings.warn(message, DeprecationWarning, 2)
-        return func(*args, **kargs)
-    # TODO: use decorator ?  functools.wrapper ?
-    deprecated_method.__name__ = func.__name__
-    deprecated_method.__doc__ = "%s\n\n%s" % (message, func.__doc__)
-    return deprecated_method
-
+def deprecated(message):
+    def wrapper(fn):
+        def deprecated_method(*args, **kargs):
+            warnings.warn(message, DeprecationWarning, 2)
+            return fn(*args, **kargs)
+        # TODO: use decorator ?  functools.wrapper ?
+        deprecated_method.__name__ = fn.__name__
+        deprecated_method.__doc__ = "%s\n\n%s" % (message, fn.__doc__)
+        return deprecated_method
+    return wrapper
+    
 class ThreadLocal(object):
     """stores a value on a per-thread basis"""
 

@@ -4,21 +4,30 @@ from beaker.synchronization import file_synchronizer, null_synchronizer
 from beaker.util import verify_directory, SyncDict
 import warnings
 
-try:
-    import pylibmc as memcache
-except ImportError:
-    try:
-        import cmemcache as memcache
-        warnings.warn("cmemcache is known to have serious concurrency issues; consider using 'memcache' or 'pylibmc'")
-    except ImportError:
-        try:
-            import memcache
-        except ImportError:
-            raise InvalidCacheBackendError("Memcached cache backend requires either the 'memcache' or 'cmemcache' library")
+memcache = None
 
 class MemcachedNamespaceManager(NamespaceManager):
     clients = SyncDict()
     
+    @classmethod
+    def _init_dependencies(cls):
+        global memcache
+        if memcache is not None:
+            return
+        try:
+            import pylibmc as memcache
+        except ImportError:
+            try:
+                import cmemcache as memcache
+                warnings.warn("cmemcache is known to have serious "
+                            "concurrency issues; consider using 'memcache' or 'pylibmc'")
+            except ImportError:
+                try:
+                    import memcache
+                except ImportError:
+                    raise InvalidCacheBackendError("Memcached cache backend requires either "
+                                                        "the 'memcache' or 'cmemcache' library")
+        
     def __init__(self, namespace, url=None, data_dir=None, lock_dir=None, **params):
         NamespaceManager.__init__(self, namespace)
        

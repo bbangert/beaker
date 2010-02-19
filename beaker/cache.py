@@ -7,11 +7,6 @@ specifying an alternate type when used.
 Advanced users can add new backends in beaker.backends
 
 """
-try:
-    package_scan = True
-    import pkg_resources
-except ImportError:
-    package_scan = False
     
 import warnings
 
@@ -19,18 +14,29 @@ import beaker.container as container
 import beaker.util as util
 from beaker.exceptions import BeakerException, InvalidCacheBackendError
 
+import beaker.ext.memcached as memcached
+import beaker.ext.database as database
+import beaker.ext.sqla as sqla
+import beaker.ext.google as google
+
 # Initialize the basic available backends
 clsmap = {
           'memory':container.MemoryNamespaceManager,
           'dbm':container.DBMNamespaceManager,
           'file':container.FileNamespaceManager,
+          'ext:memcached':memcached.MemcachedNamespaceManager,
+          'ext:database':database.DatabaseNamespaceManager,
+          'ext:sqla': sqla.SqlaNamespaceManager,
+          'ext:google': google.GoogleNamespaceManager,
           }
 
 # Initialize the cache region dict
 cache_regions = {}
 cache_managers = {}
 
-if package_scan:
+try:
+    import pkg_resources
+
     # Load up the additional entry point defined backends
     for entry_point in pkg_resources.iter_entry_points('beaker.backends'):
         try:
@@ -55,32 +61,10 @@ if package_scan:
                 warnings.warn("Unable to load NamespaceManager entry point: '%s': "
                               "%s" % (entry_point, tb.getvalue()), RuntimeWarning,
                               2)
+except ImportError:
+    pass
+    
 
-
-# Load legacy-style backends
-try:
-    import beaker.ext.memcached as memcached
-    clsmap['ext:memcached'] = memcached.MemcachedNamespaceManager
-except InvalidCacheBackendError, e:
-    clsmap['ext:memcached'] = e
-
-try:
-    import beaker.ext.database as database
-    clsmap['ext:database'] = database.DatabaseNamespaceManager
-except InvalidCacheBackendError, e:
-    clsmap['ext:database'] = e
-
-try:
-    import beaker.ext.sqla as sqla
-    clsmap['ext:sqla'] = sqla.SqlaNamespaceManager
-except InvalidCacheBackendError, e:
-    clsmap['ext:sqla'] = e
-
-try:
-    import beaker.ext.google as google
-    clsmap['ext:google'] = google.GoogleNamespaceManager
-except (InvalidCacheBackendError, SyntaxError), e:
-    clsmap['ext:google'] = e
 
 
 def cache_region(region, *deco_args):
@@ -121,7 +105,7 @@ def cache_region(region, *deco_args):
             if not cache[0]:
                 if region not in cache_regions:
                     raise BeakerException('Cache region not configured: %s' % region)
-                cache[0] = cache_managers.setdefault(namespace + str(reg), Cache(namespace, **reg))
+                cache[0] = Cache._get_cache(namespace, reg)
             
             cache_key = " ".join(map(str, deco_args + args))
             def go():
@@ -140,16 +124,13 @@ def region_invalidate(namespace, region, *args):
     This function only invalidates cache spaces created with the
     cache_region decorator.
     
-    namespace
-        Either the namespace of the result to invalidate, or the
+    :param namespace: Either the namespace of the result to invalidate, or the
         cached function reference
     
-    region
-        The region the function was cached to. If the function was
+    :param region: The region the function was cached to. If the function was
         cached to a single region then this argument can be None
     
-    args
-        Arguments that were used to differentiate the cached
+    :param args: Arguments that were used to differentiate the cached
         function as well as the arguments passed to the decorated
         function
 
@@ -177,11 +158,12 @@ def region_invalidate(namespace, region, *args):
         namespace = namespace._arg_namespace
 
     if not region:
-        raise BeakerException("Region or callable function namespace is required")
+        raise BeakerException("Region or callable function "
+                                    "namespace is required")
     else:
         region = cache_regions[region]
     
-    cache = cache_managers.setdefault(namespace + str(region), Cache(namespace, **region))
+    cache = Cache._get_cache(namespace, region)
     cache_key = " ".join(str(x) for x in args)
     cache.remove_value(cache_key)
 
@@ -189,20 +171,16 @@ def region_invalidate(namespace, region, *args):
 class Cache(object):
     """Front-end to the containment API implementing a data cache.
 
-    ``namespace``
-        the namespace of this Cache
+    :param namespace: the namespace of this Cache
 
-    ``type``
-        type of cache to use
+    :param type: type of cache to use
 
-    ``expire``
-        seconds to keep cached data
+    :param expire: seconds to keep cached data
 
-    ``expiretime``
-        seconds to keep cached data (legacy support)
+    :param expiretime: seconds to keep cached data (legacy support)
 
-    ``starttime``
-        time when cache was cache was
+    :param starttime: time when cache was cache was
+    
     """
     def __init__(self, namespace, type='memory', expiretime=None,
                  starttime=None, expire=None, **nsargs):
@@ -217,6 +195,15 @@ class Cache(object):
         self.expiretime = expiretime or expire
         self.starttime = starttime
         self.nsargs = nsargs
+    
+    @classmethod
+    def _get_cache(cls, namespace, kw):
+        key = namespace + str(kw)
+        try:
+            return cache_managers[key]
+        except KeyError:
+            cache_managers[key] = cache = Cache(namespace, **kw)
+            return cache
         
     def put(self, key, value, **kw):
         self._get_value(key, **kw).set_value(value)
@@ -245,6 +232,10 @@ class Cache(object):
         
         return container.Value(key, self.namespace, **kw)
     
+    @util.deprecated("Specifying a "
+            "'type' and other namespace configuration with cache.get()/put()/etc. "
+            "is deprecated. Specify 'type' and other namespace configuration to "
+            "cache_manager.get_cache() and/or the Cache constructor instead.")
     def _legacy_get_value(self, key, type, **kw):
         expiretime = kw.pop('expiretime', self.expiretime)
         starttime = kw.pop('starttime', None)
@@ -254,10 +245,6 @@ class Cache(object):
         c = Cache(self.namespace.namespace, type=type, **kwargs)
         return c._get_value(key, expiretime=expiretime, createfunc=createfunc, 
                             starttime=starttime)
-    _legacy_get_value = util.deprecated(_legacy_get_value, "Specifying a "
-        "'type' and other namespace configuration with cache.get()/put()/etc. "
-        "is deprecated. Specify 'type' and other namespace configuration to "
-        "cache_manager.get_cache() and/or the Cache constructor instead.")
     
     def clear(self):
         """Clear all the values from the namespace"""
@@ -298,13 +285,13 @@ class CacheManager(object):
     def get_cache(self, name, **kwargs):
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        return cache_managers.setdefault(name + str(kw), Cache(name, **kw))
+        return Cache._get_cache(name, kw)
     
     def get_cache_region(self, name, region):
         if region not in self.regions:
             raise BeakerException('Cache region not configured: %s' % region)
         kw = self.regions[region]
-        return cache_managers.setdefault(name + str(kw), Cache(name, **kw))
+        return Cache._get_cache(name, kw)
     
     def region(self, region, *args):
         """Decorate a function to cache itself using a cache region
@@ -343,16 +330,13 @@ class CacheManager(object):
         This function only invalidates cache spaces created with the
         cache_region decorator.
         
-        namespace
-            Either the namespace of the result to invalidate, or the
-            name of the cached function
+        :param namespace: Either the namespace of the result to invalidate, or the
+           name of the cached function
         
-        region
-            The region the function was cached to. If the function was
+        :param region: The region the function was cached to. If the function was
             cached to a single region then this argument can be None
         
-        args
-            Arguments that were used to differentiate the cached
+        :param args: Arguments that were used to differentiate the cached
             function as well as the arguments passed to the decorated
             function
 
@@ -382,7 +366,8 @@ class CacheManager(object):
             namespace = namespace._arg_namespace
 
         if not region:
-            raise BeakerException("Region or callable function namespace is required")
+            raise BeakerException("Region or callable function "
+                                    "namespace is required")
         else:
             region = self.regions[region]
         
@@ -393,12 +378,10 @@ class CacheManager(object):
     def cache(self, *args, **kwargs):
         """Decorate a function to cache itself with supplied parameters
 
-        args
-            Used to make the key unique for this function, as in region()
+        :param args: Used to make the key unique for this function, as in region()
             above.
 
-        kwargs
-            Parameters to be passed to get_cache(), will override defaults
+        :param kwargs: Parameters to be passed to get_cache(), will override defaults
 
         Example::
 
@@ -442,15 +425,12 @@ class CacheManager(object):
         This function only invalidates cache spaces created with the
         cache decorator.
         
-        func
-            Decorated function to invalidate
+        :param func: Decorated function to invalidate
         
-        args
-            Used to make the key unique for this function, as in region()
+        :param args: Used to make the key unique for this function, as in region()
             above.
 
-        kwargs
-            Parameters that were passed for use by get_cache(), note that
+        :param kwargs: Parameters that were passed for use by get_cache(), note that
             this is only required if a ``type`` was specified for the
             function
 

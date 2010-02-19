@@ -1,12 +1,15 @@
 # coding: utf-8
 from beaker.cache import clsmap, Cache
+from beaker.exceptions import InvalidCacheBackendError
 from beaker.middleware import CacheMiddleware
 from nose import SkipTest
 from webtest import TestApp
 
-if isinstance(clsmap.get('ext:database'), Exception):
-    raise SkipTest("'sqlalchemy' is not installed, can't test database "
-                   "backend")
+
+try:
+    clsmap['ext:database']._init_dependencies()
+except InvalidCacheBackendError:
+    raise SkipTest("an appropriate SQLAlchemy backend is not installed")
 
 db_url = 'sqlite:///test.db'
 

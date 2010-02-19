@@ -8,6 +8,7 @@ Release 1.5.2 (**tip**)
   "dictionaries".
 * Added tests for invalidating cache, and fixed bug with function cache when
   no args are present.
+* The SQLAlchemy backends require SQLAlchemy 0.4 or greater (0.6 recommended).
 
 Release 1.5.1 (12/17/2009)
 ==========================

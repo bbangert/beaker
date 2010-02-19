@@ -3,10 +3,14 @@ import os
 
 from beaker.cache import clsmap, Cache
 from beaker.middleware import CacheMiddleware, SessionMiddleware
+from beaker.exceptions import InvalidCacheBackendError
 from nose import SkipTest
 from webtest import TestApp
 
-if isinstance(clsmap.get('ext:memcached'), Exception):
+
+try:
+    clsmap['ext:memcached']._init_dependencies()
+except InvalidCacheBackendError:
     raise SkipTest("an appropriate memcached backend is not installed")
 
 mc_url = '127.0.0.1:11211'
