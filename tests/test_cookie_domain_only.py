@@ -6,8 +6,9 @@ from beaker.middleware import SessionMiddleware
 from nose import SkipTest
 from webtest import TestApp
 
-if not beaker.session.crypto_ok:
-    raise SkipTest("PyCryptopp is not installed, can't test cookie-only "
+from beaker import crypto
+if not crypto.has_aes:
+    raise SkipTest("No AES library is installed, can't test cookie-only "
                    "Sessions")
 
 def simple_app(environ, start_response):

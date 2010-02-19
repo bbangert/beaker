@@ -1,4 +1,5 @@
 """Beaker utilities"""
+
 try:
     import thread as _thread
     import threading as _threading
@@ -15,15 +16,15 @@ import warnings
 import sys
 
 py3k = getattr(sys, 'py3kwarning', False) or sys.version_info >= (3, 0)
+py24 = sys.version_info <= (2, 4)
+jython = sys.platform.startswith('java')
 
-try:
-    from hashlib import sha1
-except ImportError:
-    # py2.4
-    from sha import sha as sha1
+if py3k or jython:
+    import pickle
+else:
+    import cPickle as pickle
 
 from beaker.converters import asbool
-from base64 import b64encode, b64decode
 from threading import local as _tlocal
 
 
@@ -142,13 +143,18 @@ class WeakValuedRegistry(SyncDict):
         self.mutex = _threading.RLock()
         self.dict = weakref.WeakValueDictionary()
 
-            
+sha1 = None            
 def encoded_path(root, identifiers, extension = ".enc", depth = 3,
                  digest_filenames=True):
+                 
     """Generate a unique file-accessible path from the given list of
     identifiers starting at the given root directory."""
     ident = "_".join(identifiers)
-
+    
+    global sha1
+    if sha1 is None:
+        from beaker.crypto import sha1
+        
     if digest_filenames:
         if py3k:
             ident = sha1(ident.encode('utf-8')).hexdigest()

@@ -1,42 +1,17 @@
-import cPickle
 import Cookie
-import hmac
 import os
 import random
 import time
 from datetime import datetime, timedelta
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
-try:
-    # Use PyCrypto (if available)
-    from Crypto.Hash import HMAC, SHA as SHA1
+    
+from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, md5
+from beaker.util import pickle
 
-except ImportError:
-    # PyCrypto not available.  Use the Python standard library.
-    import hmac as HMAC
-    import sys
-    # When using the stdlib, we have to make sure the hmac version and sha
-    # version are compatible
-    if sys.version_info[0:2] <= (2,4):
-        # hmac in python2.4 or less require the sha module
-        import sha as SHA1
-    else:
-        # NOTE: We have to use the callable with hashlib (hashlib.sha1),
-        # otherwise hmac only accepts the sha module object itself
-        from hashlib import sha1 as SHA1
-
-# Check for pycryptopp encryption for AES
-try:
-    from beaker.crypto import generateCryptoKeys, aesEncrypt
-    crypto_ok = True
-except:
-    crypto_ok = False
-
+from beaker import crypto
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException
-from beaker.util import b64decode, b64encode
+from base64 import b64encode, b64decode
+
 
 __all__ = ['SignedCookie', 'Session']
 
@@ -373,8 +348,9 @@ class CookieSession(Session):
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  cookie_expires=True, cookie_domain=None, encrypt_key=None,
                  validate_key=None, secure=False, **kwargs):
-        if not crypto_ok and encrypt_key:
-            raise BeakerException("pycryptopp is not installed, can't use "
+        
+        if not crypto.has_aes and encrypt_key:
+            raise InvalidCryptoBackendError("No AES library is installed, can't generate "
                                   "encrypted cookie-only Session.")
         
         self.request = request
@@ -448,12 +424,12 @@ class CookieSession(Session):
         """Serialize, encipher, and base64 the session dict"""
         if self.encrypt_key:
             nonce = b64encode(os.urandom(40))[:8]
-            encrypt_key = generateCryptoKeys(self.encrypt_key,
+            encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
-            data = cPickle.dumps(self.copy(), 2)
-            return nonce + b64encode(aesEncrypt(data, encrypt_key))
+            data = pickle.dumps(self.copy(), 2)
+            return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = cPickle.dumps(self.copy(), 2)
+            data = pickle.dumps(self.copy(), 2)
             return b64encode(data)
     
     def _decrypt_data(self):
@@ -461,14 +437,14 @@ class CookieSession(Session):
         dict"""
         if self.encrypt_key:
             nonce = self.cookie[self.key].value[:8]
-            encrypt_key = generateCryptoKeys(self.encrypt_key,
+            encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
             payload = b64decode(self.cookie[self.key].value[8:])
-            data = aesEncrypt(payload, encrypt_key)
-            return cPickle.loads(data)
+            data = crypto.aesDecrypt(payload, encrypt_key)
+            return pickle.loads(data)
         else:
             data = b64decode(self.cookie[self.key].value)
-            return cPickle.loads(data)
+            return pickle.loads(data)
     
     def _make_id(self):
         return md5(md5(

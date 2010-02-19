@@ -70,25 +70,9 @@ from struct import pack
 from binascii import b2a_hex
 from random import randint
 
-from beaker.util import b64encode
+from base64 import b64encode
 
-try:
-    # Use PyCrypto (if available)
-    from Crypto.Hash import HMAC, SHA as SHA1
-
-except ImportError:
-    # PyCrypto not available.  Use the Python standard library.
-    import hmac as HMAC
-    import sys
-    # When using the stdlib, we have to make sure the hmac version and sha
-    # version are compatible
-    if sys.version_info[0:2] <= (2,4):
-        # hmac in python2.4 or less require the sha module
-        import sha as SHA1
-    else:
-        # NOTE: We have to use the callable with hashlib (hashlib.sha1),
-        # otherwise hmac only accepts the sha module object itself
-        from hashlib import sha1 as SHA1
+from beaker.crypto.util import hmac as HMAC, hmac_sha1 as SHA1
 
 def strxor(a, b):
     return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b)])

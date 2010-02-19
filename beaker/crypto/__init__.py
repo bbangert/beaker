@@ -1,29 +1,33 @@
-from warnings import warn
 
 from beaker.crypto.pbkdf2 import PBKDF2, strxor
-from beaker.exceptions import InvalidCryptoBackendError
-
-_implementations = ('pycrypto', 'jcecrypto')
+from beaker.crypto.util import hmac, sha1, hmac_sha1, md5
+from beaker import util
 
 keyLength = None
-for impl_name in _implementations:
+
+if util.jython:
     try:
-        package = 'beaker.crypto.%s' % impl_name
-        module = __import__(package, fromlist=('aesEncrypt', 'getKeyLength'))
-        keyLength = module.getKeyLength()
-        aesEncrypt = module.aesEncrypt
-        if keyLength >= 32:
-            break
-    except:
+        from beaker.crypto.jcecrypto import getKeyLength, aesEncrypt
+        keyLength = getKeyLength()
+    except ImportError:
+        pass
+else:
+    try:
+        from beaker.crypto.pycrypto import getKeyLength, aesEncrypt, aesDecrypt
+        keyLength = getKeyLength()
+    except ImportError:
         pass
 
 if not keyLength:
-    raise InvalidCryptoBackendError
+    has_aes = False
+else:
+    has_aes = True
 
-if keyLength < 32:
+if has_aes and keyLength < 32:
     warn('Crypto implementation only supports key lengths up to %d bits. '
          'Generated session cookies may be incompatible with other '
          'environments' % (keyLength * 8))
+
 
 def generateCryptoKeys(master_key, salt, iterations):
     # NB: We XOR parts of the keystream into the randomly-generated parts, just

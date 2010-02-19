@@ -9,6 +9,12 @@ Release 1.5.2 (**tip**)
 * Added tests for invalidating cache, and fixed bug with function cache when
   no args are present.
 * The SQLAlchemy backends require SQLAlchemy 0.4 or greater (0.6 recommended).
+* Rudimental Python 3 support is now available.   Simply use Python 3 with
+  Distribute and "python setup.py install" to run 2to3 automatically,
+  or manually run 2to3 on "beaker" and "tests" to convert to a 
+  Python 3 version.
+* Added support for PyCrypto module to encrypted session, etc. in addition
+  to the existing pycryptopp support.
 
 Release 1.5.1 (12/17/2009)
 ==========================

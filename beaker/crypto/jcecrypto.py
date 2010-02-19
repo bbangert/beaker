@@ -22,6 +22,8 @@ def aesEncrypt(data, key):
     cipher.init(Cipher.ENCRYPT_MODE, skeySpec, _iv)
     return cipher.doFinal(data).tostring()
 
+# magic.
+aesDecrypt = aesEncrypt
 
 def getKeyLength():
     maxlen = Cipher.getMaxAllowedKeyLength('AES/CTR/NoPadding')
