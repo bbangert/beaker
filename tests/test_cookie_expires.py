@@ -46,5 +46,5 @@ def test_cookie_exprires_2():
             webob.Request.blank('/').environ, cookie_expires=False
             ).cookie.output()
 
-    assert re.match('Set-Cookie: beaker.session.id=[0-9a-f]{32}; expires=Mon, 18-Jan-2038 [0-9:]{8} GMT; Path=/', no_expires), no_expires
+    assert re.match('Set-Cookie: beaker.session.id=[0-9a-f]{32}; expires=(Mon|Tue), 1[89]-Jan-2038 [0-9:]{8} GMT; Path=/', no_expires), no_expires
 
