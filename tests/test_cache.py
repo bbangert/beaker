@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+import platform
 import shutil
 import tarfile
 import tempfile
@@ -214,6 +215,10 @@ def test_legacy_cache():
     
 
 def test_upgrade():
+    # If we're on OSX, lets run this since its OSX dump files, otherwise
+    # we have to skip it
+    if platform.sysmte() != 'Darwin':
+        return
     for test in _test_upgrade_has_key, _test_upgrade_in, _test_upgrade_setitem:
         for mod, tar in (('dbm', dbm_cache_tar),
                          ('dumbdbm', dumbdbm_cache_tar)):
