@@ -68,6 +68,7 @@ def test_check_decorator():
 
 def test_different_default_names():
     result = fred(1)
+    time.sleep(1)
     result2 = george(1)
     assert result != result2
 
