@@ -217,7 +217,7 @@ def test_legacy_cache():
 def test_upgrade():
     # If we're on OSX, lets run this since its OSX dump files, otherwise
     # we have to skip it
-    if platform.sysmte() != 'Darwin':
+    if platform.system() != 'Darwin':
         return
     for test in _test_upgrade_has_key, _test_upgrade_in, _test_upgrade_setitem:
         for mod, tar in (('dbm', dbm_cache_tar),
