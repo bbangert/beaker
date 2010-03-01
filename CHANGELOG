@@ -1,5 +1,5 @@
-Release 1.5.2 (**tip**)
-=======================
+Release 1.5.2 (3/1/2010)
+========================
 
 * pkg_resources scanning for additional Beaker back-ends gracefully handles
   situations where its not present (GAE). Fixes #36.
