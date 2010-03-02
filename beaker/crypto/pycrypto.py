@@ -1,11 +1,9 @@
-"""
-Encryption module that uses pycryptopp or pycrypto
-
-"""
-
+"""Encryption module that uses pycryptopp or pycrypto"""
 try:
-    # TODO: why is pycryptopp preferred over Crypto.Cipher ?
-    
+    # Pycryptopp is preferred over Crypto because Crypto has had
+    # various periods of not being maintained, and pycryptopp uses
+    # the Crypto++ library which is generally considered the 'gold standard'
+    # of crypto implementations
     from pycryptopp.cipher import aes
 
     def aesEncrypt(data, key):

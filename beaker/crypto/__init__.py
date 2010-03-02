@@ -1,4 +1,3 @@
-
 from beaker.crypto.pbkdf2 import PBKDF2, strxor
 from beaker.crypto.util import hmac, sha1, hmac_sha1, md5
 from beaker import util
