@@ -1,3 +1,7 @@
+Release 1.5.3 (3/2/2010)
+========================
+* Fix Python 2.4 incompatibility with google import.
+
 Release 1.5.2 (3/1/2010)
 ========================
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import cPickle
 import logging
 from datetime import datetime
@@ -20,7 +19,7 @@ class GoogleNamespaceManager(OpenResourceNamespaceManager):
         if db is not None:
             return
         try:
-            from google.appengine.ext import db
+            db = __import__('google.appengine.ext.db').appengine.ext.db
         except ImportError:
             raise InvalidCacheBackendError("Datastore cache backend requires the "
                                            "'google.appengine.ext' library")
