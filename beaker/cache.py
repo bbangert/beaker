@@ -202,7 +202,7 @@ class Cache(object):
         try:
             return cache_managers[key]
         except KeyError:
-            cache_managers[key] = cache = Cache(namespace, **kw)
+            cache_managers[key] = cache = cls(namespace, **kw)
             return cache
         
     def put(self, key, value, **kw):
