@@ -85,7 +85,7 @@ The latest developer version is available in a `Mercurial repository
       'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
       ],
       keywords='wsgi myghty session web cache middleware',
-      author='Ben Bangart, Mike Bayer, Philip Jenvey',
+      author='Ben Bangert, Mike Bayer, Philip Jenvey',
       author_email='ben@groovie.org, pjenvey@groovie.org',
       url='http://beaker.groovie.org',
       license='BSD',
