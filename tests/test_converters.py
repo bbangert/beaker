@@ -32,7 +32,7 @@ class AsBool(unittest.TestCase):
 class AsList(unittest.TestCase):
     def test_string(self):
         self.assertEqual(aslist('abc'), ['abc'])
-        self.assertEqual(aslist('1a2a3'), [1, 2, 3])
+        self.assertEqual(aslist('1a2a3', 'a'), ['1', '2', '3'])
 
     def test_None(self):
         self.assertEqual(aslist(None), [])
@@ -46,7 +46,7 @@ class AsList(unittest.TestCase):
 
     def test_listify(self):
         """Other objects should just result in a single item list."""
-        self.assertEqual(aslist(dict()), {})
+        self.assertEqual(aslist(dict()), [{}])
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 import anydbm
 import cPickle
 import logging
-import os.path
+import os
 import time
 
 import beaker.util as util
