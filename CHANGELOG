@@ -1,6 +1,7 @@
 Release 1.5.4 (6/16/2010)
 =========================
 
+* Fix import error with InvalidCryptoBackendError.
 * Fix for domain querying on property.
 * Test cleanups
 * Fix bug with warnings preventing proper running under Jython.

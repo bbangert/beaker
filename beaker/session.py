@@ -9,7 +9,7 @@ from beaker.util import pickle
 
 from beaker import crypto
 from beaker.cache import clsmap
-from beaker.exceptions import BeakerException
+from beaker.exceptions import BeakerException, InvalidCryptoBackendError
 from base64 import b64encode, b64decode
 
 
