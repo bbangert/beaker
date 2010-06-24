@@ -98,13 +98,13 @@ def cache_region(region, *deco_args):
     def decorate(func):
         namespace = util.func_namespace(func)
         def cached(*args):
+            if region not in cache_regions:
+                raise BeakerException('Cache region not configured: %s' % region)
             reg = cache_regions[region]
             if not reg.get('enabled', True):
                 return func(*args)
             
             if not cache[0]:
-                if region not in cache_regions:
-                    raise BeakerException('Cache region not configured: %s' % region)
                 cache[0] = Cache._get_cache(namespace, reg)
             
             cache_key = " ".join(map(str, deco_args + args))

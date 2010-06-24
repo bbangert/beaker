@@ -117,6 +117,13 @@ If it's necessary to immediately save the session to the back-end, the
 This is not usually the case however, as a session generally should not be
 saved should something catastrophic happen during a request.
 
+.. note::
+    
+    When using the Beaker middleware, you **must call save before the headers
+    are sent to the client**. Since Beaker's middleware watches for when the
+    ``start_response`` function is called to know that it should add its
+    cookie header, the session must be saved before its called.
+
 
 Auto-save
 ---------
