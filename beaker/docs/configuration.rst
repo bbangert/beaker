@@ -98,6 +98,11 @@ type (**required**, string)
     
     Some of these back-ends require the url option as listed below.
 
+webtest_varname (**optionall**, string)
+    The name of the attribute to use when stashing the session object into
+    the environ for use with WebTest. The name provided here is where the 
+    session object will be attached to the WebTest TestApp return value.
+
 url (**optional**, string)
     URL is specific to use of either ext:memcached or ext:database. When using
     one of those types, this option is **required**.

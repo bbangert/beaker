@@ -227,6 +227,8 @@ def coerce_session_params(params):
         ('timeout', (int, types.NoneType), "Session timeout must be an "
          "integer."),
         ('auto', (bool, types.NoneType), "Session is created if accessed."),
+        ('webtest_varname', (str, types.NoneType), "Session varname must be "
+         "a string."),
     ]
     return verify_rules(params, rules)
 

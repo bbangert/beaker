@@ -141,6 +141,9 @@ class SessionMiddleware(object):
         environ[self.environ_key] = session
         environ['beaker.get_session'] = self._get_session
         
+        if 'paste.testing_variables' in environ and 'webtest_varname' in self.options:
+            environ['paste.testing_variables'][self.options['webtest_varname']] = session
+        
         def session_start_response(status, headers, exc_info = None):
             if session.accessed():
                 session.persist()

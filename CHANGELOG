@@ -1,3 +1,9 @@
+Release 1.5.5 (**tip**)
+=======================
+
+* Add ``webtest_varname`` option to configuration to optionally include
+  the session value in the environ vars when using Beaker with WebTest.
+
 Release 1.5.4 (6/16/2010)
 =========================
 
