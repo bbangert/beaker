@@ -6,7 +6,7 @@ from beaker.middleware import CacheMiddleware, SessionMiddleware
 from beaker.exceptions import InvalidCacheBackendError
 from nose import SkipTest
 from webtest import TestApp
-
+import unittest
 
 try:
     clsmap['ext:memcached']._init_dependencies()
@@ -132,31 +132,31 @@ def test_dropping_keys():
     assert cache.has_key('test')
     assert 'test' in cache
     assert cache.has_key('fred')
-    
+
     # Directly nuke the actual key, to simulate it being removed by memcached
     cache.namespace.mc.delete('test_test')
     assert not cache.has_key('test')
     assert cache.has_key('fred')
-    
+
     # Nuke the keys dict, it might die, who knows
     cache.namespace.mc.delete('test:keys')
     assert cache.has_key('fred')
-    
+
     # And we still need clear to work, even if it won't work well
     cache.clear()
 
 def test_deleting_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     cache.set_value('test', 20)
-    
+
     # Nuke the keys dict, it might die, who knows
     cache.namespace.mc.delete('test:keys')
-    
+
     assert cache.has_key('test')
-    
+
     # make sure we can still delete keys even though our keys dict got nuked
     del cache['test']
-    
+
     assert not cache.has_key('test')
 
 def test_has_key_multicache():
@@ -168,7 +168,7 @@ def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     assert cache.has_key("test")
 
-def test_unicode_keys():    
+def test_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
     cache.set_value(u'hiŏ', o)
@@ -177,7 +177,7 @@ def test_unicode_keys():
     cache.remove_value(u'hiŏ')
     assert u'hiŏ' not in cache
 
-def test_spaces_in_unicode_keys():    
+def test_spaces_in_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
     cache.set_value(u'hi ŏ', o)
@@ -203,7 +203,7 @@ def test_increment():
     assert 'current value is: 2' in res
     res = app.get('/')
     assert 'current value is: 3' in res
-    
+
     app = TestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
     assert 'current value is: 1' in res
@@ -224,3 +224,52 @@ def test_store_none():
     assert 'current value is: 10' in res
     res = app.get('/')
     assert 'current value is: None' in res
+
+class TestPylibmcInit(unittest.TestCase):
+    def setUp(self):
+
+        from beaker.ext import memcached
+        try:
+            import pylibmc as memcache
+            memcached.pylibmc = memcache
+        except:
+            import memcache
+            memcached.pylibmc = memcache
+            from contextlib import contextmanager
+            class ThreadMappedPool(dict):
+                "a mock of pylibmc's ThreadMappedPool"
+
+                def __init__(self, master):
+                    self.master = master
+
+                @contextmanager
+                def reserve(self):
+                    yield self.master
+            memcached.pylibmc.ThreadMappedPool = ThreadMappedPool
+
+    def tearDown(self):
+        from beaker.ext import memcached
+        memcached.pylibmc = memcached.memcache = None
+
+    def test_uses_pylibmc_client(self):
+        from beaker.ext import memcached
+        cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached")
+        assert isinstance(cache.namespace, memcached.PyLibMCNamespaceManager)
+
+    def test_dont_use_pylibmc_client(self):
+        from beaker.ext import memcached
+        memcached.pylibmc = None
+        cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached")
+        assert not isinstance(cache.namespace, memcached.PyLibMCNamespaceManager)
+        assert isinstance(cache.namespace, memcached.MemcachedNamespaceManager)
+
+    def test_client(self):
+        cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached")
+        o = object()
+        cache.set_value("test", o)
+        assert cache.has_key("test")
+        assert "test" in cache
+        assert not cache.has_key("foo")
+        assert "foo" not in cache
+        cache.remove_value("test")
+        assert not cache.has_key("test")

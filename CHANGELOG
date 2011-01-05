@@ -5,6 +5,8 @@ Release 1.5.5 (**tip**)
   the session value in the environ vars when using Beaker with WebTest.
 * Defer running of pkg_resources to look for external cache modules
   until requested. #66
+* memcached backend uses pylibmc.ThreadMappedPool to ensure thread-local
+  usage of pylibmc when that library is installed.
 
 Release 1.5.4 (6/16/2010)
 =========================
