@@ -3,6 +3,8 @@ Release 1.5.5 (**tip**)
 
 * Add ``webtest_varname`` option to configuration to optionally include
   the session value in the environ vars when using Beaker with WebTest.
+* Defer running of pkg_resources to look for external cache modules
+  until requested. #66
 
 Release 1.5.4 (6/16/2010)
 =========================
