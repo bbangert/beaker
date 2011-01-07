@@ -82,19 +82,19 @@ def test_expire_changes():
     cache.set_value('test', 10)
     assert cache.has_key('test')
     assert cache['test'] == 10
-    
+
     # ensure that we can change a never-expiring value
     cache.set_value('test', 20, expiretime=1)
     assert cache.has_key('test')
     assert cache['test'] == 20
     time.sleep(1)
     assert not cache.has_key('test')
-    
+
     # test that we can change it before its expired
     cache.set_value('test', 30, expiretime=50)
     assert cache.has_key('test')
     assert cache['test'] == 30
-    
+
     cache.set_value('test', 40, expiretime=3)
     assert cache.has_key('test')
     assert cache['test'] == 40
@@ -114,14 +114,14 @@ def test_fresh_createfunc():
     assert x == 16
     x = cache.get_value('test', createfunc=lambda: 18, expiretime=2)
     assert x == 16
-    
+
     cache.remove_value('test')
     assert not cache.has_key('test')
     x = cache.get_value('test', createfunc=lambda: 20, expiretime=2)
     assert x == 20
-    
-    
-    
+
+
+
 def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', type='dbm')
     o = object()
@@ -131,7 +131,7 @@ def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', type='dbm')
     assert cache.has_key("test")
 
-def test_unicode_keys():    
+def test_unicode_keys():
     cache = Cache('test', data_dir='./cache', type='dbm')
     o = object()
     cache.set_value(u'hiŏ', o)
@@ -147,7 +147,7 @@ def test_multi_keys():
     def create_func():
         called['here'] = True
         return 'howdy'
-    
+
     try:
         cache.get_value('key1')
     except KeyError:
@@ -171,7 +171,7 @@ def test_multi_keys():
         pass
     else:
         raise Exception("Failed to keyerror on nonexistent key")
-    
+
     assert 'howdy' == cache.get_value('key2', createfunc=create_func)
     assert called == {}
 
@@ -189,20 +189,35 @@ def test_cache_manager():
     res = app.get('/')
     assert 'test_key is: test value' in res
     assert 'test_key cleared' in res
-    
+
+def test_clsmap_nonexistent():
+    from beaker.cache import clsmap
+
+    try:
+        clsmap['fake']
+        assert False
+    except KeyError:
+        pass
+
+def test_clsmap_present():
+    from beaker.cache import clsmap
+
+    assert clsmap['memory']
+
+
 def test_legacy_cache():
     cache = Cache('newtests', data_dir='./cache', type='dbm')
-    
+
     cache.set_value('x', '1')
     assert cache.get_value('x') == '1'
-    
+
     cache.set_value('x', '2', type='file', data_dir='./cache')
     assert cache.get_value('x') == '1'
     assert cache.get_value('x', type='file', data_dir='./cache') == '2'
-    
+
     cache.remove_value('x')
     cache.remove_value('x', type='file', data_dir='./cache')
-    
+
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '5') == '5'
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '6', type='file', data_dir='./cache') == '6'
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '7') == '5'
@@ -212,7 +227,7 @@ def test_legacy_cache():
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '10', type='file', data_dir='./cache') == '10'
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '11') == '9'
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '12', type='file', data_dir='./cache') == '10'
-    
+
 
 def test_upgrade():
     # If we're on OSX, lets run this since its OSX dump files, otherwise
