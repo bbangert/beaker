@@ -138,7 +138,7 @@ class Session(dict):
                 if self.cookie_expires is False:
                     expires = datetime.fromtimestamp( 0x7FFFFFFF )
                 elif isinstance(self.cookie_expires, timedelta):
-                    expires = datetime.today() + self.cookie_expires
+                    expires = datetime.utcnow() + self.cookie_expires
                 elif isinstance(self.cookie_expires, datetime):
                     expires = self.cookie_expires
                 else:
@@ -183,7 +183,7 @@ class Session(dict):
         if self.secure:
             self.cookie[self.key]['secure'] = True
         self.cookie[self.key]['path'] = '/'
-        expires = datetime.today().replace(year=2003)
+        expires = datetime.utcnow().replace(year=2003)
         self.cookie[self.key]['expires'] = \
             expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
@@ -477,7 +477,7 @@ class CookieSession(Session):
             if self.cookie_expires is False:
                 expires = datetime.fromtimestamp( 0x7FFFFFFF )
             elif isinstance(self.cookie_expires, timedelta):
-                expires = datetime.today() + self.cookie_expires
+                expires = datetime.utcnow() + self.cookie_expires
             elif isinstance(self.cookie_expires, datetime):
                 expires = self.cookie_expires
             else:
