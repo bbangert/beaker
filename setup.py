@@ -82,6 +82,7 @@ The latest developer version is available in a `Mercurial repository
       'Intended Audience :: Developers',
       'License :: OSI Approved :: BSD License',
       'Programming Language :: Python',
+      'Programming Language :: Python :: 3',
       'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
       ],
       keywords='wsgi myghty session web cache middleware',
