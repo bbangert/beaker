@@ -9,4 +9,3 @@ Module Contents
 .. autofunction:: make_cache_table
 .. autoclass:: SqlaContainer
 .. autoclass:: SqlaNamespaceManager
-   

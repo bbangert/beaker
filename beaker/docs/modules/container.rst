@@ -19,4 +19,3 @@ Module Contents
 .. autoclass:: OpenResourceNamespaceManager
 .. autoclass:: Value
    :members: set_value, has_value, can_have_value, has_current_value, get_value, clear_value
-   

@@ -9,4 +9,3 @@ Module Contents
 .. autofunction:: crypt
 .. autoclass:: PBKDF2
    :members: close, hexread, read
-   

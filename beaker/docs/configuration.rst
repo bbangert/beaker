@@ -33,7 +33,7 @@ below, an appropriate entry in a `Pylons`_ INI file would be::
 
     When using the options in a framework like `Pylons`_ or `TurboGears2`_, these
     options must be prefixed by ``beaker.``, for example in a `Pylons`_ INI file::
-    
+
         beaker.session.data_dir = %(here)s/data/sessions/data
         beaker.session.lock_dir = %(here)s/data/sessions/lock
 
@@ -42,11 +42,11 @@ Or when using stand-alone with the :class:`~beaker.middleware.SessionMiddleware`
 .. code-block:: python
 
     from beaker.middleware import SessionMiddleware
-    
+
     session_opts = {
         'session.cookie_expires': True
     }
-    
+
     app = SomeWSGIAPP()
     app = SessionMiddleware(app, session_opts)
 
@@ -67,7 +67,7 @@ Or when using the :class:`~beaker.cache.CacheManager`:
     cache = CacheManager(**parse_cache_config_options(cache_opts))
 
 .. note::
-    
+
     When using the CacheManager directly, all dict options must be run through the
     :func:`beaker.util.parse_cache_config_options` function to ensure they're valid
     and of the appropriate type.
@@ -88,14 +88,14 @@ lock_dir (**required**, string)
 
 type (**required**, string)
     The name of the back-end to use for storing the sessions or cache objects.
-    
+
     Available back-ends supplied with Beaker: ``file``, ``dbm``, ``memory``,
     ``ext:memcached``, ``ext:database``, ``ext:google``
-    
+
     For sessions, the additional type of ``cookie`` is available which
     will store all the session data in the cookie itself. As such, size
     limitations apply (4096 bytes).
-    
+
     Some of these back-ends require the url option as listed below.
 
 webtest_varname (**optionall**, string)
@@ -106,15 +106,15 @@ webtest_varname (**optionall**, string)
 url (**optional**, string)
     URL is specific to use of either ext:memcached or ext:database. When using
     one of those types, this option is **required**.
-    
+
     When used with ext:memcached, this should be either a single, or
     semi-colon separated list of memcached servers::
-        
+
         session_opts = {
             'session.type': 'ext:memcached',
             'session.url': '127.0.0.1:11211',
         }
-    
+
     When used with ext:database, this should be a valid `SQLAlchemy`_ database
     string.
 
@@ -129,17 +129,17 @@ auto (**optional**, bool)
     When set to True, the session will save itself anytime it is accessed
     during a request, negating the need to issue the 
     :meth:`~beaker.session.Session.save` method.
-    
+
     Defaults to False.
 
 cookie_expires (**optional**, bool, datetime, timedelta)
     Determines when the cookie used to track the client-side of the session
     will expire. When set to a boolean value, it will either expire at the
     end of the browsers session, or never expire.
-    
+
     Setting to a datetime forces a hard ending time for the session (generally
     used for setting a session to a far off date).
-    
+
     Defaults to never expiring.
 
 
@@ -150,9 +150,9 @@ cookie_domain (**optional**, string)
     should be set to the main domain the cookie should be valid for. For
     example, if a cookie should be valid under ``www.nowhere.com`` **and**
     ``files.nowhere.com`` then it should be set to ``.nowhere.com``.
-    
+
     Defaults to the current domain in its entirety.
-    
+
     Alternatively, the domain can be set dynamically on the session by
     calling, see :ref:`cookie_attributes`.
 
@@ -162,7 +162,7 @@ key (**required**, string)
 secret (**required**, string)
     Used with the HMAC to ensure session integrity. This value should
     ideally be a randomly generated string.
-    
+
     When using in a cluster environment, the secret must be the same on
     every machine.
 
@@ -175,7 +175,7 @@ timeout (**optional**, integer)
     Seconds until the session is considered invalid, after which it will
     be ignored and invalidated. This number is based on the time since
     the session was last accessed, not from when the session was created.
-    
+
     Defaults to never expiring.
 
 
@@ -210,10 +210,10 @@ back-ends as noted with the sessions.
 
 enabled (**optional**, bool)
     Quick toggle to disable or enable caching across an entire application.
-    
+
     This should generally be used when testing an application or in
     development when caching should be ignored.
-    
+
     Defaults to True.
 
 expire (**optional**, integer)
@@ -231,15 +231,15 @@ type and expiration on a per-usage basis.
 
 regions (**optional**, list, tuple)
     Names of the regions that are to be configured.
-    
+
     For each region, all of the other cache options are valid and will
     be read out of the cache options for that key. Options that are not
     listed under a region will be used globally in the cache unless a
     region specifies a different value.
-    
+
     For example, to specify two batches of options, one called ``long-term``,
     and one called ``short-term``::
-        
+
         cache_opts = {
             'cache.data_dir': '/tmp/cache/data',
             'cache.lock_dir': '/tmp/cache/lock'

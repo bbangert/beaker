@@ -85,7 +85,7 @@ def test_unicode_keys():
     assert u'hŏa' not in cache
     cache.remove_value(u'hiŏ')
     assert u'hiŏ' not in cache
-    
+
 def test_increment():
     app = TestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})

@@ -8,4 +8,3 @@ Module Contents
 
 .. autoclass:: GoogleContainer
 .. autoclass:: GoogleNamespaceManager
-   

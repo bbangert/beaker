@@ -22,7 +22,7 @@ def make_region_cached_func():
     opts['cache.regions'] = 'short_term, long_term'
     opts['cache.short_term.expire'] = '2'
     cache = make_cache_obj(**opts)
-    
+
     @cache.region('short_term', 'region_loader')
     def load(person):
         now = datetime.now()
@@ -55,15 +55,15 @@ def test_decorators():
 def check_decorator(func):
     result = func('Fred')
     assert 'Fred' in result
-    
+
     result2 = func('Fred')
     assert result == result2
-    
+
     result3 = func('George')
     assert 'George' in result3
     result4 = func('George')
     assert result3 == result4
-    
+
     time.sleep(2)
     result2 = func('Fred')
     assert result != result2
@@ -72,17 +72,17 @@ def test_check_invalidate_region():
     func = make_region_cached_func()
     result = func('Fred')
     assert 'Fred' in result
-    
+
     result2 = func('Fred')
     assert result == result2
     _cache_obj.region_invalidate(func, None, 'region_loader', 'Fred')
-    
+
     result3 = func('Fred')
     assert result3 != result2
-    
+
     result2 = func('Fred')
     assert result3 == result2
-    
+
     # Invalidate a non-existent key
     _cache_obj.region_invalidate(func, None, 'region_loader', 'Fredd')
     assert result3 == result2
@@ -91,17 +91,17 @@ def test_check_invalidate():
     func = make_cached_func()
     result = func('Fred')
     assert 'Fred' in result
-    
+
     result2 = func('Fred')
     assert result == result2
     _cache_obj.invalidate(func, 'loader', 'Fred')
-    
+
     result3 = func('Fred')
     assert result3 != result2
-    
+
     result2 = func('Fred')
     assert result3 == result2
-    
+
     # Invalidate a non-existent key
     _cache_obj.invalidate(func, 'loader', 'Fredd')
     assert result3 == result2

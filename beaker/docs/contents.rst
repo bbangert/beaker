@@ -3,7 +3,7 @@ Beaker Documentation
 
 .. toctree::
    :maxdepth: 2
-   
+
    configuration
    sessions
    caching
@@ -12,7 +12,7 @@ Beaker Documentation
    :maxdepth: 1
 
    changes
-   
+
 
 Indices and tables
 ==================
@@ -39,5 +39,5 @@ Module Listing
     modules/memcached
     modules/sqla
     modules/pbkdf2
-    
-    
+
+

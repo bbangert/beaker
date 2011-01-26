@@ -208,7 +208,7 @@ Release 1.1 (11/16/2008)
   used as a cache-invalidation mechanism.
 * file-based locking will not unlink lockfiles; this can interfere
   with the flock() mechanism in the event that a concurrent process
-  is accessing the files.  
+  is accessing the files.
 * Sending "type" and other namespace config arguments to cache.get()/
   cache.put()/cache.remove_value() is deprecated.   The namespace
   configuration is now preferred at the Cache level, i.e. when you construct
@@ -224,7 +224,7 @@ Release 1.1 (11/16/2008)
 * memcache caching has been vastly improved, no longer stores a list of
   all keys, which along the same theme prevented efficient usage for an 
   arbitrarily large number of keys.  The keys() method is now unimplemented, 
-  and cache.remove() clears the entire memcache cache across all namespaces.  
+  and cache.remove() clears the entire memcache cache across all namespaces.
   This is what the memcache API provides so it's the best we can do. 
 * memcache caching passes along "expiretime" to the memcached "time"
   parameter, so that the cache itself can reduce its size for elements which
@@ -265,7 +265,7 @@ Release 1.0 (8/13/2008)
   manner as cache.set_value().  This way you can send a new createfunc
   to cache.get_value() each time and it will be used.
 
-  
+
 Release 0.9.5 (6/19/2008)
 =========================
 

@@ -8,4 +8,3 @@ Module Contents
 
 .. autoclass:: MemcachedContainer
 .. autoclass:: MemcachedNamespaceManager
-   

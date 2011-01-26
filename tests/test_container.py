@@ -9,7 +9,7 @@ from threading import Thread
 class CachedWidget(object):
     totalcreates = 0
     delay = 0
-    
+
     def __init__(self):
         CachedWidget.totalcreates += 1
         time.sleep(CachedWidget.delay)
@@ -21,17 +21,17 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
 
     CachedWidget.totalcreates = 0
     CachedWidget.delay = delay
-    
+
     # allow for python overhead when checking current time against expire times
     fudge = 1
-    
+
     starttime = time.time()
-    
+
     running = [True]
     class RunThread(Thread):
         def run(self):
             print "%s starting" % self
-            
+
             if threadlocal:
                 localvalue = Value(
                                 'test', 
@@ -42,7 +42,7 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
                 localvalue.clear_value()
             else:
                 localvalue = value
-                
+
             try:
                 while running[0]:
                     item = localvalue.get_value()
@@ -57,7 +57,7 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
                 running[0] = False
                 raise
             print "%s finishing" % self
-                
+
     if not threadlocal:
         value = Value(
                     'test', 
@@ -68,20 +68,20 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
         value.clear_value()
     else:
         value = None
-    
+
     threads = [RunThread() for i in range(1, 8)]
-    
+
     for t in threads:
         t.start()
-        
+
     time.sleep(totaltime)
 
     failed = not running[0]
     running[0] = False
-    
+
     for t in threads:
         t.join()
-    
+
     assert not failed, "One or more threads failed"
     if expiretime is None:
         expected = 1
@@ -102,7 +102,7 @@ def test_file_container(totaltime=10, expiretime=None, delay=0, threadlocal=Fals
 
 def test_memory_container_tlocal():
     test_memory_container(expiretime=5, delay=2, threadlocal=True)
-    
+
 def test_memory_container_2():
     test_memory_container(expiretime=2)
 
@@ -117,7 +117,7 @@ def test_dbm_container_3():
 
 def test_file_container_2():
     test_file_container(expiretime=2)
-    
+
 def test_file_container_3():
     test_file_container(expiretime=5, delay=2)
 
@@ -126,24 +126,24 @@ def test_file_container_tlocal():
 
 def test_file_open_bug():
     """ensure errors raised during reads or writes don't lock the namespace open."""
-    
+
     value = Value('test', clsmap['file']('reentrant_test', data_dir='./cache'))
     if os.path.exists(value.namespace.file):
         os.remove(value.namespace.file)
-    
+
     value.set_value("x")
 
     f = open(value.namespace.file, 'w')
     f.write("BLAH BLAH BLAH")
     f.close()
-    
+
     # TODO: do we have an assertRaises() in nose to use here ?
     try:
         value.set_value("y")
         assert False
     except:
         pass
-        
+
     _synchronizers.clear()
 
     value = Value('test', clsmap['file']('reentrant_test', data_dir='./cache'))
@@ -158,12 +158,12 @@ def test_file_open_bug():
 
 def test_removing_file_refreshes():
     """test that the cache doesn't ignore file removals"""
-    
+
     x = [0]
     def create():
         x[0] += 1
         return x[0]
-        
+
     value = Value('test', 
                     clsmap['file']('refresh_test', data_dir='./cache'), 
                     createfunc=create, starttime=time.time()

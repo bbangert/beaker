@@ -31,15 +31,15 @@ a session object will be made available as ``beaker.session`` in the WSGI
 environ.
 
 Getting data out of the session::
-    
+
     myvar = session['somekey']
 
 Testing for a value::
-    
+
     logged_in = 'user_id' in session
 
 Adding data to the session::
-    
+
     session['name'] = 'Fred Smith'
 
 Complete example using a basic WSGI app with sessions::
@@ -49,19 +49,19 @@ Complete example using a basic WSGI app with sessions::
     def simple_app(environ, start_response):
         # Get the session object from the environ
         session = environ['beaker.session']
-        
+
         # Check to see if a value is in the session
         if 'logged_in' in session:
             user = True
         else:
             user = False
-        
+
         # Set some other session variable
         session['user_id'] = 10
-        
+
         start_response('200 OK', [('Content-type', 'text/plain')])
         return ['User is logged in: %s' % user]
-    
+
     # Configure the SessionMiddleware
     session_opts = {
         'session.type': 'file',
@@ -97,11 +97,11 @@ Saving
 
 Sessions can be saved using the :meth:`~beaker.session.Session.save` method
 on the session object::
-    
+
     session.save()
 
 .. warning::
-    
+
     Beaker relies on Python's pickle module to pickle data objects for storage
     in the session. Objects that cannot be pickled should **not** be stored in
     the session.
@@ -111,14 +111,14 @@ at the end of the request.
 
 If it's necessary to immediately save the session to the back-end, the
 :meth:`~beaker.session.SessionObject.persist` method should be used::
-    
+
     session.persist()
 
 This is not usually the case however, as a session generally should not be
 saved should something catastrophic happen during a request.
 
 .. note::
-    
+
     When using the Beaker middleware, you **must call save before the headers
     are sent to the client**. Since Beaker's middleware watches for when the
     ``start_response`` function is called to know that it should add its
@@ -140,7 +140,7 @@ Deleting
 Calling the :meth:`~beaker.session.Session.delete` method deletes the session
 from the back-end storage and sends an expiration on the cookie requesting the
 browser to clear it::
-    
+
     session.delete()
 
 This should be used at the end of a request when the session should be deleted
@@ -149,7 +149,7 @@ and will not be used further in the request.
 If a session should be invalidated, and a new session created and used during
 the request, the :meth:`~beaker.session.Session.invalidate` method should be
 used::
-    
+
     session.invalidate()
 
 Removing Expired/Old Sessions
@@ -167,7 +167,7 @@ When using the file-based sessions, a script could run to remove files that
 haven't been touched in a long time, for example (in the session's data dir):
 
 .. code-block:: bash
-    
+
     find . -mtime +3 -exec rm {} \;
 
 
@@ -181,7 +181,7 @@ path can be set dynamically for a session with the domain and path properties.
 These settings will persist as long as the cookie exists, or until changed.
 
 Example::
-    
+
     # Setting the session's cookie domain and path
     session.domain = '.domain.com'
     session.path = '/admin'

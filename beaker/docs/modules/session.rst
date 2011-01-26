@@ -13,4 +13,3 @@ Module Contents
 .. autoclass:: SessionObject
    :members: persist, get_by_id, accessed
 .. autoclass:: SignedCookie
-   

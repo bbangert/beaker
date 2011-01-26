@@ -19,9 +19,9 @@ def test_null():
     sync = null_synchronizer()
     assert sync.acquire_write_lock()
     sync.release_write_lock()
-    
+
 def test_mutex():
     sync = mutex_synchronizer('someident')
     sync.acquire_write_lock()
     sync.release_write_lock()
-        
+

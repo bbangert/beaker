@@ -54,7 +54,7 @@ def test_nosave():
     assert [] == res.headers.getall('Set-Cookie')
     res = app.get('/nosave')
     assert 'current value is: 1' in res
-    
+
     res = app.get('/')
     assert 'current value is: 1' in res
     assert len(res.headers.getall('Set-Cookie')) > 0
@@ -97,7 +97,7 @@ def test_nosave_with_encryption():
     assert [] == res.headers.getall('Set-Cookie')
     res = app.get('/nosave')
     assert 'current value is: 1' in res
-    
+
     res = app.get('/')
     assert 'current value is: 1' in res
     assert len(res.headers.getall('Set-Cookie')) > 0

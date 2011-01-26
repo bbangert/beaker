@@ -51,7 +51,7 @@ Before using Beaker's caching, an instance of the
 examples below assume that it has already been created.
 
 Creating the cache instance::
-    
+
     from beaker.cache import CacheManager
     from beaker.util import parse_cache_config_options
 
@@ -74,7 +74,7 @@ Programmatic API
 
 To store data for a cache value, first, a NamespaceManager has to be
 retrieved to manage the keys for a ``thing`` to be cached::
-    
+
     # Assuming that cache is an already created CacheManager instance
     tmpl_cache = cache.get_cache('mytemplate.html', type='dbm', expire=3600)
 
@@ -89,14 +89,14 @@ be called anytime the cache has expired or a new copy needs to be made. The
 creation function must not accept any arguments as it won't be called with
 any. Options affecting the created value can be passed in by using closure
 scope on the creation function::
-    
+
     search_param = 'gophers'
-    
+
     def get_results():
         # do something to retrieve data
         data = get_data(search_param)
         return data
-    
+
     # Cache this function, based on the search_param, using the tmpl_cache
     # instance from the prior example
     results = tmpl_cache.get(key=search_param, createfunc=get_results)
@@ -106,7 +106,7 @@ Invalidating
 
 All of the values for a particular namespace can be removed by calling the
 :meth:`~beaker.cache.Cache.clear` method::
-    
+
     tmpl_cache.clear()
 
 Note that this only clears the key's in the namespace that this particular
@@ -131,14 +131,14 @@ used in the namespace to prevent multiple functions from caching their values
 in the same location.
 
 For example::
-    
+
     # Assuming that cache is an already created CacheManager instance
     @cache.cache('my_search_func', expire=3600)
     def get_results(search_param):
         # do something to retrieve data
         data = get_data(search_param)
         return data
-    
+
     results = get_results('gophers')
 
 The non-keyword arguments to the :meth:`~beaker.cache.CacheManager.cache`
@@ -163,7 +163,7 @@ Since the :meth:`~beaker.cache.CacheManager.cache` decorator hides the
 namespace used, manually removing the key requires the use of the
 :meth:`~beaker.cache.CacheManager.invalidate` function. To invalidate
 the 'gophers' result that the prior example referred to::
-    
+
     cache.invalidate(get_results, 'my_search_func', 'gophers')
 
 If however, a type was specified for the cached function, the type must
@@ -171,14 +171,14 @@ also be given to the :meth:`~beaker.cache.CacheManager.invalidate`
 function so that it can remove the value from the appropriate back-end.
 
 Example::
-    
+
     # Assuming that cache is an already created CacheManager instance
     @cache.cache('my_search_func', type="file", expire=3600)
     def get_results(search_param):
         # do something to retrieve data
         data = get_data(search_param)
         return data
-    
+
     cache.invalidate(get_results, 'my_search_func', 'gophers', type="file")
 
 .. note::
@@ -210,23 +210,23 @@ Setting up cache region's is documented in the
 
 Assuming a ``long_term`` and ``short_term`` region were setup, the 
 :meth:`~beaker.cache.CacheManager.region` decorator can be used::
-    
+
     @cache.region('short_term', 'my_search_func')
     def get_results(search_param):
         # do something to retrieve data
         data = get_data(search_param)
         return data
-    
+
     results = get_results('gophers')
 
 Or using the :func:`~beaker.cache.cache_region` decorator::
-    
+
     @cache_region('short_term', 'my_search_func')
     def get_results(search_param):
         # do something to retrieve data
         data = get_data(search_param)
         return data
-    
+
     results = get_results('gophers')
 
 The only difference with the :func:`~beaker.cache.cache_region` decorator is
@@ -240,12 +240,12 @@ Since the :meth:`~beaker.cache.CacheManager.region` decorator hides the
 namespace used, manually removing the key requires the use of the
 :meth:`~beaker.cache.CacheManager.region_invalidate` function. To invalidate
 the 'gophers' result that the prior example referred to::
-    
+
     cache.region_invalidate(get_results, None, 'my_search_func', 'gophers')
 
 Or when using the :func:`~beaker.cache.cache_region` decorator, the
 :func:`beaker.cache.region_invalidate` function should be used::
-    
+
     region_invalidate(get_results, None, 'my_search_func', 'gophers')
 
 .. note::

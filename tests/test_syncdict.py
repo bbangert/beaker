@@ -1,13 +1,13 @@
 from beaker.util import SyncDict, WeakValuedRegistry
 import random, time, weakref
 import threading
-    
+
 class Value(object):
     values = {}
-    
+
     def do_something(self, id):
         Value.values[id] = self
-        
+
     def stop_doing_something(self, id):
         del Value.values[id]
 
@@ -18,7 +18,7 @@ def create(id):
     global totalcreates
     totalcreates += 1
     return Value()
-        
+
 def threadtest(s, id):
     print "create thread %d starting" % id
 
@@ -38,15 +38,15 @@ def threadtest(s, id):
             value.stop_doing_something(id)
             del value
             time.sleep(random.random() * .01)
-        
+
 def runtest(s):
 
     global values
     values = {}
-    
+
     global totalcreates
     totalcreates = 0
-    
+
     global totalgets
     totalgets = 0
 
@@ -58,12 +58,12 @@ def runtest(s):
         t = threading.Thread(target=threadtest, args=(s, id_))
         t.start()
         threads.append(t)
-    
+
     for i in range(0, 10):
         if not running:
             break
         time.sleep(1)
-    
+
     failed = not running
 
     running = False
@@ -76,11 +76,11 @@ def runtest(s):
     print "total object creates %d" % totalcreates
     print "total object gets %d" % totalgets
 
-    
+
 def test_dict():
     # normal dictionary test, where we will remove the value
     # periodically. the number of creates should be equal to
-    # the number of removes plus one.    
+    # the number of removes plus one.
     print "\ntesting with normal dict"
     runtest(SyncDict())
 
