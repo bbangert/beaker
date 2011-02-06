@@ -15,6 +15,12 @@ except InvalidCacheBackendError:
 
 mc_url = '127.0.0.1:11211'
 
+from beaker.ext.memcached import memcache
+c = memcache.Client([mc_url])
+c.set('x', 'y')
+if not c.get('x'):
+    raise SkipTest("Memcached is not running at %s" % mc_url)
+
 def teardown():
     import shutil
     shutil.rmtree('./cache', True)
