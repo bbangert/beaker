@@ -210,7 +210,8 @@ class Session(dict):
             data_dir=self.data_dir, digest_filenames=False,
             **self.namespace_args)
         now = time.time()
-        self.request['set_cookie'] = True
+        if self.use_cookies:
+            self.request['set_cookie'] = True
 
         self.namespace.acquire_read_lock()
         timed_out = False
@@ -288,7 +289,7 @@ class Session(dict):
                 self.namespace['session'] = data
         finally:
             self.namespace.release_write_lock()
-        if self.is_new:
+        if self.use_cookies and self.is_new:
             self.request['set_cookie'] = True
 
     def revert(self):

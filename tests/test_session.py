@@ -105,3 +105,52 @@ def test_timeout():
     assert u'Suomi' not in session
     assert u'Great Britain' not in session
     assert u'Deutchland' not in session
+
+
+def test_cookies_enabled():
+    """
+    Test if cookies are sent out properly when ``use_cookies``
+    is set to ``True``
+    """
+    session = get_session(use_cookies=True)
+    assert 'cookie_out' in session.request
+    assert session.request['set_cookie'] == False
+
+    session.domain = 'example.com'
+    session.path = '/example'
+    assert session.request['set_cookie'] == True
+    assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
+    assert 'Domain=example.com' in session.request['cookie_out']
+    assert 'Path=/' in session.request['cookie_out']
+
+    session = get_session(use_cookies=True)
+    session.save()
+    assert session.request['set_cookie'] == True
+    assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
+
+    session = get_session(use_cookies=True, id=session.id)
+    session.delete()
+    assert session.request['set_cookie'] == True
+    assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
+    assert 'expires=' in session.request['cookie_out']
+
+
+def test_cookies_disabled():
+    """
+    Test that no cookies are sent when ``use_cookies`` is set to ``False``
+    """
+    session = get_session(use_cookies=False)
+    assert 'set_cookie' not in session.request
+    assert 'cookie_out' not in session.request
+
+    session.save()
+    assert 'set_cookie' not in session.request
+    assert 'cookie_out' not in session.request
+
+    session = get_session(use_cookies=False, id=session.id)
+    assert 'set_cookie' not in session.request
+    assert 'cookie_out' not in session.request
+
+    session.delete()
+    assert 'set_cookie' not in session.request
+    assert 'cookie_out' not in session.request
