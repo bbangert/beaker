@@ -207,7 +207,8 @@ class Session(dict):
     def load(self):
         "Loads the data from this session from persistent storage"
         self.namespace = self.namespace_class(self.id,
-            data_dir=self.data_dir, digest_filenames=False,
+            data_dir=self.data_dir, 
+            digest_filenames=False,
             **self.namespace_args)
         now = time.time()
         if self.use_cookies:

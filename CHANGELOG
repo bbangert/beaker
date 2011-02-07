@@ -6,7 +6,9 @@ Release 1.5.5 (**tip**)
 * Defer running of pkg_resources to look for external cache modules
   until requested. #66
 * memcached backend uses pylibmc.ThreadMappedPool to ensure thread-local
-  usage of pylibmc when that library is installed.
+  usage of pylibmc when that library is in use.
+* memcached backend also has ``memcache_module`` string argument, allows
+  direct specification of the name of which memcache backend to use.
 
 Release 1.5.4 (6/16/2010)
 =========================

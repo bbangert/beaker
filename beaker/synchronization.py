@@ -83,6 +83,10 @@ def mutex_synchronizer(identifier, **kwargs):
 
 
 class null_synchronizer(object):
+    """A 'null' synchronizer, which provides the :class:`.SynchronizerImpl` interface
+    without any locking.
+    
+    """
     def acquire_write_lock(self, wait=True):
         return True
     def acquire_read_lock(self):
@@ -96,6 +100,10 @@ class null_synchronizer(object):
 
 
 class SynchronizerImpl(object):
+    """Base class for a synchronization object that allows
+    multiple readers, single writers.
+    
+    """
     def __init__(self):
         self._state = util.ThreadLocal()
 
@@ -194,16 +202,7 @@ class SynchronizerImpl(object):
 
 
 class FileSynchronizer(SynchronizerImpl):
-    """a synchronizer which locks using flock().
-
-    Adapted for Python/multithreads from Apache::Session::Lock::File,
-    http://search.cpan.org/src/CWEST/Apache-Session-1.81/Session/Lock/File.pm
-
-    This module does not unlink temporary files, 
-    because it interferes with proper locking.  This can cause 
-    problems on certain systems (Linux) whose file systems (ext2) do not 
-    perform well with lots of files in one directory.  To prevent this
-    you should use a script to clean out old files from your lock directory.
+    """A synchronizer which locks using flock().
 
     """
     def __init__(self, identifier, lock_dir):

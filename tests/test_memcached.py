@@ -9,14 +9,14 @@ from webtest import TestApp
 import unittest
 
 try:
-    clsmap['ext:memcached']._init_dependencies()
+    from beaker.ext import memcached
+    client = memcached._load_client()
 except InvalidCacheBackendError:
     raise SkipTest("an appropriate memcached backend is not installed")
 
 mc_url = '127.0.0.1:11211'
 
-from beaker.ext.memcached import memcache
-c = memcache.Client([mc_url])
+c =client.Client([mc_url])
 c.set('x', 'y')
 if not c.get('x'):
     raise SkipTest("Memcached is not running at %s" % mc_url)
@@ -237,10 +237,9 @@ class TestPylibmcInit(unittest.TestCase):
         from beaker.ext import memcached
         try:
             import pylibmc as memcache
-            memcached.pylibmc = memcache
         except:
             import memcache
-            memcached.pylibmc = memcache
+            memcached._client_libs['pylibmc'] = memcached.pylibmc = memcache
             from contextlib import contextmanager
             class ThreadMappedPool(dict):
                 "a mock of pylibmc's ThreadMappedPool"
@@ -251,7 +250,7 @@ class TestPylibmcInit(unittest.TestCase):
                 @contextmanager
                 def reserve(self):
                     yield self.master
-            memcached.pylibmc.ThreadMappedPool = ThreadMappedPool
+            memcache.ThreadMappedPool = ThreadMappedPool
 
     def tearDown(self):
         from beaker.ext import memcached
@@ -259,7 +258,9 @@ class TestPylibmcInit(unittest.TestCase):
 
     def test_uses_pylibmc_client(self):
         from beaker.ext import memcached
-        cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached")
+        cache = Cache('test', data_dir='./cache', 
+                            memcache_module='pylibmc', 
+                            url=mc_url, type="ext:memcached")
         assert isinstance(cache.namespace, memcached.PyLibMCNamespaceManager)
 
     def test_dont_use_pylibmc_client(self):

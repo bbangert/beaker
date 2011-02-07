@@ -4,42 +4,72 @@ from beaker.synchronization import file_synchronizer, null_synchronizer
 from beaker.util import verify_directory, SyncDict
 import warnings
 
-memcache = pylibmc = None
+_client_libs = {}
+def _load_client(name='auto'):
+    if name in _client_libs:
+        return _client_libs[name]
+
+    def _pylibmc():
+        global pylibmc
+        import pylibmc
+        return pylibmc
+
+    def _cmemcache():
+        global cmemcache
+        import cmemcache
+        warnings.warn("cmemcache is known to have serious "
+                    "concurrency issues; consider using 'memcache' "
+                    "or 'pylibmc'")
+        return cmemcache
+
+    def _memcache():
+        global memcache
+        import memcache
+        return memcache
+
+    def _auto():
+        for _client in (_pylibmc, _cmemcache, _memcache):
+            try:
+                return _client()
+            except ImportError:
+                pass
+        else:
+            raise InvalidCacheBackendError(
+                    "Memcached cache backend requires one "
+                    "of: 'pylibmc' or 'memcache' to be installed.")
+
+    clients = {
+        'pylibmc':_pylibmc,
+        'cmemcache':_cmemcache,
+        'memcache':_memcache,
+        'auto':_auto
+    }
+    _client_libs[name] = clib = clients[name]()
+    return clib
 
 class MemcachedNamespaceManager(NamespaceManager):
+    """Provides the :class:`.NamespaceManager` API over a memcache client library."""
+
     clients = SyncDict()
 
-    @classmethod
-    def _init_dependencies(cls):
-        global memcache
-        if memcache is not None:
-            return
+    def __new__(cls, *args, **kw):
+        memcache_module = kw.pop('memcache_module', 'auto')
 
-        try:
-            import pylibmc
-            memcache = pylibmc
-        except ImportError:
-            try:
-                import cmemcache as memcache
-                warnings.warn("cmemcache is known to have serious "
-                            "concurrency issues; consider using 'memcache' or 'pylibmc'")
-            except ImportError:
-                try:
-                    import memcache
-                except ImportError:
-                    raise InvalidCacheBackendError(
-                            "Memcached cache backend requires one "
-                            "of: 'pylibmc' or 'memcache' to be installed.")
+        memcache_client = _load_client(memcache_module)
 
-    def __new__(cls, *args, **kwargs):
-        cls._init_dependencies()
-        if pylibmc is not None:
+        if memcache_module == 'pylibmc' or \
+            memcache_client.__name__.startswith('pylibmc'):
             return object.__new__(PyLibMCNamespaceManager)
         else:
             return object.__new__(MemcachedNamespaceManager)
 
-    def __init__(self, namespace, url=None, data_dir=None, lock_dir=None, **params):
+    def __init__(self, namespace, url, 
+                        memcache_module='auto', 
+                        data_dir=None, lock_dir=None, 
+                        **kw):
         NamespaceManager.__init__(self, namespace)
+
+        _memcache_module = _client_libs[memcache_module]
 
         if not url:
             raise MissingCacheParameter("url is required") 
@@ -51,7 +81,10 @@ class MemcachedNamespaceManager(NamespaceManager):
         if self.lock_dir:
             verify_directory(self.lock_dir)
 
-        self.mc = MemcachedNamespaceManager.clients.get(url, memcache.Client, url.split(';'))
+        self.mc = MemcachedNamespaceManager.clients.get(
+                        (memcache_module, url), 
+                        _memcache_module.Client, 
+                        url.split(';'))
 
     def get_creation_lock(self, key):
         return file_synchronizer(
@@ -87,7 +120,9 @@ class MemcachedNamespaceManager(NamespaceManager):
         self.mc.flush_all()
 
     def keys(self):
-        raise NotImplementedError("Memcache caching does not support iteration of all cache keys")
+        raise NotImplementedError(
+                "Memcache caching does not "
+                "support iteration of all cache keys")
 
 class PyLibMCNamespaceManager(MemcachedNamespaceManager):
     """Provide thread-local support for pylibmc."""
@@ -127,4 +162,5 @@ class PyLibMCNamespaceManager(MemcachedNamespaceManager):
             mc.flush_all()
 
 class MemcachedContainer(Container):
+    """Container class which invokes :class:`.MemcacheNamespaceManager`."""
     namespace_class = MemcachedNamespaceManager

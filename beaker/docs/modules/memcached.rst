@@ -7,4 +7,8 @@ Module Contents
 ---------------
 
 .. autoclass:: MemcachedContainer
+    :show-inheritance:
 .. autoclass:: MemcachedNamespaceManager
+    :show-inheritance:
+.. autoclass:: PyLibMCNamespaceManager
+    :show-inheritance:

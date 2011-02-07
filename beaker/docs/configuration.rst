@@ -86,6 +86,13 @@ lock_dir (**required**, string)
     file is used to ensure that multiple processes/threads aren't attempting
     to re-create the same value at the same time (The :term:`Dog-Pile Effect`)
 
+memcache_module (**optional**, string)
+    One of the names ``memcache``, ``cmemcache``, ``pylibmc``, or ``auto``.
+    Default is ``auto``.  Specifies which memcached client library should
+    be imported when using the ext:memcached backend.  If left at its
+    default of ``auto``, ``pylibmc`` is favored first, then ``cmemcache``,
+    then ``memcache``.  New in 1.5.5.
+
 type (**required**, string)
     The name of the back-end to use for storing the sessions or cache objects.
 
@@ -98,7 +105,7 @@ type (**required**, string)
 
     Some of these back-ends require the url option as listed below.
 
-webtest_varname (**optionall**, string)
+webtest_varname (**optional**, string)
     The name of the attribute to use when stashing the session object into
     the environ for use with WebTest. The name provided here is where the 
     session object will be attached to the WebTest TestApp return value.

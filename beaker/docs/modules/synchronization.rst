@@ -9,4 +9,6 @@ Module Contents
 .. autoclass:: ConditionSynchronizer
 .. autoclass:: FileSynchronizer
 .. autoclass:: NameLock
+.. autoclass:: null_synchronizer
 .. autoclass:: SynchronizerImpl
+    :members:

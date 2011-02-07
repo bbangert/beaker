@@ -28,12 +28,17 @@ else:
 class NamespaceManager(object):
     """Handles dictionary operations and locking for a namespace of
     values.
+    
+    :class:`.NamespaceManager` provides a dictionary-like interface,
+    implementing ``__getitem__()``, ``__setitem__()``, and 
+    ``__contains__()``, as well as functions related to lock
+    acquisition.
 
     The implementation for setting and retrieving the namespace data is
     handled by subclasses.
 
-    NamespaceManager may be used alone, or may be privately accessed by
-    one or more Container objects.  Container objects provide per-key
+    NamespaceManager may be used alone, or may be accessed by
+    one or more :class:`.Value` objects.  :class:`.Value` objects provide per-key
     services like expiration times and automatic recreation of values.
 
     Multiple NamespaceManagers created with a particular name will all
@@ -50,31 +55,84 @@ class NamespaceManager(object):
 
     @classmethod
     def _init_dependencies(cls):
-        pass
+        """Initialize module-level dependent libraries required
+        by this :class:`.NamespaceManager`."""
+
 
     def __init__(self, namespace):
         self._init_dependencies()
         self.namespace = namespace
 
     def get_creation_lock(self, key):
+        """Return a locking object that is used to synchronize
+        multiple threads or processes which wish to generate a new
+        cache value.
+        
+        This function is typically an instance of
+        :class:`.FileSynchronizer`, :class:`.ConditionSynchronizer`,
+        or :class:`.null_synchronizer`.   
+        
+        The creation lock is only used when a requested value
+        does not exist, or has been expired, and is only used
+        by the :class:`.Value` key-management object in conjunction
+        with a "createfunc" value-creation function.
+        
+        """
         raise NotImplementedError()
 
     def do_remove(self):
+        """Implement removal of the entire contents of this 
+        :class:`.NamespaceManager`.
+        
+        e.g. for a file-based namespace, this would remove
+        all the files.
+        
+        The front-end to this method is the
+        :meth:`.NamespaceManager.remove` method.
+        
+        """
         raise NotImplementedError()
 
     def acquire_read_lock(self):
-        pass
+        """Establish a read lock.
+        
+        This operation is called before a key is read.    By
+        default the function does nothing.
+
+        """
 
     def release_read_lock(self):
-        pass
+        """Release a read lock.
+        
+        This operation is called after a key is read.    By
+        default the function does nothing.
+
+        """
 
     def acquire_write_lock(self, wait=True):
+        """Establish a write lock.
+        
+        This operation is called before a key is written.   
+        A return value of ``True`` indicates the lock has 
+        been acquired.
+        
+        By default the function returns ``True`` unconditionally.
+        
+        """
         return True
 
     def release_write_lock(self):
-        pass
+        """Release a write lock.
+        
+        This operation is called after a new value is written.
+        By default this function does nothing.
+        
+        """
 
     def has_key(self, key):
+        """Return ``True`` if the given key is present in this 
+        :class:`.Namespace`.
+        """
         return self.__contains__(key)
 
     def __getitem__(self, key):
@@ -84,11 +142,11 @@ class NamespaceManager(object):
         raise NotImplementedError()
 
     def set_value(self, key, value, expiretime=None):
-        """Optional set_value() method called by Value.
-
-        Allows an expiretime to be passed, for namespace
-        implementations which can prune their collections
-        using expiretime.
+        """Sets a value in this :class:`.NamespaceManager`.
+        
+        This is the same as ``__setitem__()``, but
+        also allows an expiration time to be passed
+        at the same time.
 
         """
         self[key] = value
@@ -100,9 +158,21 @@ class NamespaceManager(object):
         raise NotImplementedError()
 
     def keys(self):
+        """Return the list of all keys.
+        
+        This method may not be supported by all
+        :class:`.NamespaceManager` implementations.
+        
+        """
         raise NotImplementedError()
 
     def remove(self):
+        """Remove the entire contents of this 
+        :class:`.NamespaceManager`.
+        
+        e.g. for a file-based namespace, this would remove
+        all the files.
+        """
         self.do_remove()
 
 
@@ -192,6 +262,11 @@ class OpenResourceNamespaceManager(NamespaceManager):
             self.access_lock.release_write_lock()
 
 class Value(object):
+    """Implements synchronization, expiration, and value-creation logic
+    for a single value stored in a :class:`.NamespaceManager`.
+
+    """
+
     __slots__ = 'key', 'createfunc', 'expiretime', 'expire_argument', 'starttime', 'storedtime',\
                 'namespace'
 
@@ -374,7 +449,8 @@ class AbstractDictionaryNSManager(NamespaceManager):
 
     def get_creation_lock(self, key):
         return NameLock(
-            identifier="memorynamespace/funclock/%s/%s" % (self.namespace, key),
+            identifier="memorynamespace/funclock/%s/%s" % 
+                        (self.namespace, key),
             reentrant=True
         )
 
@@ -400,16 +476,21 @@ class AbstractDictionaryNSManager(NamespaceManager):
         return self.dictionary.keys()
 
 class MemoryNamespaceManager(AbstractDictionaryNSManager):
+    """:class:`.NamespaceManager` that uses a Python dictionary for storage."""
+
     namespaces = util.SyncDict()
 
     def __init__(self, namespace, **kwargs):
         AbstractDictionaryNSManager.__init__(self, namespace)
-        self.dictionary = MemoryNamespaceManager.namespaces.get(self.namespace,
-                                                                dict)
+        self.dictionary = MemoryNamespaceManager.\
+                                namespaces.get(self.namespace, dict)
 
 class DBMNamespaceManager(OpenResourceNamespaceManager):
+    """:class:`.NamespaceManager` that uses ``dbm`` files for storage."""
+
     def __init__(self, namespace, dbmmodule=None, data_dir=None, 
-            dbm_dir=None, lock_dir=None, digest_filenames=True, **kwargs):
+            dbm_dir=None, lock_dir=None, 
+            digest_filenames=True, **kwargs):
         self.digest_filenames = digest_filenames
 
         if not dbm_dir and not data_dir:
@@ -510,6 +591,13 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
 
 
 class FileNamespaceManager(OpenResourceNamespaceManager):
+    """:class:`.NamespaceManager` that uses binary files for storage.
+    
+    Each namespace is implemented as a single file storing a 
+    dictionary of key/value pairs, serialized using the Python
+    ``pickle`` module.
+    
+    """
     def __init__(self, namespace, data_dir=None, file_dir=None, lock_dir=None,
                  digest_filenames=True, **kwargs):
         self.digest_filenames = digest_filenames
@@ -618,6 +706,13 @@ class ContainerMeta(type):
                      expiretime=expiretime, starttime=starttime)
 
 class Container(object):
+    """Implements synchronization and value-creation logic
+    for a 'value' stored in a :class:`.NamespaceManager`.
+    
+    :class:`.Container` and its subclasses are deprecated.   The
+    :class:`.Value` class is now used for this purpose.
+    
+    """
     __metaclass__ = ContainerMeta
     namespace_class = NamespaceManager
 

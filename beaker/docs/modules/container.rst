@@ -6,16 +6,28 @@
 Module Contents
 ---------------
 
+.. autoclass:: DBMNamespaceManager
+    :show-inheritance:
+.. autoclass:: FileNamespaceManager
+    :show-inheritance:
+.. autoclass:: MemoryNamespaceManager
+    :show-inheritance:
+.. autoclass:: NamespaceManager
+    :members:
+.. autoclass:: OpenResourceNamespaceManager
+    :show-inheritance:
+.. autoclass:: Value
+   :members:
+   :undoc-members:
+
+Deprecated Classes
+------------------
 .. autoclass:: Container
 .. autoclass:: ContainerMeta
+    :show-inheritance:
 .. autoclass:: DBMContainer
-.. autoclass:: DBMNamespaceManager
+    :show-inheritance:
 .. autoclass:: FileContainer
-.. autoclass:: FileNamespaceManager
+    :show-inheritance:
 .. autoclass:: MemoryContainer
-.. autoclass:: MemoryNamespaceManager
-.. autoclass:: NamespaceManager
-   :members: set_value, get_creation_lock, do_remove, has_key
-.. autoclass:: OpenResourceNamespaceManager
-.. autoclass:: Value
-   :members: set_value, has_value, can_have_value, has_current_value, get_value, clear_value
+    :show-inheritance:
