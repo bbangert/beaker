@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
 
-import webob
 from beaker.session import Session
 
 
@@ -9,7 +8,7 @@ def get_session(**kwargs):
     """A shortcut for creating :class:`Session` instance"""
     options = {}
     options.update(**kwargs)
-    return Session(webob.Request.blank('/').environ, **options)
+    return Session({}, **options)
 
 
 def test_save_load():
