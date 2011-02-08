@@ -14,6 +14,8 @@ Release 1.5.5 (**tip**)
 * Added an optimization to the FileNamespaceContainer when used with 
   Session, such that the pickled contents of the file are not 
   read a second time when session.save() is called.  (#64)
+* Fixed bug whereby CacheManager.invalidate wouldn't work for a function
+  decorated by cache.cache(). (#61)
 
 Release 1.5.4 (6/16/2010)
 =========================

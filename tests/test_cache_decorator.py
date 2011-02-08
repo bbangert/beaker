@@ -25,6 +25,14 @@ def make_cache_obj(**kwargs):
     cache = CacheManager(**parse_cache_config_options(opts))
     return cache
 
+def make_cached_func(**opts):
+    cache = make_cache_obj(**opts)
+    @cache.cache()
+    def load(person):
+        now = datetime.now()
+        return "Hi there %s, its currently %s" % (person, now)
+    return cache, load
+
 def make_region_cached_func():
     opts = {}
     opts['cache.regions'] = 'short_term, long_term'
@@ -49,7 +57,7 @@ def make_region_cached_func_2():
         return "Hi there %s, its currently %s" % (person, now)
     return load_person
 
-def test_check_decorator():
+def test_check_region_decorator():
     func = make_region_cached_func()
     result = func('Fred')
     assert 'Fred' in result
@@ -110,3 +118,14 @@ def test_check_invalidate_region_2():
     # Invalidate a non-existent key
     region_invalidate(func, None, 'Fredd')
     assert result3 == result2
+
+def test_invalidate_cache():
+    cache, func = make_cached_func()
+    val = func('foo')
+    time.sleep(.1)
+    val2 = func('foo')
+    assert val == val2
+
+    cache.invalidate(func, 'foo')
+    val3 = func('foo')
+    assert val3 != val

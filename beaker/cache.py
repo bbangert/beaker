@@ -432,14 +432,14 @@ class CacheManager(object):
 
         """
         cache = [None]
-        key = " ".join(str(x) for x in args)
+        cache_args = [str(x) for x in args]
 
         def decorate(func):
             namespace = util.func_namespace(func)
             def cached(*args):
                 if not cache[0]:
                     cache[0] = self.get_cache(namespace, **kwargs)
-                cache_key = key + " " + " ".join(str(x) for x in args)
+                cache_key = " ".join(cache_args + [str(x) for x in args])
                 def go():
                     return func(*args)
                 return cache[0].get_value(cache_key, createfunc=go)
