@@ -153,3 +153,48 @@ def test_cookies_disabled():
     session.delete()
     assert 'set_cookie' not in session.request
     assert 'cookie_out' not in session.request
+
+
+def test_file_based_replace_optimization():
+    """Test the file-based backend with session, 
+    which includes the 'replace' optimization.
+    
+    """
+
+    session = get_session(use_cookies=False, type='file', 
+                            data_dir='./cache')
+
+    session['foo'] = 'foo'
+    session['bar'] = 'bar'
+    session.save()
+
+    session = get_session(use_cookies=False, type='file', 
+                            data_dir='./cache', id=session.id)
+    assert session['foo'] == 'foo'
+    assert session['bar'] == 'bar'
+
+    session['bar'] = 'bat'
+    session['bat'] = 'hoho'
+    session.save()
+
+    session.namespace.do_open('c', False)
+    session.namespace['test'] = 'some test'
+    session.namespace.do_close()
+
+    session = get_session(use_cookies=False, type='file', 
+                            data_dir='./cache', id=session.id)
+
+    session.namespace.do_open('r', False)
+    assert session.namespace['test'] == 'some test'
+    session.namespace.do_close()
+
+    assert session['foo'] == 'foo'
+    assert session['bar'] == 'bat'
+    assert session['bat'] == 'hoho'
+    session.save()
+
+    # the file has been replaced, so our out-of-session
+    # key is gone
+    session.namespace.do_open('r', False)
+    assert 'test' not in session.namespace
+    session.namespace.do_close()

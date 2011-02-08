@@ -64,7 +64,7 @@ class SqlaNamespaceManager(OpenResourceNamespaceManager):
             identifier ="databasecontainer/funclock/%s" % self.namespace,
             lock_dir=self.lock_dir)
 
-    def do_open(self, flags):
+    def do_open(self, flags, replace):
         if self.loaded:
             self.flags = flags
             return

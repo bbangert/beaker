@@ -113,7 +113,7 @@ class NamespaceManager(object):
 
         """
 
-    def acquire_write_lock(self, wait=True):
+    def acquire_write_lock(self, wait=True, replace=False):
         """Establish a write lock.
         
         This operation is called before a key is written.   
@@ -121,6 +121,11 @@ class NamespaceManager(object):
         been acquired.
         
         By default the function returns ``True`` unconditionally.
+        
+        'replace' is a hint indicating the full contents
+        of the namespace may be safely discarded. Some backends
+        may implement this (i.e. file backend won't unpickle the 
+        current contents).
         
         """
         return True
@@ -194,7 +199,7 @@ class OpenResourceNamespaceManager(NamespaceManager):
     def get_access_lock(self):
         raise NotImplementedError()
 
-    def do_open(self, flags): 
+    def do_open(self, flags, replace): 
         raise NotImplementedError()
 
     def do_close(self): 
@@ -214,11 +219,11 @@ class OpenResourceNamespaceManager(NamespaceManager):
         finally:
             self.access_lock.release_read_lock()
 
-    def acquire_write_lock(self, wait=True): 
+    def acquire_write_lock(self, wait=True, replace=False): 
         r = self.access_lock.acquire_write_lock(wait)
         try:
             if (wait or r): 
-                self.open('c', checkcount = True)
+                self.open('c', checkcount = True, replace=replace)
             return r
         except:
             self.access_lock.release_write_lock()
@@ -230,15 +235,15 @@ class OpenResourceNamespaceManager(NamespaceManager):
         finally:
             self.access_lock.release_write_lock()
 
-    def open(self, flags, checkcount=False):
+    def open(self, flags, checkcount=False, replace=False):
         self.mutex.acquire()
         try:
             if checkcount:
                 if self.openers == 0: 
-                    self.do_open(flags)
+                    self.do_open(flags, replace)
                 self.openers += 1
             else:
-                self.do_open(flags)
+                self.do_open(flags, replace)
                 self.openers = 1
         finally:
             self.mutex.release()
@@ -561,7 +566,7 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
                 list.append(self.file + os.extsep + ext)
         return list
 
-    def do_open(self, flags):
+    def do_open(self, flags, replace):
         debug("opening dbm file %s", self.file)
         try:
             self.dbm = self.dbmmodule.open(self.file, flags)
@@ -644,12 +649,13 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
     def file_exists(self, file):
         return os.access(file, os.F_OK)
 
-    def do_open(self, flags):
-        if self.file_exists(self.file):
+    def do_open(self, flags, replace):
+        if not replace and self.file_exists(self.file):
             fh = open(self.file, 'rb')
             try:
                 self.hash = cPickle.load(fh)
-            except (IOError, OSError, EOFError, cPickle.PickleError, ValueError):
+            except (IOError, OSError, EOFError, 
+                    cPickle.PickleError, ValueError):
                 pass
             fh.close()
 

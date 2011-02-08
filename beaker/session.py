@@ -287,7 +287,7 @@ class Session(dict):
                                     digest_filenames=False, 
                                     **self.namespace_args)
 
-        self.namespace.acquire_write_lock()
+        self.namespace.acquire_write_lock(replace=True)
         try:
             if accessed_only:
                 data = dict(self.accessed_dict.items())

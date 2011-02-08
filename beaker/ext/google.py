@@ -52,7 +52,7 @@ class GoogleNamespaceManager(OpenResourceNamespaceManager):
         # this is weird, should probably be present
         return null_synchronizer()
 
-    def do_open(self, flags):
+    def do_open(self, flags, replace):
         # If we already loaded the data, don't bother loading it again
         if self.loaded:
             self.flags = flags

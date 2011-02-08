@@ -11,6 +11,9 @@ Release 1.5.5 (**tip**)
   direct specification of the name of which memcache backend to use.
 * Basic container/file-based Session support working in Py3K. (#72)
 * Further Python 3 fixes
+* Added an optimization to the FileNamespaceContainer when used with 
+  Session, such that the pickled contents of the file are not 
+  read a second time when session.save() is called.  (#64)
 
 Release 1.5.4 (6/16/2010)
 =========================
