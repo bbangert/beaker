@@ -6,8 +6,16 @@ import tarfile
 import tempfile
 import time
 from beaker.middleware import CacheMiddleware
+from beaker import util
 from beaker.cache import Cache
-from webtest import TestApp
+from nose import SkipTest
+from beaker.util import skip_if
+import base64
+import zlib
+try:
+    from webtest import TestApp
+except ImportError:
+    TestApp = None
 
 # Tarballs of the output of:
 # >>> from beaker.cache import Cache
@@ -23,7 +31,10 @@ nv+l0vg0yYcTdznMxhdpfFvHbpj1lyv0N8oq+jdhrr/b/A5Yo79R9G9ERX8XbXgLrNHfav7/G1Hd
 pRjbXgkAAAAAAFjVyc1Idc6U1lYGgbSmL0Mjpe248+PYjY87I91x/UGeb3udAAAAAACgfh+fAAAA
 AADgr/t5/sPFTZ5cb/38D19Lzn9pRHX/zR4CtEZ/o+nfiEX9N3kI0Gr9vWl/W0z0BwAAAAAAAAAA
 AAAAAAAAqPAFyOvcKA==
-""".decode('base64').decode('zlib')
+"""
+if util.py3k:
+    dbm_cache_tar = dbm_cache_tar.encode('ascii')
+dbm_cache_tar = zlib.decompress(base64.b64decode(dbm_cache_tar))
 
 # dumbdbm format
 dumbdbm_cache_tar = """\
@@ -33,7 +44,10 @@ W0RT457Jsq9W6632W0Se0JI49/1E0vCIZZPPzHt5HmzPWNQ91M1r/XbwuVP3/6nKLcq2Gey6qftl
 kudGVrKgushNkYuVc5VM/Rups5vjY3wErJU6nD+Z7fyFNFpEjIf4AFeef7Jq22TOZnzOpLiJLz0d
 CGyE+q/scHyMk/Wv+E79G0L9hzC7JSFMpv0PN0+J4rv7xNk+iTuKh07E6aXnB9Mao/7X/fExzt//
 FecS9R8C9v/r9rP+l49tubnk+e/z/J8JjvMfAAAAAAAAAADAn70DFJAAwQ==
-""".decode('base64').decode('zlib')
+"""
+if util.py3k:
+    dumbdbm_cache_tar = dumbdbm_cache_tar.encode('ascii')
+dumbdbm_cache_tar = zlib.decompress(base64.b64decode(dumbdbm_cache_tar))
 
 def simple_app(environ, start_response):
     clear = False
@@ -175,6 +189,7 @@ def test_multi_keys():
     assert 'howdy' == cache.get_value('key2', createfunc=create_func)
     assert called == {}
 
+@skip_if(lambda: TestApp is None, "webtest not installed")
 def test_increment():
     app = TestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.type':type, 'beaker.clear':True})
@@ -184,6 +199,7 @@ def test_increment():
     res = app.get('/')
     assert 'current value is: 3' in res
 
+@skip_if(lambda: TestApp is None, "webtest not installed")
 def test_cache_manager():
     app = TestApp(CacheMiddleware(cache_manager_app))
     res = app.get('/')
@@ -243,7 +259,7 @@ def test_upgrade():
                 continue
             dir = tempfile.mkdtemp()
             fd, name = tempfile.mkstemp(dir=dir)
-            fp = os.fdopen(fd, 'w')
+            fp = os.fdopen(fd, 'wb')
             fp.write(tar)
             fp.close()
             tar = tarfile.open(name)

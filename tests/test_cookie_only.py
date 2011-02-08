@@ -4,7 +4,10 @@ import os
 import beaker.session
 from beaker.middleware import SessionMiddleware
 from nose import SkipTest
-from webtest import TestApp
+try:
+    from webtest import TestApp
+except ImportError:
+    raise SkipTest("webtest not installed")
 
 from beaker import crypto
 if not crypto.has_aes:

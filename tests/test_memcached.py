@@ -1,12 +1,16 @@
 # coding: utf-8
 import os
 
-from beaker.cache import clsmap, Cache
+from beaker.cache import clsmap, Cache, util
 from beaker.middleware import CacheMiddleware, SessionMiddleware
 from beaker.exceptions import InvalidCacheBackendError
 from nose import SkipTest
-from webtest import TestApp
 import unittest
+
+try:
+    from webtest import TestApp
+except ImportError:
+    TestApp = None
 
 try:
     from beaker.ext import memcached
@@ -103,7 +107,7 @@ def cache_manager_app(environ, start_response):
         yield "test_key wasn't cleared, is: %s\n" % \
             cm.get_cache('test')['test_key']
 
-
+@util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_session():
     app = TestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
     res = app.get('/')
@@ -114,6 +118,7 @@ def test_session():
     assert 'current value is: 3' in res
 
 
+@util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_session_invalid():
     app = TestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
     res = app.get('/invalid', headers=dict(Cookie='beaker.session.id=df7324911e246b70b5781c3c58328442; Path=/'))
@@ -201,6 +206,7 @@ def test_spaces_in_keys():
     assert cache.has_key("hasspace")
     assert 42 == cache.get_value("hasspace")
 
+@util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_increment():
     app = TestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
@@ -218,12 +224,14 @@ def test_increment():
     res = app.get('/')
     assert 'current value is: 3' in res
 
+@util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_cache_manager():
     app = TestApp(CacheMiddleware(cache_manager_app))
     res = app.get('/')
     assert 'test_key is: test value' in res
     assert 'test_key cleared' in res
 
+@util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_store_none():
     app = TestApp(CacheMiddleware(using_none_app))
     res = app.get('/', extra_environ={'beaker.clear':True})

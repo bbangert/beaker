@@ -31,6 +31,32 @@ from threading import local as _tlocal
 __all__  = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict",
             "encoded_path", "verify_directory"]
 
+def function_named(fn, name):
+    """Return a function with a given __name__.
+
+    Will assign to __name__ and return the original function if possible on
+    the Python implementation, otherwise a new function will be constructed.
+
+    """
+    fn.__name__ = name
+    return fn
+
+def skip_if(predicate, reason=None):
+    """Skip a test if predicate is true."""
+    reason = reason or predicate.__name__
+
+    from nose import SkipTest
+    def decorate(fn):
+        fn_name = fn.__name__
+        def maybe(*args, **kw):
+            if predicate():
+                msg = "'%s' skipped: %s" % (
+                    fn_name, reason)
+                raise SkipTest(msg)
+            else:
+                return fn(*args, **kw)
+        return function_named(maybe, fn_name)
+    return decorate
 
 def verify_directory(dir):
     """verifies and creates a directory.  tries to

@@ -5,7 +5,7 @@ import time
 from datetime import datetime, timedelta
 
 from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, md5
-from beaker.util import pickle
+from beaker.util import pickle, py3k
 
 from beaker import crypto
 from beaker.cache import clsmap
@@ -121,10 +121,21 @@ class Session(dict):
                     raise
 
     def _create_id(self):
-        self.id = md5(
-            md5("%f%s%f%s" % (time.time(), id({}), random.random(),
-                              getpid())).hexdigest(), 
-        ).hexdigest()
+        id_str = "%f%s%f%s" % (
+                    time.time(), 
+                    id({}), 
+                    random.random(),
+                    getpid()
+                ) 
+        if py3k:
+            self.id = md5(
+                            md5(
+                                id_str.encode('ascii')
+                            ).hexdigest().encode('ascii')
+                        ).hexdigest()
+        else:
+            self.id = md5(md5(id_str).hexdigest()).hexdigest()
+
         self.is_new = True
         self.last_accessed = None
         if self.use_cookies:

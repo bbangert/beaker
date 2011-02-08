@@ -6,9 +6,11 @@ Release 1.5.5 (**tip**)
 * Defer running of pkg_resources to look for external cache modules
   until requested. #66
 * memcached backend uses pylibmc.ThreadMappedPool to ensure thread-local
-  usage of pylibmc when that library is in use.
+  usage of pylibmc when that library is in use. (#60)
 * memcached backend also has ``memcache_module`` string argument, allows
   direct specification of the name of which memcache backend to use.
+* Basic container/file-based Session support working in Py3K. (#72)
+* Further Python 3 fixes
 
 Release 1.5.4 (6/16/2010)
 =========================

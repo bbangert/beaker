@@ -1,11 +1,15 @@
 """Container and Namespace classes"""
-import anydbm
+
+import beaker.util as util
+if util.py3k:
+    import dbm as anydbm
+else:
+    import anydbm
 import cPickle
 import logging
 import os
 import time
 
-import beaker.util as util
 from beaker.exceptions import CreationAbortedError, MissingCacheParameter
 from beaker.synchronization import _threading, file_synchronizer, \
      mutex_synchronizer, NameLock, null_synchronizer

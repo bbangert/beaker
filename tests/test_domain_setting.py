@@ -2,7 +2,11 @@ import re
 import os
 
 from beaker.middleware import SessionMiddleware
-from webtest import TestApp
+from nose import SkipTest
+try:
+    from webtest import TestApp
+except ImportError:
+    raise SkipTest("webtest not installed")
 
 def teardown():
     import shutil

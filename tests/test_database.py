@@ -1,9 +1,13 @@
 # coding: utf-8
-from beaker.cache import clsmap, Cache
+from beaker.cache import clsmap, Cache, util
 from beaker.exceptions import InvalidCacheBackendError
 from beaker.middleware import CacheMiddleware
 from nose import SkipTest
-from webtest import TestApp
+
+try:
+    from webtest import TestApp
+except ImportError:
+    TestApp = None
 
 
 try:
@@ -86,6 +90,7 @@ def test_unicode_keys():
     cache.remove_value(u'hiŏ')
     assert u'hiŏ' not in cache
 
+@util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_increment():
     app = TestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
@@ -95,6 +100,7 @@ def test_increment():
     res = app.get('/')
     assert 'current value is: 3' in res
 
+@util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_cache_manager():
     app = TestApp(CacheMiddleware(cache_manager_app))
     res = app.get('/')
