@@ -652,11 +652,7 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
     def do_open(self, flags, replace):
         if not replace and self.file_exists(self.file):
             fh = open(self.file, 'rb')
-            try:
-                self.hash = cPickle.load(fh)
-            except (IOError, OSError, EOFError, 
-                    cPickle.PickleError, ValueError):
-                pass
+            self.hash = cPickle.load(fh)
             fh.close()
 
         self.flags = flags

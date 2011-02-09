@@ -5,9 +5,7 @@ import time
 from datetime import datetime, timedelta
 
 from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, md5
-from beaker.util import pickle, py3k
-
-from beaker import crypto
+from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
 from base64 import b64encode, b64decode
@@ -114,8 +112,12 @@ class Session(dict):
         else:
             try:
                 self.load()
-            except:
+            except Exception, e:
                 if invalidate_corrupt:
+                    util.warn(
+                        "Invalidating corrupt session %s; "
+                        "error was: %s.  Set invalidate_corrupt=False "
+                        "to propagate this exception." % (self.id, e))
                     self.invalidate()
                 else:
                     raise
@@ -127,7 +129,7 @@ class Session(dict):
                     random.random(),
                     getpid()
                 ) 
-        if py3k:
+        if util.py3k:
             self.id = md5(
                             md5(
                                 id_str.encode('ascii')
@@ -439,10 +441,10 @@ class CookieSession(Session):
             nonce = b64encode(os.urandom(40))[:8]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
-            data = pickle.dumps(self.copy(), 2)
+            data = util.pickle.dumps(self.copy(), 2)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = pickle.dumps(self.copy(), 2)
+            data = util.pickle.dumps(self.copy(), 2)
             return b64encode(data)
 
     def _decrypt_data(self):
@@ -454,10 +456,10 @@ class CookieSession(Session):
                                              self.validate_key + nonce, 1)
             payload = b64decode(self.cookie[self.key].value[8:])
             data = crypto.aesDecrypt(payload, encrypt_key)
-            return pickle.loads(data)
+            return util.pickle.loads(data)
         else:
             data = b64decode(self.cookie[self.key].value)
-            return pickle.loads(data)
+            return util.pickle.loads(data)
 
     def _make_id(self):
         return md5(md5(

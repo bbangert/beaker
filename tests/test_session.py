@@ -2,6 +2,7 @@
 import time
 
 from beaker.session import Session
+from beaker import util
 
 
 def get_session(**kwargs):
@@ -158,7 +159,7 @@ def test_cookies_disabled():
 def test_file_based_replace_optimization():
     """Test the file-based backend with session, 
     which includes the 'replace' optimization.
-    
+
     """
 
     session = get_session(use_cookies=False, type='file', 
@@ -198,3 +199,27 @@ def test_file_based_replace_optimization():
     session.namespace.do_open('r', False)
     assert 'test' not in session.namespace
     session.namespace.do_close()
+
+
+def test_invalidate_corrupt():
+    session = get_session(use_cookies=False, type='file', 
+                            data_dir='./cache')
+    session['foo'] = 'bar'
+    session.save()
+
+    f = open(session.namespace.file, 'w')
+    f.write("crap")
+    f.close()
+
+    util.assert_raises(
+        util.pickle.UnpicklingError,
+        get_session,
+        use_cookies=False, type='file', 
+                data_dir='./cache', id=session.id
+    )
+
+    session = get_session(use_cookies=False, type='file', 
+                            invalidate_corrupt=True,
+                            data_dir='./cache', id=session.id)
+    assert "foo" not in dict(session)
+

@@ -26,6 +26,7 @@ else:
     import cPickle as pickle
 
 from beaker.converters import asbool
+from beaker import exceptions
 from threading import local as _tlocal
 
 
@@ -59,6 +60,18 @@ def skip_if(predicate, reason=None):
         return function_named(maybe, fn_name)
     return decorate
 
+def assert_raises(except_cls, callable_, *args, **kw):
+    """Assert the given exception is raised by the given function + arguments."""
+
+    try:
+        callable_(*args, **kw)
+        success = False
+    except except_cls, e:
+        success = True
+ 
+    # assert outside the block so it works for AssertionError too !
+    assert success, "Callable did not raise an exception"
+
 def verify_directory(dir):
     """verifies and creates a directory.  tries to
     ignore collisions with other threads and processes."""
@@ -76,6 +89,13 @@ def has_self_arg(func):
     """Return True if the given function has a 'self' argument."""
 
     return inspect.getargspec(func)[0][0] in ('self', 'cls')
+
+def warn(msg, stacklevel=3):
+    """Issue a warning."""
+    if isinstance(msg, basestring):
+        warnings.warn(msg, exceptions.BeakerWarning, stacklevel=stacklevel)
+    else:
+        warnings.warn(msg, stacklevel=stacklevel)
 
 def deprecated(message):
     def wrapper(fn):

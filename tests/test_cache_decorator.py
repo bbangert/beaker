@@ -3,7 +3,7 @@ from datetime import datetime
 
 import beaker.cache as cache
 from beaker.cache import CacheManager, cache_region, region_invalidate
-from beaker.util import parse_cache_config_options
+from beaker import util
 
 defaults = {'cache.data_dir':'./cache', 'cache.type':'dbm', 'cache.expire': 2}
 
@@ -22,7 +22,7 @@ def george(x):
 def make_cache_obj(**kwargs):
     opts = defaults.copy()
     opts.update(kwargs)
-    cache = CacheManager(**parse_cache_config_options(opts))
+    cache = CacheManager(**util.parse_cache_config_options(opts))
     return cache
 
 def make_cached_func(**opts):
@@ -145,8 +145,15 @@ def test_class_key_cache():
     x = Foo().go(1, 2)
     y = go(1, 2)
 
-    assert cache.get_cache('test_cache_decorator.go').get('method 1 2') == x
-    assert cache.get_cache('test_cache_decorator.go').get('standalone 1 2') == y
+    ns = go._arg_namespace
+    assert cache.get_cache(ns).get('method 1 2') == x
+    assert cache.get_cache(ns).get('standalone 1 2') == y
+
+def test_func_namespace():
+    def go(x, y):
+        return "hi standalone"
+
+    assert util.func_namespace(go).endswith('test_cache_decorator.go')
 
 def test_class_key_region():
     opts = {}
@@ -165,9 +172,9 @@ def test_class_key_region():
 
     x = Foo().go(1, 2)
     y = go(1, 2)
-
-    assert cache.get_cache_region('test_cache_decorator.go', 'short_term').get('method 1 2') == x
-    assert cache.get_cache_region('test_cache_decorator.go', 'short_term').get('standalone 1 2') == y
+    ns = go._arg_namespace
+    assert cache.get_cache_region(ns, 'short_term').get('method 1 2') == x
+    assert cache.get_cache_region(ns, 'short_term').get('standalone 1 2') == y
 
 def test_classmethod_key_region():
     opts = {}
@@ -182,7 +189,8 @@ def test_classmethod_key_region():
             return "hi"
 
     x = Foo.go(1, 2)
-    assert cache.get_cache_region('test_cache_decorator.go', 'short_term').get('method 1 2') == x
+    ns = Foo.go._arg_namespace
+    assert cache.get_cache_region(ns, 'short_term').get('method 1 2') == x
 
 def test_class_key_region_invalidate():
     opts = {}

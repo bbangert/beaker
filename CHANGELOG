@@ -20,6 +20,9 @@ Release 1.6 (**tip**)
 * cache decorators @cache.cache(), @cache_region() won't include first
   argument named 'self' or 'cls' as part of the cache key.  This allows
   reasonably safe usage for methods as well as functions.  (#55)
+* file backend no longer squashes unpickling errors.   This was inconsistent
+  behavior versus all the other backends.
+* invalidate_corrupt flag on Session now emits a warning. (#52)
 
 Release 1.5.4 (6/16/2010)
 =========================
