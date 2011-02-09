@@ -6,6 +6,7 @@
 Module Contents
 ---------------
 
+.. autodata:: beaker.cache.cache_regions
 .. autofunction:: cache_region
 .. autofunction:: region_invalidate
 .. autoclass:: Cache

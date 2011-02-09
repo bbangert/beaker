@@ -1,8 +1,11 @@
 import sys
+import re
 
 from setuptools import setup, find_packages
 
-version = '1.5.4'
+v = open(os.path.join(os.path.dirname(__file__), 'beaker', '__init__.py'))
+VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
+v.close()
 
 extra = {}
 if sys.version_info >= (3, 0):
@@ -20,7 +23,7 @@ if not sys.platform.startswith('java') and not sys.platform == 'cli':
         tests_require.append('pysqlite')
 
 setup(name='Beaker',
-      version=version,
+      version=VERSION,
       description="A Session and Caching library with WSGI Middleware",
       long_description="""\
 Cache and Session Library

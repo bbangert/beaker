@@ -1,6 +1,7 @@
-Release 1.5.5 (**tip**)
+Release 1.6 (**tip**)
 =======================
 
+* added runtime beaker.__version__
 * Add ``webtest_varname`` option to configuration to optionally include
   the session value in the environ vars when using Beaker with WebTest.
 * Defer running of pkg_resources to look for external cache modules
@@ -16,6 +17,9 @@ Release 1.5.5 (**tip**)
   read a second time when session.save() is called.  (#64)
 * Fixed bug whereby CacheManager.invalidate wouldn't work for a function
   decorated by cache.cache(). (#61)
+* cache decorators @cache.cache(), @cache_region() won't include first
+  argument named 'self' or 'cls' as part of the cache key.  This allows
+  reasonably safe usage for methods as well as functions.  (#55)
 
 Release 1.5.4 (6/16/2010)
 =========================

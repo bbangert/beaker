@@ -129,3 +129,81 @@ def test_invalidate_cache():
     cache.invalidate(func, 'foo')
     val3 = func('foo')
     assert val3 != val
+
+def test_class_key_cache():
+    cache = make_cache_obj()
+
+    class Foo(object):
+        @cache.cache('method')
+        def go(self, x, y):
+            return "hi foo"
+
+    @cache.cache('standalone')
+    def go(x, y):
+        return "hi standalone"
+
+    x = Foo().go(1, 2)
+    y = go(1, 2)
+
+    assert cache.get_cache('test_cache_decorator.go').get('method 1 2') == x
+    assert cache.get_cache('test_cache_decorator.go').get('standalone 1 2') == y
+
+def test_class_key_region():
+    opts = {}
+    opts['cache.regions'] = 'short_term'
+    opts['cache.short_term.expire'] = '2'
+    cache = make_cache_obj(**opts)
+
+    class Foo(object):
+        @cache_region('short_term', 'method')
+        def go(self, x, y):
+            return "hi foo"
+
+    @cache_region('short_term', 'standalone')
+    def go(x, y):
+        return "hi standalone"
+
+    x = Foo().go(1, 2)
+    y = go(1, 2)
+
+    assert cache.get_cache_region('test_cache_decorator.go', 'short_term').get('method 1 2') == x
+    assert cache.get_cache_region('test_cache_decorator.go', 'short_term').get('standalone 1 2') == y
+
+def test_classmethod_key_region():
+    opts = {}
+    opts['cache.regions'] = 'short_term'
+    opts['cache.short_term.expire'] = '2'
+    cache = make_cache_obj(**opts)
+
+    class Foo(object):
+        @classmethod
+        @cache_region('short_term', 'method')
+        def go(cls, x, y):
+            return "hi"
+
+    x = Foo.go(1, 2)
+    assert cache.get_cache_region('test_cache_decorator.go', 'short_term').get('method 1 2') == x
+
+def test_class_key_region_invalidate():
+    opts = {}
+    opts['cache.regions'] = 'short_term'
+    opts['cache.short_term.expire'] = '2'
+    cache = make_cache_obj(**opts)
+
+    class Foo(object):
+        @cache_region('short_term', 'method')
+        def go(self, x, y):
+            now = datetime.now()
+            return "hi %s" % now
+
+        def invalidate(self, x, y):
+            region_invalidate(self.go, None, "method", x, y)
+
+    x = Foo().go(1, 2)
+    time.sleep(1)
+    y = Foo().go(1, 2)
+    Foo().invalidate(1, 2)
+    z = Foo().go(1, 2)
+
+    assert x == y
+    assert x != z

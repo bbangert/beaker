@@ -14,6 +14,7 @@ import types
 import weakref
 import warnings
 import sys
+import inspect
 
 py3k = getattr(sys, 'py3kwarning', False) or sys.version_info >= (3, 0)
 py24 = sys.version_info < (2,5)
@@ -71,6 +72,10 @@ def verify_directory(dir):
             if tries > 5:
                 raise
 
+def has_self_arg(func):
+    """Return True if the given function has a 'self' argument."""
+
+    return inspect.getargspec(func)[0][0] in ('self', 'cls')
 
 def deprecated(message):
     def wrapper(fn):
