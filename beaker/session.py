@@ -50,7 +50,7 @@ class Session(dict):
     ``key``
         The name the cookie should be set to.
     ``timeout``
-        How long session data is considered valid. This is used 
+        How long session data is considered valid. This is used
         regardless of the cookie being present or not to determine
         whether session data is still valid.
     ``cookie_domain``
@@ -124,11 +124,11 @@ class Session(dict):
 
     def _create_id(self):
         id_str = "%f%s%f%s" % (
-                    time.time(), 
-                    id({}), 
+                    time.time(),
+                    id({}),
                     random.random(),
                     getpid()
-                ) 
+                )
         if util.py3k:
             self.id = md5(
                             md5(
@@ -220,7 +220,7 @@ class Session(dict):
     def load(self):
         "Loads the data from this session from persistent storage"
         self.namespace = self.namespace_class(self.id,
-            data_dir=self.data_dir, 
+            data_dir=self.data_dir,
             digest_filenames=False,
             **self.namespace_args)
         now = time.time()
@@ -284,9 +284,9 @@ class Session(dict):
 
         if not hasattr(self, 'namespace'):
             self.namespace = self.namespace_class(
-                                    self.id, 
+                                    self.id,
                                     data_dir=self.data_dir,
-                                    digest_filenames=False, 
+                                    digest_filenames=False,
                                     **self.namespace_args)
 
         self.namespace.acquire_write_lock(replace=True)
@@ -346,7 +346,7 @@ class CookieSession(Session):
     ``key``
         The name the cookie should be set to.
     ``timeout``
-        How long session data is considered valid. This is used 
+        How long session data is considered valid. This is used
         regardless of the cookie being present or not to determine
         whether session data is still valid.
     ``encrypt_key``
