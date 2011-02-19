@@ -85,20 +85,38 @@ def test_invalidate():
 
 def test_regenerate_id():
     """Test :meth:`Session.regenerate_id`"""
-    session = get_session(user_cookies=True)
+    # new session & save
+    session = get_session()
     orig_id = session.id
     session[u'foo'] = u'bar'
+    session.save()
 
-    # cookie should be there
-    assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
+    # load session
+    session = get_session(id=session.id)
+    # data should still be there
+    assert session[u'foo'] == u'bar'
 
+    # regenerate the id
     session.regenerate_id()
 
     assert session.id != orig_id
+
+    # data is still there
     assert session[u'foo'] == u'bar'
 
     # should be the new id
     assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
+
+    # get a new session before calling save
+    bunk_sess = get_session(id=session.id)
+    assert u'foo' not in bunk_sess
+
+    # save it
+    session.save()
+
+    # make sure we get the data back
+    session = get_session(id=session.id)
+    assert session[u'foo'] == u'bar'
 
 
 def test_timeout():
