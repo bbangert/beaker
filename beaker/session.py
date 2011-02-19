@@ -169,7 +169,7 @@ class Session(dict):
                 raise
             util.warn('Python 2.6+ is required to use httponly')
 
-    def _create_id(self):
+    def _create_id(self, set_new=True):
         id_str = "%f%s%f%s" % (
                     time.time(),
                     id({}),
@@ -185,11 +185,13 @@ class Session(dict):
         else:
             self.id = md5(md5(id_str).hexdigest()).hexdigest()
 
-        self.is_new = True
-        self.last_accessed = None
+        if set_new:
+            self.is_new = True
+            self.last_accessed = None
         if self.use_cookies:
             self._set_cookie_values()
-            self._update_cookie_out(set_cookie=False)
+            sc = set_new == False
+            self._update_cookie_out(set_cookie=sc)
 
     def created(self):
         return self['_creation_time']
@@ -301,7 +303,9 @@ class Session(dict):
         if accessed_only and self.is_new:
             return None
 
-        if not hasattr(self, 'namespace'):
+        # this session might not have a namespace yet or the session id
+        # might have been regenerated
+        if not hasattr(self, 'namespace') or self.namespace.namespace != self.id:
             self.namespace = self.namespace_class(
                                     self.id,
                                     data_dir=self.data_dir,
@@ -339,7 +343,7 @@ class Session(dict):
             elevates priviliges.
 
         """
-        self._create_id()
+        self._create_id(set_new=False)
 
     # TODO: I think both these methods should be removed.  They're from
     # the original mod_python code i was ripping off but they really
