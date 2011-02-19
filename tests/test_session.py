@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import sys
 import time
+import warnings
 
 from beaker.session import Session
 from beaker import util
@@ -152,6 +154,25 @@ def test_cookies_enabled():
     assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
     assert 'expires=' in session.request['cookie_out']
 
+    # test for secure
+    session = get_session(use_cookies=True, secure=True)
+    assert 'secure' in session.request['cookie_out']
+
+    # test for httponly
+    class ShowWarning(object):
+        def __init__(self):
+            self.msg = None
+        def __call__(self, message, category, filename, lineno, file=None, line=None):
+            self.msg = str(message)
+    orig_sw = warnings.showwarning
+    sw = ShowWarning()
+    warnings.showwarning = sw
+    session = get_session(use_cookies=True, httponly=True)
+    if sys.version_info < (2, 6):
+        assert sw.msg == 'Python 2.6+ is required to use httponly'
+    else:
+        assert 'httponly' in session.request['cookie_out']
+    warnings.showwarning = orig_sw
 
 def test_cookies_disabled():
     """
