@@ -157,19 +157,19 @@ def test_cookies_disabled():
 
 
 def test_file_based_replace_optimization():
-    """Test the file-based backend with session, 
+    """Test the file-based backend with session,
     which includes the 'replace' optimization.
 
     """
 
-    session = get_session(use_cookies=False, type='file', 
+    session = get_session(use_cookies=False, type='file',
                             data_dir='./cache')
 
     session['foo'] = 'foo'
     session['bar'] = 'bar'
     session.save()
 
-    session = get_session(use_cookies=False, type='file', 
+    session = get_session(use_cookies=False, type='file',
                             data_dir='./cache', id=session.id)
     assert session['foo'] == 'foo'
     assert session['bar'] == 'bar'
@@ -182,7 +182,7 @@ def test_file_based_replace_optimization():
     session.namespace['test'] = 'some test'
     session.namespace.do_close()
 
-    session = get_session(use_cookies=False, type='file', 
+    session = get_session(use_cookies=False, type='file',
                             data_dir='./cache', id=session.id)
 
     session.namespace.do_open('r', False)
@@ -202,7 +202,7 @@ def test_file_based_replace_optimization():
 
 
 def test_invalidate_corrupt():
-    session = get_session(use_cookies=False, type='file', 
+    session = get_session(use_cookies=False, type='file',
                             data_dir='./cache')
     session['foo'] = 'bar'
     session.save()
@@ -214,12 +214,11 @@ def test_invalidate_corrupt():
     util.assert_raises(
         util.pickle.UnpicklingError,
         get_session,
-        use_cookies=False, type='file', 
+        use_cookies=False, type='file',
                 data_dir='./cache', id=session.id
     )
 
-    session = get_session(use_cookies=False, type='file', 
+    session = get_session(use_cookies=False, type='file',
                             invalidate_corrupt=True,
                             data_dir='./cache', id=session.id)
     assert "foo" not in dict(session)
-
