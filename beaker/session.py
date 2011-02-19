@@ -312,6 +312,16 @@ class Session(dict):
         self.clear()
         self.update(self.accessed_dict)
 
+    def regenerate_id(self):
+        """
+            creates a new session id, retains all session data
+
+            Its a good security practice to regnerate the id after a client
+            elevates priviliges.
+
+        """
+        self._create_id()
+
     # TODO: I think both these methods should be removed.  They're from
     # the original mod_python code i was ripping off but they really
     # have no use here.

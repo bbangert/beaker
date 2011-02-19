@@ -81,6 +81,24 @@ def test_invalidate():
     assert u'Deutchland' not in session
 
 
+def test_regenerate_id():
+    """Test :meth:`Session.regenerate_id`"""
+    session = get_session(user_cookies=True)
+    orig_id = session.id
+    session[u'foo'] = u'bar'
+
+    # cookie should be there
+    assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
+
+    session.regenerate_id()
+
+    assert session.id != orig_id
+    assert session[u'foo'] == u'bar'
+
+    # should be the new id
+    assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
+
+
 def test_timeout():
     """Test if the session times out properly"""
     session = get_session(timeout=2)
