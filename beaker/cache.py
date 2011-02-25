@@ -6,7 +6,6 @@ as well as the function decorators :func:`.region_decorate`,
 :func:`.region_invalidate`.
 
 """
-
 import warnings
 
 import beaker.container as container
@@ -543,9 +542,15 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                                     "argument is required")
 
             if skip_self:
-                cache_key = " ".join(map(str, deco_args + args[1:]))
+                try:
+                    cache_key = " ".join(map(str, deco_args + args[1:]))
+                except UnicodeEncodeError:
+                    cache_key = " ".join(map(unicode, deco_args + args[1:]))
             else:
-                cache_key = " ".join(map(str, deco_args + args))
+                try:
+                    cache_key = " ".join(map(str, deco_args + args))
+                except UnicodeEncodeError:
+                    cache_key = " ".join(map(unicode, deco_args + args))
             def go():
                 return func(*args)
 
