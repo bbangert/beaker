@@ -23,6 +23,8 @@ Release 1.6 (**tip**)
 * file backend no longer squashes unpickling errors.   This was inconsistent
   behavior versus all the other backends.
 * invalidate_corrupt flag on Session now emits a warning. (#52)
+* cache.remove_value() removes the value even if it's already marked
+  'expired' (#42)
 
 Release 1.5.4 (6/16/2010)
 =========================

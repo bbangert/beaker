@@ -134,8 +134,6 @@ def test_fresh_createfunc():
     x = cache.get_value('test', createfunc=lambda: 20, expiretime=2)
     assert x == 20
 
-
-
 def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', type='dbm')
     o = object()
@@ -153,6 +151,21 @@ def test_unicode_keys():
     assert u'hŏa' not in cache
     cache.remove_value(u'hiŏ')
     assert u'hiŏ' not in cache
+
+def test_remove_stale():
+    """test that remove_value() removes even if the value is expired."""
+
+    cache = Cache('test', type='memory')
+    o = object()
+    cache.namespace['key'] = (time.time() - 30, 10, o)
+    container = cache._get_value('key')
+    assert not container.has_current_value()
+    assert 'key' in container.namespace
+    cache.remove_value('key')
+    assert 'key' not in container.namespace
+
+    # safe to call again
+    cache.remove_value('key')
 
 def test_multi_keys():
     cache = Cache('newtests', data_dir='./cache', type='dbm')

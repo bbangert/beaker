@@ -305,8 +305,7 @@ class Cache(object):
 
     def remove_value(self, key, **kw):
         mycontainer = self._get_value(key, **kw)
-        if mycontainer.has_current_value():
-            mycontainer.clear_value()
+        mycontainer.clear_value()
     remove = remove_value
 
     def _get_value(self, key, **kw):
