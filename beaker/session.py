@@ -50,19 +50,22 @@ class Session(dict):
     ``key``
         The name the cookie should be set to.
     ``timeout``
-        How long session data is considered valid. This is used 
+        How long session data is considered valid. This is used
         regardless of the cookie being present or not to determine
         whether session data is still valid.
     ``cookie_domain``
         Domain to use for the cookie.
     ``secure``
         Whether or not the cookie should only be sent over SSL.
+    ``httponly``
+        Whether or not the cookie should only be accessible by the browser
+        not by JavaScript.
     """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
                  key='beaker.session.id', timeout=None, cookie_expires=True,
                  cookie_domain=None, secret=None, secure=False,
-                 namespace_class=None, **namespace_args):
+                 namespace_class=None, httponly=False, **namespace_args):
         if not type:
             if data_dir:
                 self.type = 'file'
@@ -89,6 +92,7 @@ class Session(dict):
         self.was_invalidated = False
         self.secret = secret
         self.secure = secure
+        self.httponly = httponly
         self.id = id
         self.accessed_dict = {}
 
@@ -122,31 +126,19 @@ class Session(dict):
                 else:
                     raise
 
-    def _create_id(self):
-        id_str = "%f%s%f%s" % (
-                    time.time(), 
-                    id({}), 
-                    random.random(),
-                    getpid()
-                ) 
-        if util.py3k:
-            self.id = md5(
-                            md5(
-                                id_str.encode('ascii')
-                            ).hexdigest().encode('ascii')
-                        ).hexdigest()
-        else:
-            self.id = md5(md5(id_str).hexdigest()).hexdigest()
+    def _set_cookie_values(self, expires=None):
+        self.cookie[self.key] = self.id
+        if self._domain:
+            self.cookie[self.key]['domain'] = self._domain
+        if self.secure:
+            self.cookie[self.key]['secure'] = True
+        self._set_cookie_http_only()
+        self.cookie[self.key]['path'] = self._path
 
-        self.is_new = True
-        self.last_accessed = None
-        if self.use_cookies:
-            self.cookie[self.key] = self.id
-            if self._domain:
-                self.cookie[self.key]['domain'] = self._domain
-            if self.secure:
-                self.cookie[self.key]['secure'] = True
-            self.cookie[self.key]['path'] = self._path
+        self._set_cookie_expires(expires)
+
+    def _set_cookie_expires(self, expires):
+        if expires is None:
             if self.cookie_expires is not True:
                 if self.cookie_expires is False:
                     expires = datetime.fromtimestamp( 0x7FFFFFFF )
@@ -157,10 +149,49 @@ class Session(dict):
                 else:
                     raise ValueError("Invalid argument for cookie_expires: %s"
                                      % repr(self.cookie_expires))
-                self.cookie[self.key]['expires'] = \
-                    expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
-            self.request['cookie_out'] = self.cookie[self.key].output(header='')
-            self.request['set_cookie'] = False
+            else:
+                expires = None
+        if expires is not None:
+            self.cookie[self.key]['expires'] = \
+                expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
+        return expires
+
+    def _update_cookie_out(self, set_cookie=True):
+        self.request['cookie_out'] = self.cookie[self.key].output(header='')
+        self.request['set_cookie'] = set_cookie
+
+    def _set_cookie_http_only(self):
+        try:
+            if self.httponly:
+                self.cookie[self.key]['httponly'] = True
+        except Cookie.CookieError, e:
+            if 'Invalid Attribute httponly' not in str(e):
+                raise
+            util.warn('Python 2.6+ is required to use httponly')
+
+    def _create_id(self, set_new=True):
+        id_str = "%f%s%f%s" % (
+                    time.time(),
+                    id({}),
+                    random.random(),
+                    getpid()
+                )
+        if util.py3k:
+            self.id = md5(
+                            md5(
+                                id_str.encode('ascii')
+                            ).hexdigest().encode('ascii')
+                        ).hexdigest()
+        else:
+            self.id = md5(md5(id_str).hexdigest()).hexdigest()
+
+        if set_new:
+            self.is_new = True
+            self.last_accessed = None
+        if self.use_cookies:
+            self._set_cookie_values()
+            sc = set_new == False
+            self._update_cookie_out(set_cookie=sc)
 
     def created(self):
         return self['_creation_time']
@@ -169,8 +200,7 @@ class Session(dict):
     def _set_domain(self, domain):
         self['_domain'] = domain
         self.cookie[self.key]['domain'] = domain
-        self.request['cookie_out'] = self.cookie[self.key].output(header='')
-        self.request['set_cookie'] = True
+        self._update_cookie_out()
 
     def _get_domain(self):
         return self._domain
@@ -180,8 +210,7 @@ class Session(dict):
     def _set_path(self, path):
         self['_path'] = path
         self.cookie[self.key]['path'] = path
-        self.request['cookie_out'] = self.cookie[self.key].output(header='')
-        self.request['set_cookie'] = True
+        self._update_cookie_out()
 
     def _get_path(self):
         return self._path
@@ -190,17 +219,9 @@ class Session(dict):
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
-        self.cookie[self.key] = self.id
-        if self._domain:
-            self.cookie[self.key]['domain'] = self._domain
-        if self.secure:
-            self.cookie[self.key]['secure'] = True
-        self.cookie[self.key]['path'] = '/'
         expires = datetime.utcnow().replace(year=2003)
-        self.cookie[self.key]['expires'] = \
-            expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
-        self.request['cookie_out'] = self.cookie[self.key].output(header='')
-        self.request['set_cookie'] = True
+        self._set_cookie_values(expires)
+        self._update_cookie_out()
 
     def delete(self):
         """Deletes the session from the persistent storage, and sends
@@ -220,7 +241,7 @@ class Session(dict):
     def load(self):
         "Loads the data from this session from persistent storage"
         self.namespace = self.namespace_class(self.id,
-            data_dir=self.data_dir, 
+            data_dir=self.data_dir,
             digest_filenames=False,
             **self.namespace_args)
         now = time.time()
@@ -282,11 +303,13 @@ class Session(dict):
         if accessed_only and self.is_new:
             return None
 
-        if not hasattr(self, 'namespace'):
+        # this session might not have a namespace yet or the session id
+        # might have been regenerated
+        if not hasattr(self, 'namespace') or self.namespace.namespace != self.id:
             self.namespace = self.namespace_class(
-                                    self.id, 
+                                    self.id,
                                     data_dir=self.data_dir,
-                                    digest_filenames=False, 
+                                    digest_filenames=False,
                                     **self.namespace_args)
 
         self.namespace.acquire_write_lock(replace=True)
@@ -311,6 +334,16 @@ class Session(dict):
         access in the request"""
         self.clear()
         self.update(self.accessed_dict)
+
+    def regenerate_id(self):
+        """
+            creates a new session id, retains all session data
+
+            Its a good security practice to regnerate the id after a client
+            elevates priviliges.
+
+        """
+        self._create_id(set_new=False)
 
     # TODO: I think both these methods should be removed.  They're from
     # the original mod_python code i was ripping off but they really
@@ -346,7 +379,7 @@ class CookieSession(Session):
     ``key``
         The name the cookie should be set to.
     ``timeout``
-        How long session data is considered valid. This is used 
+        How long session data is considered valid. This is used
         regardless of the cookie being present or not to determine
         whether session data is still valid.
     ``encrypt_key``
@@ -358,11 +391,14 @@ class CookieSession(Session):
         Domain to use for the cookie.
     ``secure``
         Whether or not the cookie should only be sent over SSL.
+    ``httponly``
+        Whether or not the cookie should only be accessible by the browser
+        not by JavaScript.
 
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  cookie_expires=True, cookie_domain=None, encrypt_key=None,
-                 validate_key=None, secure=False, **kwargs):
+                 validate_key=None, secure=False, httponly=False, **kwargs):
 
         if not crypto.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
@@ -376,6 +412,7 @@ class CookieSession(Session):
         self.validate_key = validate_key
         self.request['set_cookie'] = False
         self.secure = secure
+        self.httponly = httponly
         self._domain = cookie_domain
         self._path = '/'
 
@@ -488,21 +525,13 @@ class CookieSession(Session):
             self['_id'] = self._make_id()
         self['_accessed_time'] = time.time()
 
-        if self.cookie_expires is not True:
-            if self.cookie_expires is False:
-                expires = datetime.fromtimestamp( 0x7FFFFFFF )
-            elif isinstance(self.cookie_expires, timedelta):
-                expires = datetime.utcnow() + self.cookie_expires
-            elif isinstance(self.cookie_expires, datetime):
-                expires = self.cookie_expires
-            else:
-                raise ValueError("Invalid argument for cookie_expires: %s"
-                                 % repr(self.cookie_expires))
-            self['_expires'] = expires
-        elif '_expires' in self:
+        if '_expires' in self:
             expires = self['_expires']
         else:
             expires = None
+        expires = self._set_cookie_expires(expires)
+        if expires is not None:
+            self['_expires'] = expires
 
         val = self._encrypt_data()
         if len(val) > 4064:
@@ -515,12 +544,10 @@ class CookieSession(Session):
             self.cookie[self.key]['domain'] = self._domain
         if self.secure:
             self.cookie[self.key]['secure'] = True
+        self._set_cookie_http_only()
 
         self.cookie[self.key]['path'] = self.get('_path', '/')
 
-        if expires:
-            self.cookie[self.key]['expires'] = \
-                expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT" )
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = True
 

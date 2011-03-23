@@ -1,3 +1,4 @@
+from __future__ import with_statement
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer, null_synchronizer
@@ -63,16 +64,16 @@ class MemcachedNamespaceManager(NamespaceManager):
         else:
             return object.__new__(MemcachedNamespaceManager)
 
-    def __init__(self, namespace, url, 
-                        memcache_module='auto', 
-                        data_dir=None, lock_dir=None, 
+    def __init__(self, namespace, url,
+                        memcache_module='auto',
+                        data_dir=None, lock_dir=None,
                         **kw):
         NamespaceManager.__init__(self, namespace)
 
         _memcache_module = _client_libs[memcache_module]
 
         if not url:
-            raise MissingCacheParameter("url is required") 
+            raise MissingCacheParameter("url is required")
 
         if lock_dir:
             self.lock_dir = lock_dir
@@ -82,13 +83,13 @@ class MemcachedNamespaceManager(NamespaceManager):
             verify_directory(self.lock_dir)
 
         self.mc = MemcachedNamespaceManager.clients.get(
-                        (memcache_module, url), 
-                        _memcache_module.Client, 
+                        (memcache_module, url),
+                        _memcache_module.Client,
                         url.split(';'))
 
     def get_creation_lock(self, key):
         return file_synchronizer(
-            identifier="memcachedcontainer/funclock/%s" % 
+            identifier="memcachedcontainer/funclock/%s" %
                     self.namespace,lock_dir = self.lock_dir)
 
     def _format_key(self, key):

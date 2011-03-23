@@ -24,7 +24,7 @@ the session.
 Using
 =====
 
-The session object provided by Beaker's 
+The session object provided by Beaker's
 :class:`~beaker.middleware.SessionMiddleware` implements a dict-style interface
 with a few additional object methods. Once the SessionMiddleware is in place,
 a session object will be made available as ``beaker.session`` in the WSGI
@@ -117,12 +117,34 @@ If it's necessary to immediately save the session to the back-end, the
 This is not usually the case however, as a session generally should not be
 saved should something catastrophic happen during a request.
 
-.. note::
+**Order Matters**: When using the Beaker middleware, you **must call save before
+the headers are sent to the client**. Since Beaker's middleware watches for when
+the ``start_response`` function is called to know that it should add its cookie
+header, the session must be saved before its called.
 
-    When using the Beaker middleware, you **must call save before the headers
-    are sent to the client**. Since Beaker's middleware watches for when the
-    ``start_response`` function is called to know that it should add its
-    cookie header, the session must be saved before its called.
+Keep in mind that Response objects in popular frameworks (WebOb, Werkzeug,
+etc.) call start_response immediately, so if you are using one of those
+objects to handle your Response, you must call .save() before the Response
+object is called::
+
+    # this would apply to WebOb and possibly others too
+    from werkzeug.wrappers import Response
+
+    # this will work
+    def sessions_work(environ, start_response):
+        environ['beaker.session']['count'] += 1
+        resp = Response('hello')
+        environ['beaker.session'].save()
+        return resp(environ, start_response)
+
+    # this will not work
+    def sessions_broken(environ, start_response):
+        environ['beaker.session']['count'] += 1
+        resp = Response('hello')
+        retval = resp(environ, start_response)
+        environ['beaker.session'].save()
+        return retval
+
 
 
 Auto-save
@@ -174,7 +196,7 @@ haven't been touched in a long time, for example (in the session's data dir):
 Cookie Domain and Path
 ======================
 
-In addition to setting a default cookie domain with the 
+In addition to setting a default cookie domain with the
 :ref:`cookie domain setting <cookie_domain_config>`, the cookie's domain and
 path can be set dynamically for a session with the domain and path properties.
 
