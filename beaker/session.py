@@ -1,9 +1,7 @@
 import Cookie
 import os
-import random
-import time
 from datetime import datetime, timedelta
-
+import time
 from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, md5
 from beaker import crypto, util
 from beaker.cache import clsmap
@@ -13,7 +11,33 @@ from base64 import b64encode, b64decode
 
 __all__ = ['SignedCookie', 'Session']
 
-getpid = hasattr(os, 'getpid') and os.getpid or (lambda : '')
+
+try:
+    import uuid
+    def _session_id():
+        return uuid.uuid4().hex
+except ImportError:
+    import random
+    if hasattr(os, 'getpid'):
+        getpid = os.getpid
+    else:
+        def getpid():
+            return ''
+    def _session_id():
+        id_str = "%f%s%f%s" % (
+                    time.time(),
+                    id({}),
+                    random.random(),
+                    getpid()
+                )
+        if util.py3k:
+            return md5(
+                            md5(
+                                id_str.encode('ascii')
+                            ).hexdigest().encode('ascii')
+                        ).hexdigest()
+        else:
+            return md5(md5(id_str).hexdigest()).hexdigest()
 
 class SignedCookie(Cookie.BaseCookie):
     """Extends python cookie to give digital signature support"""
@@ -170,20 +194,7 @@ class Session(dict):
             util.warn('Python 2.6+ is required to use httponly')
 
     def _create_id(self, set_new=True):
-        id_str = "%f%s%f%s" % (
-                    time.time(),
-                    id({}),
-                    random.random(),
-                    getpid()
-                )
-        if util.py3k:
-            self.id = md5(
-                            md5(
-                                id_str.encode('ascii')
-                            ).hexdigest().encode('ascii')
-                        ).hexdigest()
-        else:
-            self.id = md5(md5(id_str).hexdigest()).hexdigest()
+        self.id = _session_id()
 
         if set_new:
             self.is_new = True
@@ -193,9 +204,9 @@ class Session(dict):
             sc = set_new == False
             self._update_cookie_out(set_cookie=sc)
 
+    @property
     def created(self):
         return self['_creation_time']
-    created = property(created)
 
     def _set_domain(self, domain):
         self['_domain'] = domain
@@ -430,7 +441,7 @@ class CookieSession(Session):
         except Cookie.CookieError:
             self.cookie = SignedCookie(validate_key, input=None)
 
-        self['_id'] = self._make_id()
+        self['_id'] = _session_id()
         self.is_new = True
 
         # If we have a cookie, load it
@@ -498,12 +509,6 @@ class CookieSession(Session):
             data = b64decode(self.cookie[self.key].value)
             return util.pickle.loads(data)
 
-    def _make_id(self):
-        return md5(md5(
-            "%f%s%f%s" % (time.time(), id({}), random.random(), getpid())
-            ).hexdigest()
-        ).hexdigest()
-
     def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage"""
         if accessed_only and self.is_new:
@@ -522,7 +527,7 @@ class CookieSession(Session):
         if '_creation_time' not in self:
             self['_creation_time'] = time.time()
         if '_id' not in self:
-            self['_id'] = self._make_id()
+            self['_id'] = _session_id()
         self['_accessed_time'] = time.time()
 
         if '_expires' in self:
@@ -560,7 +565,7 @@ class CookieSession(Session):
     def invalidate(self):
         """Clear the contents and start a new session"""
         self.delete()
-        self['_id'] = self._make_id()
+        self['_id'] = _session_id()
 
 
 class SessionObject(object):
