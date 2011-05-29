@@ -296,7 +296,9 @@ def coerce_cache_params(params):
         ('expire', (int, types.NoneType), "expire must be an integer representing "
          "how many seconds the cache is valid for"),
         ('regions', (list, tuple, types.NoneType), "Regions must be a "
-         "comma seperated list of valid regions")
+         "comma seperated list of valid regions"),
+        ('key_length', (int, types.NoneType), "key_length must be an integer "
+         "which indicates the longest a key can be before hashing"),
     ]
     return verify_rules(params, rules)
 
@@ -332,7 +334,8 @@ def parse_cache_config_options(config, include_defaults=True):
                                   lock_dir=options.get('lock_dir'),
                                   type=options.get('type'),
                                   enabled=options['enabled'],
-                                  expire=options.get('expire'))
+                                  expire=options.get('expire'),
+                                  key_length=options.get('key_length', 250))
             region_len = len(region) + 1
             for key in options.keys():
                 if key.startswith('%s.' % region):

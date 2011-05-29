@@ -105,3 +105,22 @@ def test_check_invalidate():
     # Invalidate a non-existent key
     _cache_obj.invalidate(func, 'loader', 'Fredd')
     assert result3 == result2
+
+def test_long_name():
+    func = make_cached_func()
+    name = 'Fred' * 250
+    result = func(name)
+    assert name in result
+    
+    result2 = func(name)
+    assert result == result2
+    # This won't actually invalidate it since the key won't be sha'd
+    _cache_obj.invalidate(func, 'loader', name, key_length=8000)
+
+    result3 = func(name)
+    assert result3 == result2
+    
+    # And now this should invalidate it
+    _cache_obj.invalidate(func, 'loader', name)
+    result4 = func(name)
+    assert result3 != result4

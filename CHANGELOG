@@ -1,6 +1,8 @@
 Release 1.6 (**tip**)
 =======================
 
+* Add ``key_length`` option for cache regions, and for keyword args passed
+  into the cache system. Cache keys longer than this will be SHA'd.
 * added runtime beaker.__version__
 * Add ``webtest_varname`` option to configuration to optionally include
   the session value in the environ vars when using Beaker with WebTest.

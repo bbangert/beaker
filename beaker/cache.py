@@ -11,6 +11,7 @@ import warnings
 
 import beaker.container as container
 import beaker.util as util
+from beaker.crypto.util import sha1
 from beaker.exceptions import BeakerException, InvalidCacheBackendError
 from beaker.synchronization import _threading
 
@@ -254,7 +255,7 @@ def region_invalidate(namespace, region, *args):
         region = cache_regions[region]
 
     cache = Cache._get_cache(namespace, region)
-    _cache_decorator_invalidate(cache, args)
+    _cache_decorator_invalidate(cache, region['key_length'], args)
 
 
 class Cache(object):
@@ -419,7 +420,7 @@ class CacheManager(object):
         cache_region decorator.
 
         :param namespace: Either the namespace of the result to invalidate, or the
-           name of the cached function
+           cached function
 
         :param region: The region the function was cached to. If the function was
             cached to a single region then this argument can be None
@@ -515,7 +516,11 @@ class CacheManager(object):
         namespace = func._arg_namespace
 
         cache = self.get_cache(namespace, **kwargs)
-        _cache_decorator_invalidate(cache, args)
+        if hasattr(func, '_arg_region'):
+            key_length = cache_regions[func._arg_region]['key_length']
+        else:
+            key_length = kwargs.pop('key_length', 250)
+        _cache_decorator_invalidate(cache, key_length, args)
 
 def _cache_decorate(deco_args, manager, kwargs, region):
     """Return a caching function decorator."""
@@ -545,6 +550,12 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                 cache_key = " ".join(map(str, deco_args + args[1:]))
             else:
                 cache_key = " ".join(map(str, deco_args + args))
+            if region:
+                key_length = cache_regions[region]['key_length']
+            else:
+                key_length = kwargs.pop('key_length', 250)
+            if len(cache_key) > key_length:
+                cache_key = sha1(cache_key).hexdigest()
             def go():
                 return func(*args)
 
@@ -555,8 +566,10 @@ def _cache_decorate(deco_args, manager, kwargs, region):
         return cached
     return decorate
 
-def _cache_decorator_invalidate(cache, args):
+def _cache_decorator_invalidate(cache, key_length, args):
     """Invalidate a cache key based on function arguments."""
 
     cache_key = " ".join(map(str, args))
+    if len(cache_key) > key_length:
+        cache_key = sha1(cache_key).hexdigest()
     cache.remove_value(cache_key)
