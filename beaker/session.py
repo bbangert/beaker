@@ -219,7 +219,7 @@ class Session(dict):
     domain = property(_get_domain, _set_domain)
 
     def _set_path(self, path):
-        self['_path'] = path
+        self['_path'] = self._path = path
         self.cookie[self.key]['path'] = path
         self._update_cookie_out()
 
@@ -294,6 +294,10 @@ class Session(dict):
 
                 # Update the current _accessed_time
                 session_data['_accessed_time'] = now
+                
+                # Set the path if applicable
+                if '_path' in session_data:
+                    self._path = session_data['_path']
                 self.update(session_data)
                 self.accessed_dict = session_data.copy()
         finally:
@@ -449,6 +453,7 @@ class CookieSession(Session):
             self.is_new = False
             try:
                 self.update(self._decrypt_data())
+                self._path = self.get('_path', '/')
             except:
                 pass
             if self.timeout is not None and time.time() - \
@@ -475,8 +480,7 @@ class CookieSession(Session):
     domain = property(_get_domain, _set_domain)
 
     def _set_path(self, path):
-        self['_path'] = path
-        self._path = path
+        self['_path'] = self._path = path
 
     def _get_path(self):
         return self._path
