@@ -1,6 +1,7 @@
 Release 1.6 (**tip**)
 =======================
 
+* Fix bug with CacheMiddleware clobbering enabled setting.
 * Update option for ``cookie_expires`` so that it can now handle an integer
   which will be used as the seconds till the cookie expires.
 * Merge fix for Issue 31, can now handle unicode cache keys.

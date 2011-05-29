@@ -342,7 +342,7 @@ def parse_cache_config_options(config, include_defaults=True):
     coerce_cache_params(options)
 
     # Set cache to enabled if not turned off
-    if 'enabled' not in options:
+    if 'enabled' not in options and include_defaults:
         options['enabled'] = True
 
     # Configure region dict if regions are available
