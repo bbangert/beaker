@@ -263,8 +263,8 @@ def coerce_session_params(params):
         ('lock_dir', (str, types.NoneType), "lock_dir must be a string referring to a "
          "directory."),
         ('type', (str, types.NoneType), "Session type must be a string."),
-        ('cookie_expires', (bool, datetime, timedelta), "Cookie expires was "
-         "not a boolean, datetime, or timedelta instance."),
+        ('cookie_expires', (bool, datetime, timedelta, int), "Cookie expires was "
+         "not a boolean, datetime, int, or timedelta instance."),
         ('cookie_domain', (str, types.NoneType), "Cookie domain must be a "
          "string."),
         ('id', (str,), "Session id must be a string."),
@@ -281,7 +281,11 @@ def coerce_session_params(params):
         ('webtest_varname', (str, types.NoneType), "Session varname must be "
          "a string."),
     ]
-    return verify_rules(params, rules)
+    opts = verify_rules(params, rules)
+    cookie_expires = opts.get('cookie_expires')
+    if cookie_expires and isinstance(cookie_expires, int):
+        opts['cookie_expires'] = timedelta(seconds=cookie_expires)
+    return opts
 
 
 def coerce_cache_params(params):

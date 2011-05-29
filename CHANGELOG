@@ -1,6 +1,9 @@
 Release 1.6 (**tip**)
 =======================
 
+* Update option for ``cookie_expires`` so that it can now handle an integer
+  which will be used as the seconds till the cookie expires.
+* Merge fix for Issue 31, can now handle unicode cache keys.
 * Add ``key_length`` option for cache regions, and for keyword args passed
   into the cache system. Cache keys longer than this will be SHA'd.
 * added runtime beaker.__version__

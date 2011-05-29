@@ -24,7 +24,7 @@ requires options for caching and sessions to be prefixed appropriately.
 For example, to configure the ``cookie_expires`` option for Beaker sessions
 below, an appropriate entry in a `Pylons`_ INI file would be::
 
-    # Ironically, setting cookie_expires = true causes Beaker to omit the
+    # Setting cookie_expires = true causes Beaker to omit the
     # expires= field from the Set-Cookie: header, signaling the cookie 
     # should be discarded when the browser closes.
     beaker.session.cookie_expires = true
@@ -139,13 +139,17 @@ auto (**optional**, bool)
 
     Defaults to False.
 
-cookie_expires (**optional**, bool, datetime, timedelta)
+cookie_expires (**optional**, bool, datetime, timedelta, int)
     Determines when the cookie used to track the client-side of the session
     will expire. When set to a boolean value, it will either expire at the
     end of the browsers session, or never expire.
 
     Setting to a datetime forces a hard ending time for the session (generally
     used for setting a session to a far off date).
+    
+    Setting to an integer will result in the cookie being set to expire in
+    that many seconds. I.e. a value of ``300`` will result in the cookie being
+    set to expire in 300 seconds.
 
     Defaults to never expiring.
 
