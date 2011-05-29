@@ -1,6 +1,7 @@
 Release 1.6 (**tip**)
 =======================
 
+* Fix bug with how path was set so that its restored properly and propagated.
 * Fix bug with CacheMiddleware clobbering enabled setting.
 * Update option for ``cookie_expires`` so that it can now handle an integer
   which will be used as the seconds till the cookie expires.
