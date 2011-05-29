@@ -219,14 +219,6 @@ options used as fallback should one of them not be specified in the call.
 Only the ``lock_dir`` option is strictly required, unless using the file-based
 back-ends as noted with the sessions.
 
-enabled (**optional**, bool)
-    Quick toggle to disable or enable caching across an entire application.
-
-    This should generally be used when testing an application or in
-    development when caching should be ignored.
-
-    Defaults to True.
-
 expire (**optional**, integer)
     Seconds until the cache is considered old and a new value is created.
 
@@ -239,6 +231,15 @@ Cache Region Options
 Starting in Beaker 1.3, cache regions are now supported. These can be thought
 of as bundles of configuration options to apply, rather than specifying the
 type and expiration on a per-usage basis.
+
+enabled (**optional**, bool)
+    Quick toggle to disable or enable caching across an entire application.
+
+    This should generally be used when testing an application or in
+    development when caching should be ignored.
+
+    Defaults to True.
+
 
 regions (**optional**, list, tuple)
     Names of the regions that are to be configured.
