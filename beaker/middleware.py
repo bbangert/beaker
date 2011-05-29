@@ -20,7 +20,7 @@ class CacheMiddleware(object):
     def __init__(self, app, config=None, environ_key='beaker.cache', **kwargs):
         """Initialize the Cache Middleware
 
-        The Cache middleware will make a Cache instance available
+        The Cache middleware will make a CacheManager instance available
         every request under the ``environ['beaker.cache']`` key by
         default. The location in environ can be changed by setting
         ``environ_key``.
