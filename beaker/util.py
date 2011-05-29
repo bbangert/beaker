@@ -9,6 +9,7 @@ except ImportError:
 
 from datetime import datetime, timedelta
 import os
+import re
 import string
 import types
 import weakref
@@ -224,6 +225,16 @@ def encoded_path(root, identifiers, extension = ".enc", depth = 3,
     return os.path.join(dir, ident + extension)
 
 
+def asint(obj):
+    print 'F' + obj
+    if isinstance(obj, int):
+        return obj
+    elif isinstance(obj, basestring) and re.match(r'^\d+$', obj):
+        return int(obj)
+    else:
+        raise Exception("This is not a proper int")
+
+
 def verify_options(opt, types, error):
     if not isinstance(opt, types):
         if not isinstance(types, tuple):
@@ -236,6 +247,11 @@ def verify_options(opt, types, error):
                 else:
                     if typ == bool:
                         typ = asbool
+                    elif typ == int:
+                        typ = asint
+                    elif typ in (timedelta, datetime):
+                        if not isinstance(opt, typ):
+                            raise Exception("%s requires a timedelta type", typ)
                     opt = typ(opt)
                 coerced = True
             except:
@@ -283,7 +299,8 @@ def coerce_session_params(params):
     ]
     opts = verify_rules(params, rules)
     cookie_expires = opts.get('cookie_expires')
-    if cookie_expires and isinstance(cookie_expires, int):
+    if cookie_expires and isinstance(cookie_expires, int) and \
+       not isinstance(cookie_expires, bool):
         opts['cookie_expires'] = timedelta(seconds=cookie_expires)
     return opts
 

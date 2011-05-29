@@ -13,25 +13,26 @@ def test_cookie_expires():
     now = datetime.datetime.now()
 
     values = ['300', 300,
-        True,  'True',  'true',  't', '1', 1, 
-        False, 'False', 'false', 'f', '0', 0,
-        datetime.timedelta(minutes=5), now,]
+        True,  'True',  'true',  't',
+        False, 'False', 'false', 'f',
+        datetime.timedelta(minutes=5), now]
 
-    expected = [None, True, True, True, True, True, True, True,
-            False, False, False, False, False, False,
+    expected = [datetime.timedelta(seconds=300),
+            datetime.timedelta(seconds=300), 
+            True, True, True, True,
+            False, False, False, False,
             datetime.timedelta(minutes=5), now]
 
     actual = []
 
-    for v in values:
+    for pos, v in enumerate(values):
         try:
             s = SessionMiddleware(app, config={key:v})
-            actual.append(s.options['cookie_expires'])
+            val = s.options['cookie_expires']
         except:
-            actual.append(None)
+            val = None
+        assert_equal(val, expected[pos])
 
-    for a, e in zip(actual, expected):
-        assert_equal(a, e)
 
 def test_cookie_exprires_2():
     """Exhibit Set-Cookie: values."""
