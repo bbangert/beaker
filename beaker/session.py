@@ -534,6 +534,12 @@ class CookieSession(Session):
             self['_id'] = _session_id()
         self['_accessed_time'] = time.time()
 
+        val = self._encrypt_data()
+        if len(val) > 4064:
+            raise BeakerException("Cookie value is too long to store")
+
+        self.cookie[self.key] = val
+
         if '_expires' in self:
             expires = self['_expires']
         else:
@@ -542,11 +548,6 @@ class CookieSession(Session):
         if expires is not None:
             self['_expires'] = expires
 
-        val = self._encrypt_data()
-        if len(val) > 4064:
-            raise BeakerException("Cookie value is too long to store")
-
-        self.cookie[self.key] = val
         if '_domain' in self:
             self.cookie[self.key]['domain'] = self['_domain']
         elif self._domain:
