@@ -279,7 +279,7 @@ class Cache(object):
                 raise cls
         except KeyError:
             raise TypeError("Unknown cache implementation %r" % type)
-
+        self.namespace_name = namespace
         self.namespace = cls(namespace, **nsargs)
         self.expiretime = expiretime or expire
         self.starttime = starttime
@@ -559,7 +559,7 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                 key_length = cache_regions[region]['key_length']
             else:
                 key_length = kwargs.pop('key_length', 250)
-            if len(cache_key) > key_length:
+            if len(cache_key) + len(namespace) > key_length:
                 cache_key = sha1(cache_key).hexdigest()
             def go():
                 return func(*args)
@@ -575,6 +575,6 @@ def _cache_decorator_invalidate(cache, key_length, args):
     """Invalidate a cache key based on function arguments."""
 
     cache_key = " ".join(map(str, args))
-    if len(cache_key) > key_length:
+    if len(cache_key) + len(cache.namespace_name) > key_length:
         cache_key = sha1(cache_key).hexdigest()
     cache.remove_value(cache_key)

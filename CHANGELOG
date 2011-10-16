@@ -1,6 +1,7 @@
-Release 1.6 (**tip**)
-=======================
+Release 1.6 (10/16/2011)
+========================
 
+* Fix bug with cache_key length calculation.
 * Fix bug with how path was set so that its restored properly and propagated.
 * Fix bug with CacheMiddleware clobbering enabled setting.
 * Update option for ``cookie_expires`` so that it can now handle an integer

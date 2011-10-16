@@ -73,6 +73,7 @@ def assert_raises(except_cls, callable_, *args, **kw):
     # assert outside the block so it works for AssertionError too !
     assert success, "Callable did not raise an exception"
 
+
 def verify_directory(dir):
     """verifies and creates a directory.  tries to
     ignore collisions with other threads and processes."""
@@ -88,8 +89,12 @@ def verify_directory(dir):
 
 def has_self_arg(func):
     """Return True if the given function has a 'self' argument."""
+    args = inspect.getargspec(func)
+    if args and args[0] and args[0][0] in ('self', 'cls'):
+        return True
+    else:
+        return False
 
-    return inspect.getargspec(func)[0][0] in ('self', 'cls')
 
 def warn(msg, stacklevel=3):
     """Issue a warning."""
@@ -97,6 +102,7 @@ def warn(msg, stacklevel=3):
         warnings.warn(msg, exceptions.BeakerWarning, stacklevel=stacklevel)
     else:
         warnings.warn(msg, stacklevel=stacklevel)
+
 
 def deprecated(message):
     def wrapper(fn):
@@ -108,6 +114,7 @@ def deprecated(message):
         deprecated_method.__doc__ = "%s\n\n%s" % (message, fn.__doc__)
         return deprecated_method
     return wrapper
+
 
 class ThreadLocal(object):
     """stores a value on a per-thread basis"""
