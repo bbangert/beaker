@@ -1,3 +1,8 @@
+Release 1.6.1 (**tip**)
+=======================
+
+* Include .app for consistency instead of requiring wrap_app.
+
 Release 1.6 (10/16/2011)
 ========================
 

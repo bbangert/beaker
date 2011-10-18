@@ -130,7 +130,7 @@ class SessionMiddleware(object):
             self.options = config
 
         self.options.update(kwargs)
-        self.wrap_app = wrap_app
+        self.wrap_app = self.app = wrap_app
         self.environ_key = environ_key
 
     def __call__(self, environ, start_response):
