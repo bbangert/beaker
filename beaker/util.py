@@ -233,7 +233,6 @@ def encoded_path(root, identifiers, extension = ".enc", depth = 3,
 
 
 def asint(obj):
-    print 'F' + obj
     if isinstance(obj, int):
         return obj
     elif isinstance(obj, basestring) and re.match(r'^\d+$', obj):
