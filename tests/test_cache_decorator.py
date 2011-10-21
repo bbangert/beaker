@@ -153,7 +153,8 @@ def test_func_namespace():
     def go(x, y):
         return "hi standalone"
 
-    assert util.func_namespace(go).endswith('test_cache_decorator.go')
+    assert 'test_cache_decorator' in util.func_namespace(go)
+    assert util.func_namespace(go).endswith('go')
 
 def test_class_key_region():
     opts = {}
