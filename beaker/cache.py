@@ -574,7 +574,10 @@ def _cache_decorate(deco_args, manager, kwargs, region):
 def _cache_decorator_invalidate(cache, key_length, args):
     """Invalidate a cache key based on function arguments."""
 
-    cache_key = " ".join(map(str, args))
+    try:
+        cache_key = " ".join(map(str, args))
+    except UnicodeEncodeError:
+        cache_key = " ".join(map(unicode, args))
     if len(cache_key) + len(cache.namespace_name) > key_length:
         cache_key = sha1(cache_key).hexdigest()
     cache.remove_value(cache_key)
