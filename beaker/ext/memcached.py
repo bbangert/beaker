@@ -1,11 +1,13 @@
 from __future__ import with_statement
 from beaker.container import NamespaceManager, Container
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
-from beaker.synchronization import file_synchronizer, null_synchronizer
+from beaker.synchronization import file_synchronizer
 from beaker.util import verify_directory, SyncDict
 import warnings
 
 _client_libs = {}
+
+
 def _load_client(name='auto'):
     if name in _client_libs:
         return _client_libs[name]
@@ -40,13 +42,14 @@ def _load_client(name='auto'):
                     "of: 'pylibmc' or 'memcache' to be installed.")
 
     clients = {
-        'pylibmc':_pylibmc,
-        'cmemcache':_cmemcache,
-        'memcache':_memcache,
-        'auto':_auto
+        'pylibmc': _pylibmc,
+        'cmemcache': _cmemcache,
+        'memcache': _memcache,
+        'auto': _auto
     }
     _client_libs[name] = clib = clients[name]()
     return clib
+
 
 class MemcachedNamespaceManager(NamespaceManager):
     """Provides the :class:`.NamespaceManager` API over a memcache client library."""
@@ -90,7 +93,7 @@ class MemcachedNamespaceManager(NamespaceManager):
     def get_creation_lock(self, key):
         return file_synchronizer(
             identifier="memcachedcontainer/funclock/%s" %
-                    self.namespace,lock_dir = self.lock_dir)
+                    self.namespace, lock_dir=self.lock_dir)
 
     def _format_key(self, key):
         return self.namespace + '_' + key.replace(' ', '\302\267')
@@ -124,6 +127,7 @@ class MemcachedNamespaceManager(NamespaceManager):
         raise NotImplementedError(
                 "Memcache caching does not "
                 "support iteration of all cache keys")
+
 
 class PyLibMCNamespaceManager(MemcachedNamespaceManager):
     """Provide thread-local support for pylibmc."""
@@ -161,6 +165,7 @@ class PyLibMCNamespaceManager(MemcachedNamespaceManager):
     def do_remove(self):
         with self.pool.reserve() as mc:
             mc.flush_all()
+
 
 class MemcachedContainer(Container):
     """Container class which invokes :class:`.MemcacheNamespaceManager`."""

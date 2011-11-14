@@ -1,3 +1,8 @@
+Release 1.6.2 (**tip**)
+=======================
+
+* Added encryption option for any backend. Patch contributed by Toby Elliot.
+
 Release 1.6.1 (10/20/2011)
 ==========================
 

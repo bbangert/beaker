@@ -15,7 +15,7 @@ if sys.version_info >= (3, 0):
     )
 
 pycryptopp = 'pycryptopp>=0.5.12'
-tests_require = ['nose', 'webtest']
+tests_require = ['nose', 'webtest', 'Mock']
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
     tests_require.extend([pycryptopp, 'SQLALchemy'])
     try:

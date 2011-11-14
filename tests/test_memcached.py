@@ -1,4 +1,5 @@
 # coding: utf-8
+import mock
 import os
 
 from beaker.cache import clsmap, Cache, util
@@ -260,10 +261,6 @@ class TestPylibmcInit(unittest.TestCase):
                     yield self.master
             memcache.ThreadMappedPool = ThreadMappedPool
 
-    def tearDown(self):
-        from beaker.ext import memcached
-        memcached.pylibmc = memcached.memcache = None
-
     def test_uses_pylibmc_client(self):
         from beaker.ext import memcached
         cache = Cache('test', data_dir='./cache', 
@@ -272,11 +269,13 @@ class TestPylibmcInit(unittest.TestCase):
         assert isinstance(cache.namespace, memcached.PyLibMCNamespaceManager)
 
     def test_dont_use_pylibmc_client(self):
-        from beaker.ext import memcached
-        memcached.pylibmc = None
-        cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached")
-        assert not isinstance(cache.namespace, memcached.PyLibMCNamespaceManager)
-        assert isinstance(cache.namespace, memcached.MemcachedNamespaceManager)
+        from beaker.ext.memcached import _load_client
+        load_mock = mock.Mock()
+        load_mock.return_value = _load_client('memcache')
+        with mock.patch('beaker.ext.memcached._load_client', load_mock):
+            cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached")
+            assert not isinstance(cache.namespace, memcached.PyLibMCNamespaceManager)
+            assert isinstance(cache.namespace, memcached.MemcachedNamespaceManager)
 
     def test_client(self):
         cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached")
