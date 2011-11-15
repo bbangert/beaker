@@ -327,11 +327,9 @@ class Session(dict):
             self.clear()
             try:
                 session_data = self.namespace['session']
-                print session_data, self.encrypt_key
 
                 if (session_data is not None and self.encrypt_key):
                     session_data = self._decrypt_data(session_data)
-                    print "Session data is: %s" % session_data
 
                 # Memcached always returns a key, its None when its not
                 # present
