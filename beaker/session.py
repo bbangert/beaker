@@ -136,6 +136,7 @@ class Session(dict):
         self.validate_key = validate_key
         self.id = id
         self.accessed_dict = {}
+        self.invalidate_corrupt = invalidate_corrupt
 
         if self.use_cookies:
             cookieheader = request.get('cookie', '')
@@ -264,12 +265,27 @@ class Session(dict):
         """Bas64, decipher, then un-serialize the data for the session
         dict"""
         if self.encrypt_key:
-            nonce = session_data[:8]
-            encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                             self.validate_key + nonce, 1)
-            payload = b64decode(session_data[8:])
-            data = crypto.aesDecrypt(payload, encrypt_key)
-            return util.pickle.loads(data)
+            try:
+                nonce = session_data[:8]
+                encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
+                                                 self.validate_key + nonce, 1)
+                payload = b64decode(session_data[8:])
+                data = crypto.aesDecrypt(payload, encrypt_key)
+            except:
+                # As much as I hate a bare except, we get some insane errors
+                # here that get tossed when crypto fails, so we raise the
+                # 'right' exception
+                if self.invalidate_corrupt:
+                    return None
+                else:
+                    raise
+            try:
+                return util.pickle.loads(data)
+            except:
+                if self.invalidate_corrupt:
+                    return None
+                else:
+                    raise
         else:
             data = b64decode(session_data)
             return util.pickle.loads(data)
@@ -311,9 +327,11 @@ class Session(dict):
             self.clear()
             try:
                 session_data = self.namespace['session']
+                print session_data, self.encrypt_key
 
                 if (session_data is not None and self.encrypt_key):
                     session_data = self._decrypt_data(session_data)
+                    print "Session data is: %s" % session_data
 
                 # Memcached always returns a key, its None when its not
                 # present
@@ -329,6 +347,13 @@ class Session(dict):
                     '_accessed_time': now
                 }
                 self.is_new = True
+            if not isinstance(session_data, dict):
+                session_data = {
+                    '_creation_time': now,
+                    '_accessed_time': now
+                }
+                self.is_new = True
+
 
             if self.timeout is not None and \
                now - session_data['_accessed_time'] > self.timeout:
