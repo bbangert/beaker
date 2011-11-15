@@ -347,13 +347,13 @@ class Session(dict):
                     '_accessed_time': now
                 }
                 self.is_new = True
-            if not isinstance(session_data, dict):
+
+            if session_data is None or len(session_data) == 0:
                 session_data = {
                     '_creation_time': now,
                     '_accessed_time': now
                 }
                 self.is_new = True
-
 
             if self.timeout is not None and \
                now - session_data['_accessed_time'] > self.timeout:
