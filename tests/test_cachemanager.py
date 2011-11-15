@@ -48,6 +48,12 @@ def test_parse_doesnt_allow_none():
         for k, v in params.iteritems():
             assert v != 'None', k
 
+def test_parse_doesnt_allow_empty_region_name():
+    opts = {}
+    opts['cache.regions'] = ''
+    regions = parse_cache_config_options(opts)['cache_regions']
+    assert len(regions) == 0
+
 def test_decorators():
     for func in (make_region_cached_func, make_cached_func):
         yield check_decorator, func()
