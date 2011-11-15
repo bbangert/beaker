@@ -356,6 +356,8 @@ def parse_cache_config_options(config, include_defaults=True):
     if regions:
         region_configs = {}
         for region in regions:
+            if not region: # ensure region name is valid
+                continue
             # Setup the default cache options
             region_options = dict(data_dir=options.get('data_dir'),
                                   lock_dir=options.get('lock_dir'),
@@ -363,9 +365,10 @@ def parse_cache_config_options(config, include_defaults=True):
                                   enabled=options['enabled'],
                                   expire=options.get('expire'),
                                   key_length=options.get('key_length', 250))
-            region_len = len(region) + 1
+            region_prefix = '%s.' % region
+            region_len = len(region_prefix)
             for key in options.keys():
-                if key.startswith('%s.' % region):
+                if key.startswith(region_prefix):
                     region_options[key[region_len:]] = options.pop(key)
             coerce_cache_params(region_options)
             region_configs[region] = region_options
