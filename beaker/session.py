@@ -194,7 +194,7 @@ class Session(dict):
                 expires = None
         if expires is not None:
             if not self.cookie or self.key not in self.cookie:
-                self._set_cookie_values()
+                self.cookie[self.key] = self.id
             self.cookie[self.key]['expires'] = \
                 expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
         return expires
@@ -247,30 +247,32 @@ class Session(dict):
 
     path = property(_get_path, _set_path)
 
-    def _encrypt_data(self):
+    def _encrypt_data(self, session_data=None):
         """Serialize, encipher, and base64 the session dict"""
+        session_data = session_data or self.copy()
         if self.encrypt_key:
+            print "decrypt"
             nonce = b64encode(os.urandom(40))[:8]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
-            data = util.pickle.dumps(self.copy(), 2)
+            data = util.pickle.dumps(session_data, 2)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = util.pickle.dumps(self.copy(), 2)
+            data = util.pickle.dumps(session_data, 2)
             return b64encode(data)
 
-    def _decrypt_data(self):
+    def _decrypt_data(self, session_data):
         """Bas64, decipher, then un-serialize the data for the session
         dict"""
         if self.encrypt_key:
-            nonce = self.cookie[self.key].value[:8]
+            nonce = session_data[:8]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
-            payload = b64decode(self.cookie[self.key].value[8:])
+            payload = b64decode(session_data[8:])
             data = crypto.aesDecrypt(payload, encrypt_key)
             return util.pickle.loads(data)
         else:
-            data = b64decode(self.cookie[self.key].value)
+            data = b64decode(session_data)
             return util.pickle.loads(data)
 
     def _delete_cookie(self):
@@ -383,7 +385,7 @@ class Session(dict):
                 data = dict(self.items())
 
             if self.encrypt_key:
-                data = self._encrypt_data()
+                data = self._encrypt_data(data)
 
             # Save the data
             if not data and 'session' in self.namespace:
@@ -498,7 +500,8 @@ class CookieSession(Session):
         if self.key in self.cookie and self.cookie[self.key].value is not None:
             self.is_new = False
             try:
-                self.update(self._decrypt_data())
+                cookie_data = self.cookie[self.key].value
+                self.update(self._decrypt_data(cookie_data))
                 self._path = self.get('_path', '/')
             except:
                 pass
