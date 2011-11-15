@@ -251,7 +251,6 @@ class Session(dict):
         """Serialize, encipher, and base64 the session dict"""
         session_data = session_data or self.copy()
         if self.encrypt_key:
-            print "decrypt"
             nonce = b64encode(os.urandom(40))[:8]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
