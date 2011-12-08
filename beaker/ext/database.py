@@ -96,7 +96,9 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
 
     def get_creation_lock(self, key):
         return file_synchronizer(
-            identifier ="databasecontainer/funclock/%s" % self.namespace,
+            identifier ="databasecontainer/funclock/%s/%s" % (
+                self.namespace, key
+            ),
             lock_dir = self.lock_dir)
 
     def do_open(self, flags, replace):
