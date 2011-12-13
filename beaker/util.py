@@ -297,6 +297,7 @@ def coerce_session_params(params):
         ('encrypt_key', (str, types.NoneType), "Session validate_key must be "
          "a string."),
         ('secure', (bool, types.NoneType), "Session secure must be a boolean."),
+        ('httponly', (bool, types.NoneType), "Session httponly must be a boolean."),
         ('timeout', (int, types.NoneType), "Session timeout must be an "
          "integer."),
         ('auto', (bool, types.NoneType), "Session is created if accessed."),
