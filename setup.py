@@ -99,7 +99,7 @@ The latest developer version is available in a `Mercurial repository
       keywords='wsgi myghty session web cache middleware',
       author='Ben Bangert, Mike Bayer, Philip Jenvey',
       author_email='ben@groovie.org, pjenvey@groovie.org',
-      url='http://beaker.groovie.org',
+      url='http://beaker.rtfd.org/',
       license='BSD',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       zip_safe=False,
