@@ -32,7 +32,7 @@ extensions = ['sphinx.ext.autodoc']
 source_suffix = '.rst'
 
 # The master toctree document.
-master_doc = 'contents'
+master_doc = 'index'
 
 # General information about the project.
 project = u'Beaker'
@@ -119,7 +119,7 @@ html_static_path = ['_static']
 # typographically correct entities.
 #html_use_smartypants = True
 
-html_index = 'contents.html'
+# html_index = 'contents.html'
 
 # Custom sidebar templates, maps document names to template names.
 # html_sidebars = {'index': 'indexsidebar.html'}
