@@ -630,7 +630,7 @@ class SessionObject(object):
         self.__dict__['_params'] = params
         self.__dict__['_environ'] = environ
         self.__dict__['_sess'] = None
-        self.__dict__['_headers'] = []
+        self.__dict__['_headers'] = {}
 
     def _session(self):
         """Lazy initial creation of session object"""
