@@ -1,3 +1,12 @@
+Release 1.6.3 (**tip**)
+=======================
+
+* Fix bug with cookie deletion on leap years. Patch contributed by Greg
+  Nelson and Michael Wirth.
+* Fix issue with referencing same module via different import paths. Patch
+  contributed by brianfrantz.
+* Fix cookie expiration check. Patch contributed by Mike Dirolf.
+
 Release 1.6.2 (12/13/2011)
 ==========================
 
