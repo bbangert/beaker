@@ -292,7 +292,7 @@ class Session(dict):
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
-        expires = datetime.utcnow().replace(year=2003)
+        expires = datetime.utcnow()-timedelta(365)
         self._set_cookie_values(expires)
         self._update_cookie_out()
 
