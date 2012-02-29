@@ -386,4 +386,4 @@ def func_namespace(func):
     if kls:
         return '%s.%s' % (kls.__module__, kls.__name__)
     else:
-        return '%s.%s' % (func.__module__, func.__name__)
+        return '%s|%s' % (inspect.getsourcefile(func), func.__name__)
