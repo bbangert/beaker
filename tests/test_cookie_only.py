@@ -1,3 +1,4 @@
+import datetime
 import re
 import os
 
@@ -33,6 +34,14 @@ def test_increment():
     assert 'current value is: 2' in res
     res = app.get('/')
     assert 'current value is: 3' in res
+
+def test_expires():
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie',
+               'session.cookie_expires': datetime.timedelta(days=1)}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    res = app.get('/')
+    assert 'expires=' in res.headers.getall('Set-Cookie')[0]
+    assert 'current value is: 1' in res
 
 def test_different_sessions():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
