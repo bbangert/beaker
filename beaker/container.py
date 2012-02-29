@@ -537,7 +537,9 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
 
     def get_creation_lock(self, key):
         return file_synchronizer(
-                    identifier = "dbmcontainer/funclock/%s" % self.namespace, 
+                    identifier = "dbmcontainer/funclock/%s/%s" % (
+                        self.namespace, key
+                    ),
                     lock_dir=self.lock_dir
                 )
 
@@ -642,7 +644,9 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
 
     def get_creation_lock(self, key):
         return file_synchronizer(
-                identifier = "filecontainer/funclock/%s" % self.namespace, 
+                identifier = "dbmcontainer/funclock/%s/%s" % (
+                    self.namespace, key
+                ),
                 lock_dir = self.lock_dir
                 )
 

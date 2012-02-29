@@ -32,6 +32,41 @@ def test_save_load():
     assert session[u'Deutchland'] == u'Sebastian Vettel'
 
 
+def test_save_load_encryption():
+    """Test if the data is actually persistent across requests"""
+    session = get_session(encrypt_key='666a19cf7f61c64c',
+                          validate_key='hoobermas')
+    session[u'Suomi'] = u'Kimi Räikkönen'
+    session[u'Great Britain'] = u'Jenson Button'
+    session[u'Deutchland'] = u'Sebastian Vettel'
+    session.save()
+
+    session = get_session(id=session.id, encrypt_key='666a19cf7f61c64c',
+                          validate_key='hoobermas')
+    assert u'Suomi' in session
+    assert u'Great Britain' in session
+    assert u'Deutchland' in session
+
+    assert session[u'Suomi'] == u'Kimi Räikkönen'
+    assert session[u'Great Britain'] == u'Jenson Button'
+    assert session[u'Deutchland'] == u'Sebastian Vettel'
+
+
+def test_decryption_failure():
+    """Test if the data fails without the right keys"""
+    session = get_session(encrypt_key='666a19cf7f61c64c',
+                          validate_key='hoobermas')
+    session[u'Suomi'] = u'Kimi Räikkönen'
+    session[u'Great Britain'] = u'Jenson Button'
+    session[u'Deutchland'] = u'Sebastian Vettel'
+    session.save()
+
+    session = get_session(id=session.id, encrypt_key='asfdasdfadsfsadf',
+                          validate_key='hoobermas', invalidate_corrupt=True)
+    assert u'Suomi' not in session
+    assert u'Great Britain' not in session
+
+
 def test_delete():
     """Test :meth:`Session.delete`"""
     session = get_session()

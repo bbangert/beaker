@@ -15,7 +15,7 @@ if sys.version_info >= (3, 0):
     )
 
 pycryptopp = 'pycryptopp>=0.5.12'
-tests_require = ['nose', 'webtest']
+tests_require = ['nose', 'webtest', 'Mock']
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
     tests_require.extend([pycryptopp, 'SQLALchemy'])
     try:
@@ -99,7 +99,7 @@ The latest developer version is available in a `Mercurial repository
       keywords='wsgi myghty session web cache middleware',
       author='Ben Bangert, Mike Bayer, Philip Jenvey',
       author_email='ben@groovie.org, pjenvey@groovie.org',
-      url='http://beaker.groovie.org',
+      url='http://beaker.rtfd.org/',
       license='BSD',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       zip_safe=False,

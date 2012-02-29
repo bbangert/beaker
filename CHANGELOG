@@ -1,3 +1,16 @@
+Release 1.6.2 (12/13/2011)
+==========================
+
+* Updated dogpile lock so that it locks per namespace+key rather than on the
+  entire namespace. (#101)
+* Added encryption option for any backend. Patch contributed by Toby Elliot.
+
+Release 1.6.1 (10/20/2011)
+==========================
+
+* Remove stray print statement.
+* Include .app for consistency instead of requiring wrap_app.
+
 Release 1.6 (10/16/2011)
 ========================
 
