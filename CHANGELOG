@@ -1,5 +1,5 @@
-Release 1.6.3 (**tip**)
-=======================
+Release 1.6.3 (2/29/2012)
+=========================
 
 * Fix bug with cookie deletion on leap years. Patch contributed by Greg
   Nelson and Michael Wirth.
