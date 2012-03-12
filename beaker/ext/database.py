@@ -33,7 +33,7 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
 
     def __init__(self, namespace, url=None, sa_opts=None, optimistic=False,
                  table_name='beaker_cache', data_dir=None, lock_dir=None,
-                 **params):
+                 schema_name=None, **params):
         """Creates a database namespace manager
 
         ``url``
@@ -47,6 +47,8 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
             numbers.
         ``table_name``
             The table name to use in the database for the cache.
+        ``schema_name``
+            The schema name to use in the database for the cache.
         """
         OpenResourceNamespaceManager.__init__(self, namespace)
 
@@ -82,7 +84,8 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
                              sa.Column('accessed', types.DateTime, nullable=False),
                              sa.Column('created', types.DateTime, nullable=False),
                              sa.Column('data', types.PickleType, nullable=False),
-                             sa.UniqueConstraint('namespace')
+                             sa.UniqueConstraint('namespace'),
+                             schema=schema_name if schema_name else meta.schema
             )
             cache.create(checkfirst=True)
             return cache
