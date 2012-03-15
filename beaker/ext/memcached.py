@@ -1,9 +1,12 @@
 from __future__ import with_statement
 from beaker.container import NamespaceManager, Container
+from beaker.crypto.util import sha1
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer
 from beaker.util import verify_directory, SyncDict
 import warnings
+
+MAX_KEY_LENGTH = 250
 
 _client_libs = {}
 
@@ -96,7 +99,10 @@ class MemcachedNamespaceManager(NamespaceManager):
                     (self.namespace, key), lock_dir=self.lock_dir)
 
     def _format_key(self, key):
-        return self.namespace + '_' + key.replace(' ', '\302\267')
+        formated_key = self.namespace + '_' + key.replace(' ', '\302\267')
+        if len(formated_key) > MAX_KEY_LENGTH:
+            formated_key = sha1(formated_key).hexdigest()
+        return formated_key
 
     def __getitem__(self, key):
         return self.mc.get(self._format_key(key))

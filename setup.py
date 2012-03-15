@@ -77,8 +77,8 @@ Documentation can be found on the `Official Beaker Docs site
 Source
 ======
 
-The latest developer version is available in a `Mercurial repository
-<http://bitbucket.org/bbangert/beaker/get/tip.gz#egg=Beaker-dev>`_.
+The latest developer version is available in a `github repository
+<https://github.com/bbangert/beaker>`_.
 """,
       classifiers=[
       'Development Status :: 5 - Production/Stable',

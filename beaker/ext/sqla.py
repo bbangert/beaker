@@ -123,11 +123,12 @@ class SqlaNamespaceManager(OpenResourceNamespaceManager):
 class SqlaContainer(Container):
     namespace_manager = SqlaNamespaceManager
 
-def make_cache_table(metadata, table_name='beaker_cache'):
+def make_cache_table(metadata, table_name='beaker_cache', schema_name=None):
     """Return a ``Table`` object suitable for storing cached values for the
     namespace manager.  Do not create the table."""
     return sa.Table(table_name, metadata,
                     sa.Column('namespace', sa.String(255), primary_key=True),
                     sa.Column('accessed', sa.DateTime, nullable=False),
                     sa.Column('created', sa.DateTime, nullable=False),
-                    sa.Column('data', sa.PickleType, nullable=False))
+                    sa.Column('data', sa.PickleType, nullable=False),
+                    schema=schema_name if schema_name else metadata.schema)
