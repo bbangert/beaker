@@ -10,12 +10,12 @@ v.close()
 
 extra = {}
 tests_require = ['nose', 'webtest', 'Mock']
+pycryptopp = 'pycryptopp>=0.5.12'
 if sys.version_info >= (3, 0):
     extra.update(
         use_2to3=True,
     )
 else:
-    pycryptopp = 'pycryptopp>=0.5.12'
     tests_require.append(pycryptopp)
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
