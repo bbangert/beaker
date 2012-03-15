@@ -3,5 +3,7 @@ python:
   - "2.6"
   - "2.7"
   - "3.2"
-install: python setup.py develop
+install:
+    - pip install pycryptopp nose webtest Mock SQLALchemy python-memcached
+    - python setup.py develop
 script: nosetests
