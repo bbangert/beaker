@@ -44,8 +44,8 @@ def make_cached_func():
 def test_parse_doesnt_allow_none():
     opts = {}
     opts['cache.regions'] = 'short_term, long_term'
-    for region, params in parse_cache_config_options(opts)['cache_regions'].iteritems():
-        for k, v in params.iteritems():
+    for region, params in parse_cache_config_options(opts)['cache_regions'].items():
+        for k, v in params.items():
             assert v != 'None', k
 
 def test_parse_doesnt_allow_empty_region_name():
