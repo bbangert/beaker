@@ -3,7 +3,7 @@ from beaker.container import NamespaceManager, Container
 from beaker.crypto.util import sha1
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer
-from beaker.util import verify_directory, SyncDict
+from beaker.util import verify_directory, SyncDict, parse_cache_behaviors
 import warnings
 
 MAX_KEY_LENGTH = 250
@@ -88,7 +88,9 @@ class MemcachedNamespaceManager(NamespaceManager):
         if self.lock_dir:
             verify_directory(self.lock_dir)
 
-        self.mc = MemcachedNamespaceManager.clients.get(
+        if memcache_module != 'pylibmc' and \
+            not _memcache_module.__name__.startswith('pylibmc'):
+            self.mc = MemcachedNamespaceManager.clients.get(
                         (memcache_module, url),
                         _memcache_module.Client,
                         url.split(';'))
@@ -138,8 +140,23 @@ class MemcachedNamespaceManager(NamespaceManager):
 class PyLibMCNamespaceManager(MemcachedNamespaceManager):
     """Provide thread-local support for pylibmc."""
 
-    def __init__(self, *arg, **kw):
+    def __init__(self, *arg, **kw):        
         super(PyLibMCNamespaceManager, self).__init__(*arg, **kw)
+        
+        memcache_module = kw.get('memcache_module', 'auto')
+        _memcache_module = _client_libs[memcache_module]
+        protocol = kw.get('protocol', 'text')
+        username = kw.get('username', None)
+        password = kw.get('password', None)
+        url = kw.get('url')
+        behaviors = parse_cache_behaviors(kw)
+
+        self.mc = MemcachedNamespaceManager.clients.get(
+                        (memcache_module, url),
+                        _memcache_module.Client,
+                        servers=url.split(';'), behaviors=behaviors, 
+                        binary=(protocol=='binary'), username=username,
+                        password=password)
         self.pool = pylibmc.ThreadMappedPool(self.mc)
 
     def __getitem__(self, key):

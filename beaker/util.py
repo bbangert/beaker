@@ -330,6 +330,48 @@ def coerce_cache_params(params):
     ]
     return verify_rules(params, rules)
 
+def coerce_cache_behaviors(behaviors):
+    rules = [
+        ('cas', (bool, int), 'cas must be a boolean or an integer'),
+        ('no_block', (bool, int), 'no_block must be a boolean or an integer'),
+        ('receive_timeout', (int,), 'receive_timeout must be an integer'),
+        ('send_timeout', (int,), 'send_timeout must be an integer'),
+        ('ketama_hash', (str,), 'ketama_hash must be a string designating '
+         'a valid hashing strategy option'),
+        ('_poll_timeout', (int,), '_poll_timeout must be an integer'),
+        ('auto_eject', (bool, int), 'auto_eject must be an integer'),
+        ('retry_timeout', (int,), 'retry_timeout must be an integer'),
+        ('_sort_hosts', (bool, int), '_sort_hosts must be an integer'),
+        ('_io_msg_watermark', (int,), '_io_msg_watermark must be an integer'),
+        ('ketama', (bool, int), 'ketama must be a boolean or an integer'),
+        ('ketama_weighted', (bool, int), 'ketama_weighted must be a boolean or '
+         'an integer'),
+        ('_io_key_prefetch', (int, bool), '_io_key_prefetch must be a boolean '
+         'or an integer'),
+        ('_hash_with_prefix_key', (bool, int), '_hash_with_prefix_key must be '
+         'a boolean or an integer'),
+        ('tcp_nodelay', (bool, int), 'tcp_nodelay must be a boolean or an '
+         'integer'),
+        ('failure_limit', (int,), 'failure_limit must be an integer'),
+        ('buffer_requests', (bool, int), 'buffer_requests must be a boolean '
+         'or an integer'),
+        ('_socket_send_size', (int,), '_socket_send_size must be an integer'),
+        ('num_replicas', (int,), 'num_replicas must be an integer'),
+        ('remove_failed', (int,), 'remove_failed must be an integer'),
+        ('_noreply', (bool, int), '_noreply must be a boolean or an integer'),
+        ('_io_bytes_watermark', (int,), '_io_bytes_watermark must be an '
+         'integer'),
+        ('_socket_recv_size', (int,), '_socket_recv_size must be an integer'),
+        ('distribution', (str,), 'distribution must be a string designating '
+         'a valid distribution option'),
+        ('connect_timeout', (int,), 'connect_timeout must be an integer'),
+        ('hash', (str,), 'hash must be a string designating a valid hashing '
+         'option'),
+        ('verify_keys', (bool, int), 'verify_keys must be a boolean or an integer'),
+        ('dead_timeout', (int,), 'dead_timeout must be an integer')
+    ]
+    return verify_rules(behaviors, rules)
+
 
 def parse_cache_config_options(config, include_defaults=True):
     """Parse configuration options and validate for use with the
@@ -375,6 +417,20 @@ def parse_cache_config_options(config, include_defaults=True):
             region_configs[region] = region_options
         options['cache_regions'] = region_configs
     return options
+
+
+def parse_cache_behaviors(config):
+    """Parse behavior options and validate for use with pylibmc 
+    client/PylibMCNamespaceManager"""
+    behaviors = {}
+    
+    for key, val in config.iteritems():
+        if key.startswith('behavior.'):
+            behaviors[key[9:]] = val
+    
+    coerce_cache_behaviors(behaviors)   
+    return behaviors
+
 
 def func_namespace(func):
     """Generates a unique namespace for a function"""
