@@ -421,7 +421,8 @@ def parse_cache_config_options(config, include_defaults=True):
 
 def parse_memcached_behaviors(config):
     """Parse behavior options and validate for use with pylibmc 
-    client/PylibMCNamespaceManager"""
+    client/PylibMCNamespaceManager, or potentially other memcached
+    NamespaceManagers that support behaviors"""
     behaviors = {}
     
     for key, val in config.iteritems():
