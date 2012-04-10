@@ -330,7 +330,7 @@ def coerce_cache_params(params):
     ]
     return verify_rules(params, rules)
 
-def coerce_cache_behaviors(behaviors):
+def coerce_memcached_behaviors(behaviors):
     rules = [
         ('cas', (bool, int), 'cas must be a boolean or an integer'),
         ('no_block', (bool, int), 'no_block must be a boolean or an integer'),
@@ -419,7 +419,7 @@ def parse_cache_config_options(config, include_defaults=True):
     return options
 
 
-def parse_cache_behaviors(config):
+def parse_memcached_behaviors(config):
     """Parse behavior options and validate for use with pylibmc 
     client/PylibMCNamespaceManager"""
     behaviors = {}
@@ -428,7 +428,7 @@ def parse_cache_behaviors(config):
         if key.startswith('behavior.'):
             behaviors[key[9:]] = val
     
-    coerce_cache_behaviors(behaviors)   
+    coerce_memcached_behaviors(behaviors)   
     return behaviors
 
 
