@@ -165,7 +165,7 @@ class SyncDict(object):
 
     def get(self, key, createfunc, *args, **kwargs):
         try:
-            if self.has_key(key):
+            if key in self.dict:
                 return self.dict[key]
             else:
                 return self.sync_get(key, createfunc, *args, **kwargs)
@@ -176,7 +176,7 @@ class SyncDict(object):
         self.mutex.acquire()
         try:
             try:
-                if self.has_key(key):
+                if key in self.dict:
                     return self.dict[key]
                 else:
                     return self._create(key, createfunc, *args, **kwargs)
@@ -190,7 +190,7 @@ class SyncDict(object):
         return obj
 
     def has_key(self, key):
-        return self.dict.has_key(key)
+        return key in self.dict
 
     def __contains__(self, key):
         return self.dict.__contains__(key)
