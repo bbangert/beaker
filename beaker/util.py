@@ -18,7 +18,7 @@ import sys
 import inspect
 
 py3k = getattr(sys, 'py3kwarning', False) or sys.version_info >= (3, 0)
-py24 = sys.version_info < (2,5)
+py24 = sys.version_info < (2, 5)
 jython = sys.platform.startswith('java')
 
 if py3k or jython:
@@ -31,8 +31,9 @@ from beaker import exceptions
 from threading import local as _tlocal
 
 
-__all__  = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict",
+__all__ = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict",
             "encoded_path", "verify_directory"]
+
 
 def function_named(fn, name):
     """Return a function with a given __name__.
@@ -44,13 +45,16 @@ def function_named(fn, name):
     fn.__name__ = name
     return fn
 
+
 def skip_if(predicate, reason=None):
     """Skip a test if predicate is true."""
     reason = reason or predicate.__name__
 
     from nose import SkipTest
+
     def decorate(fn):
         fn_name = fn.__name__
+
         def maybe(*args, **kw):
             if predicate():
                 msg = "'%s' skipped: %s" % (
@@ -61,6 +65,7 @@ def skip_if(predicate, reason=None):
         return function_named(maybe, fn_name)
     return decorate
 
+
 def assert_raises(except_cls, callable_, *args, **kw):
     """Assert the given exception is raised by the given function + arguments."""
 
@@ -69,7 +74,7 @@ def assert_raises(except_cls, callable_, *args, **kw):
         success = False
     except except_cls, e:
         success = True
- 
+
     # assert outside the block so it works for AssertionError too !
     assert success, "Callable did not raise an exception"
 
@@ -86,6 +91,7 @@ def verify_directory(dir):
         except:
             if tries > 5:
                 raise
+
 
 def has_self_arg(func):
     """Return True if the given function has a 'self' argument."""
@@ -135,6 +141,7 @@ class ThreadLocal(object):
 
     def remove(self):
         del self._tlocal.value
+
 
 class SyncDict(object):
     """
@@ -187,12 +194,16 @@ class SyncDict(object):
 
     def __contains__(self, key):
         return self.dict.__contains__(key)
+
     def __getitem__(self, key):
         return self.dict.__getitem__(key)
+
     def __setitem__(self, key, value):
         self.dict.__setitem__(key, value)
+
     def __delitem__(self, key):
         return self.dict.__delitem__(key)
+
     def clear(self):
         self.dict.clear()
 
@@ -203,7 +214,9 @@ class WeakValuedRegistry(SyncDict):
         self.dict = weakref.WeakValueDictionary()
 
 sha1 = None
-def encoded_path(root, identifiers, extension = ".enc", depth = 3,
+
+
+def encoded_path(root, identifiers, extension=".enc", depth=3,
                  digest_filenames=True):
 
     """Generate a unique file-accessible path from the given list of
@@ -330,6 +343,7 @@ def coerce_cache_params(params):
     ]
     return verify_rules(params, rules)
 
+
 def coerce_memcached_behaviors(behaviors):
     rules = [
         ('cas', (bool, int), 'cas must be a boolean or an integer'),
@@ -379,7 +393,7 @@ def parse_cache_config_options(config, include_defaults=True):
 
     # Load default cache options
     if include_defaults:
-        options= dict(type='memory', data_dir=None, expire=None, 
+        options = dict(type='memory', data_dir=None, expire=None,
                            log_file=None)
     else:
         options = {}
@@ -399,7 +413,7 @@ def parse_cache_config_options(config, include_defaults=True):
     if regions:
         region_configs = {}
         for region in regions:
-            if not region: # ensure region name is valid
+            if not region:  # ensure region name is valid
                 continue
             # Setup the default cache options
             region_options = dict(data_dir=options.get('data_dir'),
@@ -420,16 +434,16 @@ def parse_cache_config_options(config, include_defaults=True):
 
 
 def parse_memcached_behaviors(config):
-    """Parse behavior options and validate for use with pylibmc 
+    """Parse behavior options and validate for use with pylibmc
     client/PylibMCNamespaceManager, or potentially other memcached
     NamespaceManagers that support behaviors"""
     behaviors = {}
-    
+
     for key, val in config.iteritems():
         if key.startswith('behavior.'):
             behaviors[key[9:]] = val
-    
-    coerce_memcached_behaviors(behaviors)   
+
+    coerce_memcached_behaviors(behaviors)
     return behaviors
 
 

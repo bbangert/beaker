@@ -1,11 +1,13 @@
 """Beaker exception classes"""
 
+
 class BeakerException(Exception):
     pass
 
 
 class BeakerWarning(RuntimeWarning):
     """Issued at runtime."""
+
 
 class CreationAbortedError(Exception):
     """Deprecated."""

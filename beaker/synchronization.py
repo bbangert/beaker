@@ -29,7 +29,7 @@ except:
 from beaker import util
 from beaker.exceptions import LockError
 
-__all__  = ["file_synchronizer", "mutex_synchronizer", "null_synchronizer",
+__all__ = ["file_synchronizer", "mutex_synchronizer", "null_synchronizer",
             "NameLock", "_threading"]
 
 
@@ -49,17 +49,18 @@ class NameLock(object):
                 self.lock = _threading.RLock()
             else:
                 self.lock = _threading.Lock()
+
         def __call__(self):
             return self.lock
 
-    def __init__(self, identifier = None, reentrant = False):
+    def __init__(self, identifier=None, reentrant=False):
         if identifier is None:
             self._lock = NameLock.NLContainer(reentrant)
         else:
             self._lock = NameLock.locks.get(identifier, NameLock.NLContainer,
                                             reentrant)
 
-    def acquire(self, wait = True):
+    def acquire(self, wait=True):
         return self._lock().acquire(wait)
 
     def release(self):
@@ -67,6 +68,8 @@ class NameLock(object):
 
 
 _synchronizers = util.WeakValuedRegistry()
+
+
 def _synchronizer(identifier, cls, **kwargs):
     return _synchronizers.sync_get((identifier, cls), cls, identifier, **kwargs)
 
@@ -85,14 +88,17 @@ def mutex_synchronizer(identifier, **kwargs):
 class null_synchronizer(object):
     """A 'null' synchronizer, which provides the :class:`.SynchronizerImpl` interface
     without any locking.
-    
+
     """
     def acquire_write_lock(self, wait=True):
         return True
+
     def acquire_read_lock(self):
         pass
+
     def release_write_lock(self):
         pass
+
     def release_read_lock(self):
         pass
     acquire = acquire_write_lock
@@ -102,7 +108,7 @@ class null_synchronizer(object):
 class SynchronizerImpl(object):
     """Base class for a synchronization object that allows
     multiple readers, single writers.
-    
+
     """
     def __init__(self):
         self._state = util.ThreadLocal()
@@ -127,9 +133,9 @@ class SynchronizerImpl(object):
     def release_read_lock(self):
         state = self.state
 
-        if state.writing: 
+        if state.writing:
             raise LockError("lock is in writing state")
-        if not state.reading: 
+        if not state.reading:
             raise LockError("lock is not in reading state")
 
         if state.reentrantcount == 1:
@@ -138,10 +144,10 @@ class SynchronizerImpl(object):
 
         state.reentrantcount -= 1
 
-    def acquire_read_lock(self, wait = True):
+    def acquire_read_lock(self, wait=True):
         state = self.state
 
-        if state.writing: 
+        if state.writing:
             raise LockError("lock is in writing state")
 
         if state.reentrantcount == 0:
@@ -157,9 +163,9 @@ class SynchronizerImpl(object):
     def release_write_lock(self):
         state = self.state
 
-        if state.reading: 
+        if state.reading:
             raise LockError("lock is in reading state")
-        if not state.writing: 
+        if not state.writing:
             raise LockError("lock is not in writing state")
 
         if state.reentrantcount == 1:
@@ -170,15 +176,15 @@ class SynchronizerImpl(object):
 
     release = release_write_lock
 
-    def acquire_write_lock(self, wait  = True):
+    def acquire_write_lock(self, wait=True):
         state = self.state
 
-        if state.reading: 
+        if state.reading:
             raise LockError("lock is in reading state")
 
         if state.reentrantcount == 0:
             x = self.do_acquire_write_lock(wait)
-            if (wait or x): 
+            if (wait or x):
                 state.reentrantcount += 1
                 state.writing = True
             return x
@@ -215,8 +221,8 @@ class FileSynchronizer(SynchronizerImpl):
             lock_dir = lock_dir
 
         self.filename = util.encoded_path(
-                            lock_dir, 
-                            [identifier], 
+                            lock_dir,
+                            [identifier],
                             extension='.lock'
                         )
 
@@ -288,7 +294,7 @@ class ConditionSynchronizer(SynchronizerImpl):
         # condition object to lock on
         self.condition = _threading.Condition(_threading.Lock())
 
-    def do_acquire_read_lock(self, wait = True):
+    def do_acquire_read_lock(self, wait=True):
         self.condition.acquire()
         try:
             # see if a synchronous operation is waiting to start
@@ -305,7 +311,7 @@ class ConditionSynchronizer(SynchronizerImpl):
         finally:
             self.condition.release()
 
-        if not wait: 
+        if not wait:
             return True
 
     def do_release_read_lock(self):
@@ -313,7 +319,7 @@ class ConditionSynchronizer(SynchronizerImpl):
         try:
             self.async -= 1
 
-            # check if we are the last asynchronous reader thread 
+            # check if we are the last asynchronous reader thread
             # out the door.
             if self.async == 0:
                 # yes. so if a sync operation is waiting, notifyAll to wake
@@ -326,7 +332,7 @@ class ConditionSynchronizer(SynchronizerImpl):
         finally:
             self.condition.release()
 
-    def do_acquire_write_lock(self, wait = True):
+    def do_acquire_write_lock(self, wait=True):
         self.condition.acquire()
         try:
             # here, we are not a synchronous reader, and after returning,
@@ -342,7 +348,7 @@ class ConditionSynchronizer(SynchronizerImpl):
                 if self.current_sync_operation is not None:
                     return False
 
-            # establish ourselves as the current sync 
+            # establish ourselves as the current sync
             # this indicates to other read/write operations
             # that they should wait until this is None again
             self.current_sync_operation = _threading.currentThread()
@@ -359,7 +365,7 @@ class ConditionSynchronizer(SynchronizerImpl):
         finally:
             self.condition.release()
 
-        if not wait: 
+        if not wait:
             return True
 
     def do_release_write_lock(self):
@@ -369,7 +375,7 @@ class ConditionSynchronizer(SynchronizerImpl):
                 raise LockError("Synchronizer error - current thread doesnt "
                                 "have the write lock")
 
-            # reset the current sync operation so 
+            # reset the current sync operation so
             # another can get it
             self.current_sync_operation = None
 

@@ -146,9 +146,9 @@ class MemcachedNamespaceManager(NamespaceManager):
 class PyLibMCNamespaceManager(MemcachedNamespaceManager):
     """Provide thread-local support for pylibmc."""
 
-    def __init__(self, *arg, **kw):        
+    def __init__(self, *arg, **kw):
         super(PyLibMCNamespaceManager, self).__init__(*arg, **kw)
-        
+
         memcache_module = kw.get('memcache_module', 'auto')
         _memcache_module = _client_libs[memcache_module]
         protocol = kw.get('protocol', 'text')
@@ -160,8 +160,8 @@ class PyLibMCNamespaceManager(MemcachedNamespaceManager):
         self.mc = MemcachedNamespaceManager.clients.get(
                         (memcache_module, url),
                         _memcache_module.Client,
-                        servers=url.split(';'), behaviors=behaviors, 
-                        binary=(protocol=='binary'), username=username,
+                        servers=url.split(';'), behaviors=behaviors,
+                        binary=(protocol == 'binary'), username=username,
                         password=password)
         self.pool = pylibmc.ThreadMappedPool(self.mc)
 

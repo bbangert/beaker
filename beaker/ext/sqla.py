@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 sa = None
 
+
 class SqlaNamespaceManager(OpenResourceNamespaceManager):
     binds = SyncDict()
     tables = SyncDict()
@@ -61,7 +62,7 @@ class SqlaNamespaceManager(OpenResourceNamespaceManager):
 
     def get_creation_lock(self, key):
         return file_synchronizer(
-            identifier ="databasecontainer/funclock/%s" % self.namespace,
+            identifier="databasecontainer/funclock/%s" % self.namespace,
             lock_dir=self.lock_dir)
 
     def do_open(self, flags, replace):
@@ -122,6 +123,7 @@ class SqlaNamespaceManager(OpenResourceNamespaceManager):
 
 class SqlaContainer(Container):
     namespace_manager = SqlaNamespaceManager
+
 
 def make_cache_table(metadata, table_name='beaker_cache', schema_name=None):
     """Return a ``Table`` object suitable for storing cached values for the
