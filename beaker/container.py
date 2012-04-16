@@ -526,7 +526,7 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
         self.dbm = None
         OpenResourceNamespaceManager.__init__(self, namespace)
 
-        self.file = util.encoded_path(roo=self.dbm_dir,
+        self.file = util.encoded_path(root=self.dbm_dir,
                                       identifiers=[self.namespace],
                                       extension='.dbm',
                                       digest_filenames=self.digest_filenames)
