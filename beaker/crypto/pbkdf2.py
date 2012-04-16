@@ -5,22 +5,22 @@
 #
 # Copyright (C) 2007 Dwayne C. Litzenberger <dlitz@dlitz.net>
 # All rights reserved.
-# 
+#
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted,
 # provided that the above copyright notice appear in all copies and that
 # both that copyright notice and this permission notice appear in
 # supporting documentation.
-# 
-# THE AUTHOR PROVIDES THIS SOFTWARE ``AS IS'' AND ANY EXPRESSED OR 
-# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+#
+# THE AUTHOR PROVIDES THIS SOFTWARE ``AS IS'' AND ANY EXPRESSED OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
 # OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-# IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
+# IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
 # INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Country of origin: Canada
@@ -74,8 +74,10 @@ from base64 import b64encode
 
 from beaker.crypto.util import hmac as HMAC, hmac_sha1 as SHA1
 
+
 def strxor(a, b):
     return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b)])
+
 
 class PBKDF2(object):
     """PBKDF2.py : PKCS#5 v2.0 Password-Based Key Derivation
@@ -121,7 +123,7 @@ class PBKDF2(object):
         while size < bytes:
             i += 1
             if i > 0xffffffff:
-                # We could return "" here, but 
+                # We could return "" here, but
                 raise OverflowError("derived key too long")
             block = self.__f(i)
             blocks.append(block)
@@ -137,7 +139,7 @@ class PBKDF2(object):
         assert (1 <= i and i <= 0xffffffff)
         U = self.__prf(self.__passphrase, self.__salt + pack("!L", i))
         result = U
-        for j in xrange(2, 1+self.__iterations):
+        for j in xrange(2, 1 + self.__iterations):
             U = self.__prf(self.__passphrase, U)
             result = strxor(result, U)
         return result
@@ -191,6 +193,7 @@ class PBKDF2(object):
             del self.__blockNum
             del self.__buf
             self.closed = True
+
 
 def crypt(word, salt=None, iterations=None):
     """PBKDF2-based unix crypt(3) replacement.
@@ -249,6 +252,7 @@ def crypt(word, salt=None, iterations=None):
 # crypt.
 PBKDF2.crypt = staticmethod(crypt)
 
+
 def _makesalt():
     """Return a 48-bit pseudorandom salt for crypt().
 
@@ -256,6 +260,7 @@ def _makesalt():
     """
     binarysalt = "".join([pack("@H", randint(0, 0xffff)) for i in range(3)])
     return b64encode(binarysalt, "./")
+
 
 def test_pbkdf2():
     """Module self-test"""
@@ -279,14 +284,14 @@ def test_pbkdf2():
         raise RuntimeError("self-test failed")
 
     # Test 3
-    result = PBKDF2("X"*64, "pass phrase equals block size", 1200).hexread(32)
+    result = PBKDF2("X" * 64, "pass phrase equals block size", 1200).hexread(32)
     expected = ("139c30c0966bc32ba55fdbf212530ac9"
                 "c5ec59f1a452f5cc9ad940fea0598ed1")
     if result != expected:
         raise RuntimeError("self-test failed")
 
     # Test 4
-    result = PBKDF2("X"*65, "pass phrase exceeds block size", 1200).hexread(32)
+    result = PBKDF2("X" * 65, "pass phrase exceeds block size", 1200).hexread(32)
     expected = ("9ccad6d468770cd51b10e6a68721be61"
                 "1a8b4d282601db3b36be9246915ec82a")
     if result != expected:

@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 db = None
 
+
 class GoogleNamespaceManager(OpenResourceNamespaceManager):
     tables = {}
 
@@ -103,7 +104,7 @@ class GoogleNamespaceManager(OpenResourceNamespaceManager):
     def __getitem__(self, key):
         return self.hash[key]
 
-    def __contains__(self, key): 
+    def __contains__(self, key):
         return self.hash.has_key(key)
 
     def __setitem__(self, key, value):
