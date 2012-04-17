@@ -2,7 +2,10 @@
 
 import beaker.util as util
 if util.py3k:
-    import dbm as anydbm
+    try:
+        import dbm as anydbm
+    except:
+        import dumbdbm as anydbm
 else:
     import anydbm
 import cPickle
