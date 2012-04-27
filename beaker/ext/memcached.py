@@ -3,7 +3,7 @@ from beaker.container import NamespaceManager, Container
 from beaker.crypto.util import sha1
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer
-from beaker.util import verify_directory, SyncDict
+from beaker.util import verify_directory, SyncDict, parse_memcached_behaviors
 import warnings
 
 MAX_KEY_LENGTH = 250
@@ -54,6 +54,11 @@ def _load_client(name='auto'):
     return clib
 
 
+def _is_configured_for_pylibmc(memcache_module_config, memcache_client):
+    return memcache_module_config == 'pylibmc' or \
+        memcache_client.__name__.startswith('pylibmc')
+
+
 class MemcachedNamespaceManager(NamespaceManager):
     """Provides the :class:`.NamespaceManager` API over a memcache client library."""
 
@@ -64,8 +69,7 @@ class MemcachedNamespaceManager(NamespaceManager):
 
         memcache_client = _load_client(memcache_module)
 
-        if memcache_module == 'pylibmc' or \
-            memcache_client.__name__.startswith('pylibmc'):
+        if _is_configured_for_pylibmc(memcache_module, memcache_client):
             return object.__new__(PyLibMCNamespaceManager)
         else:
             return object.__new__(MemcachedNamespaceManager)
@@ -88,7 +92,11 @@ class MemcachedNamespaceManager(NamespaceManager):
         if self.lock_dir:
             verify_directory(self.lock_dir)
 
-        self.mc = MemcachedNamespaceManager.clients.get(
+        # Check for pylibmc namespace manager, in which case client will be
+        # instantiated by subclass __init__, to handle behavior passing to the
+        # pylibmc client
+        if not _is_configured_for_pylibmc(memcache_module, _memcache_module):
+            self.mc = MemcachedNamespaceManager.clients.get(
                         (memcache_module, url),
                         _memcache_module.Client,
                         url.split(';'))
@@ -138,8 +146,23 @@ class MemcachedNamespaceManager(NamespaceManager):
 class PyLibMCNamespaceManager(MemcachedNamespaceManager):
     """Provide thread-local support for pylibmc."""
 
-    def __init__(self, *arg, **kw):
+    def __init__(self, *arg, **kw):        
         super(PyLibMCNamespaceManager, self).__init__(*arg, **kw)
+        
+        memcache_module = kw.get('memcache_module', 'auto')
+        _memcache_module = _client_libs[memcache_module]
+        protocol = kw.get('protocol', 'text')
+        username = kw.get('username', None)
+        password = kw.get('password', None)
+        url = kw.get('url')
+        behaviors = parse_memcached_behaviors(kw)
+
+        self.mc = MemcachedNamespaceManager.clients.get(
+                        (memcache_module, url),
+                        _memcache_module.Client,
+                        servers=url.split(';'), behaviors=behaviors, 
+                        binary=(protocol=='binary'), username=username,
+                        password=password)
         self.pool = pylibmc.ThreadMappedPool(self.mc)
 
     def __getitem__(self, key):
