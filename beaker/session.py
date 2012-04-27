@@ -45,12 +45,12 @@ except ImportError:
 class SignedCookie(Cookie.BaseCookie):
     """Extends python cookie to give digital signature support"""
     def __init__(self, secret, input=None):
-        self.secret = secret
+        self.secret = secret.encode('UTF-8')
         Cookie.BaseCookie.__init__(self, input)
 
     def value_decode(self, val):
         val = val.strip('"')
-        sig = HMAC.new(self.secret, val[40:], SHA1).hexdigest()
+        sig = HMAC.new(self.secret, val[40:].encode('UTF-8'), SHA1).hexdigest()
 
         # Avoid timing attacks
         invalid_bits = 0
@@ -67,7 +67,7 @@ class SignedCookie(Cookie.BaseCookie):
             return val[40:], val
 
     def value_encode(self, val):
-        sig = HMAC.new(self.secret, val, SHA1).hexdigest()
+        sig = HMAC.new(self.secret, val.encode('UTF-8'), SHA1).hexdigest()
         return str(val), ("%s%s" % (sig, val))
 
 
