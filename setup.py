@@ -9,15 +9,17 @@ VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
 v.close()
 
 extra = {}
+tests_require = ['nose', 'webtest', 'Mock']
+pycryptopp = 'pycryptopp>=0.5.12'
 if sys.version_info >= (3, 0):
     extra.update(
         use_2to3=True,
     )
+else:
+    tests_require.append(pycryptopp)
 
-pycryptopp = 'pycryptopp>=0.5.12'
-tests_require = ['nose', 'webtest', 'Mock']
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
-    tests_require.extend([pycryptopp, 'SQLALchemy'])
+    tests_require.extend(['SQLALchemy'])
     try:
         import sqlite3
     except ImportError:

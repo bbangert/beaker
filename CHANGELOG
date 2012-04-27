@@ -1,3 +1,11 @@
+Release 1.6.4 (**tip**)
+=======================
+
+* Add ability to specify schema for database-backed sessions. Patch by Vladimir
+  Tananko.
+* Fix issue with long key names in memcached backend. Patch by Guillaume
+  Taglang.
+
 Release 1.6.3 (2/29/2012)
 =========================
 
