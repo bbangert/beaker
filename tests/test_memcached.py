@@ -2,9 +2,10 @@
 import mock
 import os
 
-from beaker.cache import clsmap, Cache, util
+from beaker.cache import clsmap, Cache, CacheManager, util
 from beaker.middleware import CacheMiddleware, SessionMiddleware
 from beaker.exceptions import InvalidCacheBackendError
+from beaker.util import parse_cache_config_options
 from nose import SkipTest
 import unittest
 
@@ -278,7 +279,8 @@ class TestPylibmcInit(unittest.TestCase):
             assert isinstance(cache.namespace, memcached.MemcachedNamespaceManager)
 
     def test_client(self):
-        cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached")
+        cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached", 
+                      protocol='binary')
         o = object()
         cache.set_value("test", o)
         assert cache.has_key("test")
@@ -287,3 +289,36 @@ class TestPylibmcInit(unittest.TestCase):
         assert "foo" not in cache
         cache.remove_value("test")
         assert not cache.has_key("test")
+
+    def test_client_behaviors(self):
+        config = {
+            'cache.lock_dir':'./lock', 
+            'cache.data_dir':'./cache',  
+            'cache.type':'ext:memcached', 
+            'cache.url':mc_url,
+            'cache.memcache_module':'pylibmc', 
+            'cache.protocol':'binary', 
+            'cache.behavior.ketama': 'True', 
+            'cache.behavior.cas':False, 
+            'cache.behavior.receive_timeout':'3600',
+            'cache.behavior.send_timeout':1800, 
+            'cache.behavior.tcp_nodelay':1,
+            'cache.behavior.auto_eject':"0"
+        }
+        cache_manager = CacheManager(**parse_cache_config_options(config))
+        cache = cache_manager.get_cache('test_behavior', expire=6000)
+        
+        with cache.namespace.pool.reserve() as mc:
+            assert "ketama" in mc.behaviors
+            assert mc.behaviors["ketama"] == 1
+            assert "cas" in mc.behaviors
+            assert mc.behaviors["cas"] == 0
+            assert "receive_timeout" in mc.behaviors
+            assert mc.behaviors["receive_timeout"] == 3600
+            assert "send_timeout" in mc.behaviors
+            assert mc.behaviors["send_timeout"] == 1800
+            assert "tcp_nodelay" in mc.behaviors
+            assert mc.behaviors["tcp_nodelay"] == 1
+            assert "auto_eject" in mc.behaviors
+            assert mc.behaviors["auto_eject"] == 0
+            
