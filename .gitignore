@@ -19,3 +19,4 @@ bookenv/
 jyenv/
 pypyenv/
 env*/
+tests/test.db

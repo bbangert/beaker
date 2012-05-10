@@ -35,9 +35,9 @@ else:
 class NamespaceManager(object):
     """Handles dictionary operations and locking for a namespace of
     values.
-    
+
     :class:`.NamespaceManager` provides a dictionary-like interface,
-    implementing ``__getitem__()``, ``__setitem__()``, and 
+    implementing ``__getitem__()``, ``__setitem__()``, and
     ``__contains__()``, as well as functions related to lock
     acquisition.
 
@@ -65,7 +65,6 @@ class NamespaceManager(object):
         """Initialize module-level dependent libraries required
         by this :class:`.NamespaceManager`."""
 
-
     def __init__(self, namespace):
         self._init_dependencies()
         self.namespace = namespace
@@ -74,35 +73,35 @@ class NamespaceManager(object):
         """Return a locking object that is used to synchronize
         multiple threads or processes which wish to generate a new
         cache value.
-        
+
         This function is typically an instance of
         :class:`.FileSynchronizer`, :class:`.ConditionSynchronizer`,
-        or :class:`.null_synchronizer`.   
-        
+        or :class:`.null_synchronizer`.
+
         The creation lock is only used when a requested value
         does not exist, or has been expired, and is only used
         by the :class:`.Value` key-management object in conjunction
         with a "createfunc" value-creation function.
-        
+
         """
         raise NotImplementedError()
 
     def do_remove(self):
-        """Implement removal of the entire contents of this 
+        """Implement removal of the entire contents of this
         :class:`.NamespaceManager`.
-        
+
         e.g. for a file-based namespace, this would remove
         all the files.
-        
+
         The front-end to this method is the
         :meth:`.NamespaceManager.remove` method.
-        
+
         """
         raise NotImplementedError()
 
     def acquire_read_lock(self):
         """Establish a read lock.
-        
+
         This operation is called before a key is read.    By
         default the function does nothing.
 
@@ -110,7 +109,7 @@ class NamespaceManager(object):
 
     def release_read_lock(self):
         """Release a read lock.
-        
+
         This operation is called after a key is read.    By
         default the function does nothing.
 
@@ -118,31 +117,31 @@ class NamespaceManager(object):
 
     def acquire_write_lock(self, wait=True, replace=False):
         """Establish a write lock.
-        
-        This operation is called before a key is written.   
-        A return value of ``True`` indicates the lock has 
+
+        This operation is called before a key is written.
+        A return value of ``True`` indicates the lock has
         been acquired.
-        
+
         By default the function returns ``True`` unconditionally.
-        
+
         'replace' is a hint indicating the full contents
         of the namespace may be safely discarded. Some backends
-        may implement this (i.e. file backend won't unpickle the 
+        may implement this (i.e. file backend won't unpickle the
         current contents).
-        
+
         """
         return True
 
     def release_write_lock(self):
         """Release a write lock.
-        
+
         This operation is called after a new value is written.
         By default this function does nothing.
-        
+
         """
 
     def has_key(self, key):
-        """Return ``True`` if the given key is present in this 
+        """Return ``True`` if the given key is present in this
         :class:`.Namespace`.
         """
         return self.__contains__(key)
@@ -155,7 +154,7 @@ class NamespaceManager(object):
 
     def set_value(self, key, value, expiretime=None):
         """Sets a value in this :class:`.NamespaceManager`.
-        
+
         This is the same as ``__setitem__()``, but
         also allows an expiration time to be passed
         at the same time.
@@ -171,17 +170,17 @@ class NamespaceManager(object):
 
     def keys(self):
         """Return the list of all keys.
-        
+
         This method may not be supported by all
         :class:`.NamespaceManager` implementations.
-        
+
         """
         raise NotImplementedError()
 
     def remove(self):
-        """Remove the entire contents of this 
+        """Remove the entire contents of this
         :class:`.NamespaceManager`.
-        
+
         e.g. for a file-based namespace, this would remove
         all the files.
         """
@@ -202,37 +201,37 @@ class OpenResourceNamespaceManager(NamespaceManager):
     def get_access_lock(self):
         raise NotImplementedError()
 
-    def do_open(self, flags, replace): 
+    def do_open(self, flags, replace):
         raise NotImplementedError()
 
-    def do_close(self): 
+    def do_close(self):
         raise NotImplementedError()
 
-    def acquire_read_lock(self): 
+    def acquire_read_lock(self):
         self.access_lock.acquire_read_lock()
         try:
-            self.open('r', checkcount = True)
+            self.open('r', checkcount=True)
         except:
             self.access_lock.release_read_lock()
             raise
 
     def release_read_lock(self):
         try:
-            self.close(checkcount = True)
+            self.close(checkcount=True)
         finally:
             self.access_lock.release_read_lock()
 
-    def acquire_write_lock(self, wait=True, replace=False): 
+    def acquire_write_lock(self, wait=True, replace=False):
         r = self.access_lock.acquire_write_lock(wait)
         try:
-            if (wait or r): 
-                self.open('c', checkcount = True, replace=replace)
+            if (wait or r):
+                self.open('c', checkcount=True, replace=replace)
             return r
         except:
             self.access_lock.release_write_lock()
             raise
 
-    def release_write_lock(self): 
+    def release_write_lock(self):
         try:
             self.close(checkcount=True)
         finally:
@@ -242,7 +241,7 @@ class OpenResourceNamespaceManager(NamespaceManager):
         self.mutex.acquire()
         try:
             if checkcount:
-                if self.openers == 0: 
+                if self.openers == 0:
                     self.do_open(flags, replace)
                 self.openers += 1
             else:
@@ -256,7 +255,7 @@ class OpenResourceNamespaceManager(NamespaceManager):
         try:
             if checkcount:
                 self.openers -= 1
-                if self.openers == 0: 
+                if self.openers == 0:
                     self.do_close()
             else:
                 if self.openers > 0:
@@ -272,6 +271,7 @@ class OpenResourceNamespaceManager(NamespaceManager):
             self.do_remove()
         finally:
             self.access_lock.release_write_lock()
+
 
 class Value(object):
     """Implements synchronization, expiration, and value-creation logic
@@ -298,7 +298,7 @@ class Value(object):
         """
         self.namespace.acquire_read_lock()
         try:
-            return self.namespace.has_key(self.key)
+            return self.key in self.namespace
         finally:
             self.namespace.release_read_lock()
 
@@ -308,7 +308,7 @@ class Value(object):
     def has_current_value(self):
         self.namespace.acquire_read_lock()
         try:
-            has_value = self.namespace.has_key(self.key)
+            has_value = self.key in self.namespace
             if has_value:
                 try:
                     stored, expired, value = self._get_value()
@@ -404,8 +404,8 @@ class Value(object):
             self.set_value(value, stored)
             self.namespace.acquire_read_lock()
         except TypeError:
-            # occurs when the value is None.  memcached 
-            # may yank the rug from under us in which case 
+            # occurs when the value is None.  memcached
+            # may yank the rug from under us in which case
             # that's the result
             raise KeyError(self.key)
         return stored, expired, value
@@ -424,7 +424,7 @@ class Value(object):
         self.namespace.acquire_write_lock()
         try:
             debug("clear_value")
-            if self.namespace.has_key(self.key):
+            if self.key in self.namespace:
                 try:
                     del self.namespace[self.key]
                 except KeyError:
@@ -433,6 +433,7 @@ class Value(object):
             self.storedtime = -1
         finally:
             self.namespace.release_write_lock()
+
 
 class AbstractDictionaryNSManager(NamespaceManager):
     """A subclassable NamespaceManager that places data in a dictionary.
@@ -461,18 +462,18 @@ class AbstractDictionaryNSManager(NamespaceManager):
 
     def get_creation_lock(self, key):
         return NameLock(
-            identifier="memorynamespace/funclock/%s/%s" % 
+            identifier="memorynamespace/funclock/%s/%s" %
                         (self.namespace, key),
             reentrant=True
         )
 
-    def __getitem__(self, key): 
+    def __getitem__(self, key):
         return self.dictionary[key]
 
-    def __contains__(self, key): 
+    def __contains__(self, key):
         return self.dictionary.__contains__(key)
 
-    def has_key(self, key): 
+    def has_key(self, key):
         return self.dictionary.__contains__(key)
 
     def __setitem__(self, key, value):
@@ -487,6 +488,7 @@ class AbstractDictionaryNSManager(NamespaceManager):
     def keys(self):
         return self.dictionary.keys()
 
+
 class MemoryNamespaceManager(AbstractDictionaryNSManager):
     """:class:`.NamespaceManager` that uses a Python dictionary for storage."""
 
@@ -497,11 +499,12 @@ class MemoryNamespaceManager(AbstractDictionaryNSManager):
         self.dictionary = MemoryNamespaceManager.\
                                 namespaces.get(self.namespace, dict)
 
+
 class DBMNamespaceManager(OpenResourceNamespaceManager):
     """:class:`.NamespaceManager` that uses ``dbm`` files for storage."""
 
-    def __init__(self, namespace, dbmmodule=None, data_dir=None, 
-            dbm_dir=None, lock_dir=None, 
+    def __init__(self, namespace, dbmmodule=None, data_dir=None,
+            dbm_dir=None, lock_dir=None,
             digest_filenames=True, **kwargs):
         self.digest_filenames = digest_filenames
 
@@ -526,7 +529,7 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
         self.dbm = None
         OpenResourceNamespaceManager.__init__(self, namespace)
 
-        self.file = util.encoded_path(root= self.dbm_dir,
+        self.file = util.encoded_path(root=self.dbm_dir,
                                       identifiers=[self.namespace],
                                       extension='.dbm',
                                       digest_filenames=self.digest_filenames)
@@ -540,14 +543,14 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
 
     def get_creation_lock(self, key):
         return file_synchronizer(
-                    identifier = "dbmcontainer/funclock/%s/%s" % (
+                    identifier="dbmcontainer/funclock/%s/%s" % (
                         self.namespace, key
                     ),
                     lock_dir=self.lock_dir
                 )
 
     def file_exists(self, file):
-        if os.access(file, os.F_OK): 
+        if os.access(file, os.F_OK):
             return True
         else:
             for ext in ('db', 'dat', 'pag', 'dir'):
@@ -558,7 +561,7 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
 
     def _checkfile(self):
         if not self.file_exists(self.file):
-            g = self.dbmmodule.open(self.file, 'c') 
+            g = self.dbmmodule.open(self.file, 'c')
             g.close()
 
     def get_filenames(self):
@@ -588,11 +591,11 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
         for f in self.get_filenames():
             os.remove(f)
 
-    def __getitem__(self, key): 
+    def __getitem__(self, key):
         return cPickle.loads(self.dbm[key])
 
-    def __contains__(self, key): 
-        return self.dbm.has_key(key)
+    def __contains__(self, key):
+        return key in self.dbm
 
     def __setitem__(self, key, value):
         self.dbm[key] = cPickle.dumps(value)
@@ -606,11 +609,11 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
 
 class FileNamespaceManager(OpenResourceNamespaceManager):
     """:class:`.NamespaceManager` that uses binary files for storage.
-    
-    Each namespace is implemented as a single file storing a 
+
+    Each namespace is implemented as a single file storing a
     dictionary of key/value pairs, serialized using the Python
     ``pickle`` module.
-    
+
     """
     def __init__(self, namespace, data_dir=None, file_dir=None, lock_dir=None,
                  digest_filenames=True, **kwargs):
@@ -633,7 +636,7 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
         util.verify_directory(self.lock_dir)
         OpenResourceNamespaceManager.__init__(self, namespace)
 
-        self.file = util.encoded_path(root=self.file_dir, 
+        self.file = util.encoded_path(root=self.file_dir,
                                       identifiers=[self.namespace],
                                       extension='.cache',
                                       digest_filenames=self.digest_filenames)
@@ -647,10 +650,10 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
 
     def get_creation_lock(self, key):
         return file_synchronizer(
-                identifier = "dbmcontainer/funclock/%s/%s" % (
+                identifier="dbmcontainer/funclock/%s/%s" % (
                     self.namespace, key
                 ),
-                lock_dir = self.lock_dir
+                lock_dir=self.lock_dir
                 )
 
     def file_exists(self, file):
@@ -682,11 +685,11 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
             pass
         self.hash = {}
 
-    def __getitem__(self, key): 
+    def __getitem__(self, key):
         return self.hash[key]
 
-    def __contains__(self, key): 
-        return self.hash.has_key(key)
+    def __contains__(self, key):
+        return key in self.hash
 
     def __setitem__(self, key, value):
         self.hash[key] = value
@@ -704,10 +707,12 @@ namespace_classes = {}
 
 ContainerContext = dict
 
+
 class ContainerMeta(type):
     def __init__(cls, classname, bases, dict_):
         namespace_classes[cls] = cls.namespace_class
         return type.__init__(cls, classname, bases, dict_)
+
     def __call__(self, key, context, namespace, createfunc=None,
                  expiretime=None, starttime=None, **kwargs):
         if namespace in context:
@@ -718,22 +723,26 @@ class ContainerMeta(type):
         return Value(key, ns, createfunc=createfunc,
                      expiretime=expiretime, starttime=starttime)
 
+
 class Container(object):
     """Implements synchronization and value-creation logic
     for a 'value' stored in a :class:`.NamespaceManager`.
-    
+
     :class:`.Container` and its subclasses are deprecated.   The
     :class:`.Value` class is now used for this purpose.
-    
+
     """
     __metaclass__ = ContainerMeta
     namespace_class = NamespaceManager
 
+
 class FileContainer(Container):
     namespace_class = FileNamespaceManager
 
+
 class MemoryContainer(Container):
     namespace_class = MemoryNamespaceManager
+
 
 class DBMContainer(Container):
     namespace_class = DBMNamespaceManager
