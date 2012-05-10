@@ -105,8 +105,8 @@ class SessionMiddleware(object):
         config = config or {}
 
         # Load up the default params
-        self.options = dict(invalidate_corrupt=True, type=None, 
-                           data_dir=None, key='beaker.session.id', 
+        self.options = dict(invalidate_corrupt=True, type=None,
+                           data_dir=None, key='beaker.session.id',
                            timeout=None, secret=None, log_file=None)
 
         # Pull out any config args meant for beaker session. if there are any
@@ -144,7 +144,7 @@ class SessionMiddleware(object):
         if 'paste.testing_variables' in environ and 'webtest_varname' in self.options:
             environ['paste.testing_variables'][self.options['webtest_varname']] = session
 
-        def session_start_response(status, headers, exc_info = None):
+        def session_start_response(status, headers, exc_info=None):
             if session.accessed():
                 session.persist()
                 if session.__dict__['_headers']['set_cookie']:

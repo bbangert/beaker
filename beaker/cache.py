@@ -1,7 +1,7 @@
 """This package contains the "front end" classes and functions
 for Beaker caching.
 
-Included are the :class:`.Cache` and :class:`.CacheManager` classes, 
+Included are the :class:`.Cache` and :class:`.CacheManager` classes,
 as well as the function decorators :func:`.region_decorate`,
 :func:`.region_invalidate`.
 
@@ -23,7 +23,7 @@ import beaker.ext.google as google
 cache_regions = {}
 """Dictionary of 'region' arguments.
 
-A "region" is a string name that refers to a series of cache 
+A "region" is a string name that refers to a series of cache
 configuration arguments.    An application may have multiple
 "regions" - one which stores things in a memory cache, one
 which writes data to files, etc.
@@ -47,6 +47,7 @@ of configuration arguments.  Example::
 
 
 cache_managers = {}
+
 
 class _backends(object):
     initialized = False
@@ -100,19 +101,19 @@ class _backends(object):
                         warnings.warn(
                             "Unable to load NamespaceManager "
                             "entry point: '%s': %s" % (
-                                        entry_point, 
-                                        tb.getvalue()), 
+                                        entry_point,
+                                        tb.getvalue()),
                                         RuntimeWarning, 2)
         except ImportError:
             pass
 
 # Initialize the basic available backends
 clsmap = _backends({
-          'memory':container.MemoryNamespaceManager,
-          'dbm':container.DBMNamespaceManager,
-          'file':container.FileNamespaceManager,
-          'ext:memcached':memcached.MemcachedNamespaceManager,
-          'ext:database':database.DatabaseNamespaceManager,
+          'memory': container.MemoryNamespaceManager,
+          'dbm': container.DBMNamespaceManager,
+          'file': container.FileNamespaceManager,
+          'ext:memcached': memcached.MemcachedNamespaceManager,
+          'ext:database': database.DatabaseNamespaceManager,
           'ext:sqla': sqla.SqlaNamespaceManager,
           'ext:google': google.GoogleNamespaceManager,
           })
@@ -125,7 +126,7 @@ def cache_region(region, *args):
     Example::
 
         from beaker.cache import cache_regions, cache_region
-        
+
         # configure regions
         cache_regions.update({
             'short_term':{
@@ -138,10 +139,10 @@ def cache_region(region, *args):
         def load(search_term, limit, offset):
             '''Load from a database given a search term, limit, offset.'''
             return database.query(search_term)[offset:offset + limit]
-    
+
     The decorator can also be used with object methods.  The ``self``
-    argument is not part of the cache key.  This is based on the 
-    actual string name ``self`` being in the first argument 
+    argument is not part of the cache key.  This is based on the
+    actual string name ``self`` being in the first argument
     position (new in 1.6)::
 
         class MyThing(object):
@@ -149,27 +150,27 @@ def cache_region(region, *args):
             def load(self, search_term, limit, offset):
                 '''Load from a database given a search term, limit, offset.'''
                 return database.query(search_term)[offset:offset + limit]
-    
+
     Classmethods work as well - use ``cls`` as the name of the class argument,
     and place the decorator around the function underneath ``@classmethod``
     (new in 1.6)::
-    
+
         class MyThing(object):
             @classmethod
             @cache_region('short_term', 'load_things')
             def load(cls, search_term, limit, offset):
                 '''Load from a database given a search term, limit, offset.'''
                 return database.query(search_term)[offset:offset + limit]
-    
+
     :param region: String name of the region corresponding to the desired
       caching arguments, established in :attr:`.cache_regions`.
-      
+
     :param \*args: Optional ``str()``-compatible arguments which will uniquely
       identify the key used by this decorated function, in addition
       to the positional arguments passed to the function itself at call time.
       This is recommended as it is needed to distinguish between any two functions
       or methods that have the same name (regardless of parent class or not).
-      
+
     .. note::
 
         The function being decorated must only be called with
@@ -180,13 +181,14 @@ def cache_region(region, *args):
         forms the unique cache key.
 
     .. note::
-    
+
         When a method on a class is decorated, the ``self`` or ``cls``
         argument in the first position is
         not included in the "key" used for caching.   New in 1.6.
-        
+
     """
     return _cache_decorate(args, None, None, region)
+
 
 def region_invalidate(namespace, region, *args):
     """Invalidate a cache region corresponding to a function
@@ -209,7 +211,7 @@ def region_invalidate(namespace, region, *args):
     Example::
 
         from beaker.cache import cache_regions, cache_region, region_invalidate
-        
+
         # configure regions
         cache_regions.update({
             'short_term':{
@@ -226,11 +228,11 @@ def region_invalidate(namespace, region, *args):
         def invalidate_search(search_term, limit, offset):
             '''Invalidate the cached storage for a given search term, limit, offset.'''
             region_invalidate(load, 'short_term', 'load_data', search_term, limit, offset)
-    
+
     Note that when a method on a class is decorated, the first argument ``cls``
     or ``self`` is not included in the cache key.  This means you don't send
     it to :func:`.region_invalidate`::
-    
+
         class MyThing(object):
             @cache_region('short_term', 'some_data')
             def load(self, search_term, limit, offset):
@@ -240,7 +242,7 @@ def region_invalidate(namespace, region, *args):
             def invalidate_search(self, search_term, limit, offset):
                 '''Invalidate the cached storage for a given search term, limit, offset.'''
                 region_invalidate(self.load, 'short_term', 'some_data', search_term, limit, offset)
-        
+
     """
     if callable(namespace):
         if not region:
@@ -331,7 +333,7 @@ class Cache(object):
         kwargs = self.nsargs.copy()
         kwargs.update(kw)
         c = Cache(self.namespace.namespace, type=type, **kwargs)
-        return c._get_value(key, expiretime=expiretime, createfunc=createfunc, 
+        return c._get_value(key, expiretime=expiretime, createfunc=createfunc,
                             starttime=starttime)
 
     def clear(self):
@@ -474,7 +476,7 @@ class CacheManager(object):
         .. note::
 
             The function being decorated must only be called with
-            positional arguments. 
+            positional arguments.
 
         """
         return _cache_decorate(args, self, kwargs, None)
@@ -521,6 +523,7 @@ class CacheManager(object):
             key_length = kwargs.pop('key_length', 250)
         _cache_decorator_invalidate(cache, key_length, args)
 
+
 def _cache_decorate(deco_args, manager, kwargs, region):
     """Return a caching function decorator."""
 
@@ -529,6 +532,7 @@ def _cache_decorate(deco_args, manager, kwargs, region):
     def decorate(func):
         namespace = util.func_namespace(func)
         skip_self = util.has_self_arg(func)
+
         def cached(*args):
             if not cache[0]:
                 if region is not None:
@@ -561,6 +565,7 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                 key_length = kwargs.pop('key_length', 250)
             if len(cache_key) + len(namespace) > key_length:
                 cache_key = sha1(cache_key).hexdigest()
+
             def go():
                 return func(*args)
 
@@ -570,6 +575,7 @@ def _cache_decorate(deco_args, manager, kwargs, region):
             cached._arg_region = region
         return cached
     return decorate
+
 
 def _cache_decorator_invalidate(cache, key_length, args):
     """Invalidate a cache key based on function arguments."""

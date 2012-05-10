@@ -27,5 +27,6 @@ except ImportError:
 
         return cipher.decrypt(data).rstrip()
 
+
 def getKeyLength():
     return 32
