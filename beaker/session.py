@@ -619,7 +619,7 @@ class CookieSession(Session):
 
     def invalidate(self):
         """Clear the contents and start a new session"""
-        self.delete()
+        self.clear()
         self['_id'] = _session_id()
 
 
