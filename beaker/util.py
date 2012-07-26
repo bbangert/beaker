@@ -302,6 +302,8 @@ def coerce_session_params(params):
          "not a boolean, datetime, int, or timedelta instance."),
         ('cookie_domain', (str, types.NoneType), "Cookie domain must be a "
          "string."),
+        ('cookie_path', (str, types.NoneType), "Cookie path must be a "
+         "string."),
         ('id', (str,), "Session id must be a string."),
         ('key', (str,), "Session key must be a string."),
         ('secret', (str, types.NoneType), "Session secret must be a string."),
