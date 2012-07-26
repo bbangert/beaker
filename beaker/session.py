@@ -90,7 +90,9 @@ class Session(dict):
                     regardless of the cookie being present or not to determine
                     whether session data is still valid.
     :type timeout: int
+    :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
+    :param cookie_path: Path to use for the cookie.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
@@ -102,8 +104,8 @@ class Session(dict):
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
                  key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, secret=None, secure=False,
-                 namespace_class=None, httponly=False,
+                 cookie_domain=None, cookie_path='/', secret=None,
+                 secure=False, namespace_class=None, httponly=False,
                  encrypt_key=None, validate_key=None, **namespace_args):
         if not type:
             if data_dir:
@@ -127,7 +129,7 @@ class Session(dict):
 
         # Default cookie domain/path
         self._domain = cookie_domain
-        self._path = '/'
+        self._path = cookie_path
         self.was_invalidated = False
         self.secret = secret
         self.secure = secure
@@ -472,7 +474,9 @@ class CookieSession(Session):
                     regardless of the cookie being present or not to determine
                     whether session data is still valid.
     :type timeout: int
+    :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
+    :param cookie_path: Path to use for the cookie.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
@@ -482,8 +486,9 @@ class CookieSession(Session):
 
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
-                 cookie_expires=True, cookie_domain=None, encrypt_key=None,
-                 validate_key=None, secure=False, httponly=False, **kwargs):
+                 cookie_expires=True, cookie_domain=None, cookie_path='/',
+                 encrypt_key=None, validate_key=None, secure=False,
+                 httponly=False, **kwargs):
 
         if not crypto.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
@@ -499,7 +504,7 @@ class CookieSession(Session):
         self.secure = secure
         self.httponly = httponly
         self._domain = cookie_domain
-        self._path = '/'
+        self._path = cookie_path
 
         try:
             cookieheader = request['cookie']
