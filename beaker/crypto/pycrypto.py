@@ -15,17 +15,18 @@ try:
 
 except ImportError:
     from Crypto.Cipher import AES
+    from Crypto.Util import Counter
 
     def aesEncrypt(data, key):
-        cipher = AES.new(key)
+        cipher = AES.new(key, AES.MODE_CTR,
+                         counter=Counter.new(128, initial_value=0))
 
-        data = data + (" " * (16 - (len(data) % 16)))
         return cipher.encrypt(data)
 
     def aesDecrypt(data, key):
-        cipher = AES.new(key)
-
-        return cipher.decrypt(data).rstrip()
+        cipher = AES.new(key, AES.MODE_CTR,
+                         counter=Counter.new(128, initial_value=0))
+        return cipher.decrypt(data)
 
 def getKeyLength():
     return 32
