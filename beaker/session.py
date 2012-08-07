@@ -45,12 +45,12 @@ except ImportError:
 class SignedCookie(Cookie.BaseCookie):
     """Extends python cookie to give digital signature support"""
     def __init__(self, secret, input=None):
-        self.secret = secret
+        self.secret = secret.encode('UTF-8')
         Cookie.BaseCookie.__init__(self, input)
 
     def value_decode(self, val):
         val = val.strip('"')
-        sig = HMAC.new(self.secret, val[40:], SHA1).hexdigest()
+        sig = HMAC.new(self.secret, val[40:].encode('UTF-8'), SHA1).hexdigest()
 
         # Avoid timing attacks
         invalid_bits = 0
@@ -67,7 +67,7 @@ class SignedCookie(Cookie.BaseCookie):
             return val[40:], val
 
     def value_encode(self, val):
-        sig = HMAC.new(self.secret, val, SHA1).hexdigest()
+        sig = HMAC.new(self.secret, val.encode('UTF-8'), SHA1).hexdigest()
         return str(val), ("%s%s" % (sig, val))
 
 
@@ -90,7 +90,9 @@ class Session(dict):
                     regardless of the cookie being present or not to determine
                     whether session data is still valid.
     :type timeout: int
+    :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
+    :param cookie_path: Path to use for the cookie.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
@@ -102,8 +104,8 @@ class Session(dict):
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
                  key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, secret=None, secure=False,
-                 namespace_class=None, httponly=False,
+                 cookie_domain=None, cookie_path='/', secret=None,
+                 secure=False, namespace_class=None, httponly=False,
                  encrypt_key=None, validate_key=None, **namespace_args):
         if not type:
             if data_dir:
@@ -127,7 +129,7 @@ class Session(dict):
 
         # Default cookie domain/path
         self._domain = cookie_domain
-        self._path = '/'
+        self._path = cookie_path
         self.was_invalidated = False
         self.secret = secret
         self.secure = secure
@@ -252,7 +254,7 @@ class Session(dict):
         """Serialize, encipher, and base64 the session dict"""
         session_data = session_data or self.copy()
         if self.encrypt_key:
-            nonce = b64encode(os.urandom(40))[:8]
+            nonce = b64encode(os.urandom(6))[:8]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
             data = util.pickle.dumps(session_data, 2)
@@ -472,7 +474,9 @@ class CookieSession(Session):
                     regardless of the cookie being present or not to determine
                     whether session data is still valid.
     :type timeout: int
+    :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
+    :param cookie_path: Path to use for the cookie.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
@@ -482,8 +486,9 @@ class CookieSession(Session):
 
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
-                 cookie_expires=True, cookie_domain=None, encrypt_key=None,
-                 validate_key=None, secure=False, httponly=False, **kwargs):
+                 cookie_expires=True, cookie_domain=None, cookie_path='/',
+                 encrypt_key=None, validate_key=None, secure=False,
+                 httponly=False, **kwargs):
 
         if not crypto.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
@@ -499,7 +504,7 @@ class CookieSession(Session):
         self.secure = secure
         self.httponly = httponly
         self._domain = cookie_domain
-        self._path = '/'
+        self._path = cookie_path
 
         try:
             cookieheader = request['cookie']
@@ -614,7 +619,7 @@ class CookieSession(Session):
 
     def invalidate(self):
         """Clear the contents and start a new session"""
-        self.delete()
+        self.clear()
         self['_id'] = _session_id()
 
 

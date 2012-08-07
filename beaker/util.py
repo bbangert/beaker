@@ -18,7 +18,7 @@ import sys
 import inspect
 
 py3k = getattr(sys, 'py3kwarning', False) or sys.version_info >= (3, 0)
-py24 = sys.version_info < (2,5)
+py24 = sys.version_info < (2, 5)
 jython = sys.platform.startswith('java')
 
 if py3k or jython:
@@ -31,8 +31,9 @@ from beaker import exceptions
 from threading import local as _tlocal
 
 
-__all__  = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict",
+__all__ = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict",
             "encoded_path", "verify_directory"]
+
 
 def function_named(fn, name):
     """Return a function with a given __name__.
@@ -44,13 +45,16 @@ def function_named(fn, name):
     fn.__name__ = name
     return fn
 
+
 def skip_if(predicate, reason=None):
     """Skip a test if predicate is true."""
     reason = reason or predicate.__name__
 
     from nose import SkipTest
+
     def decorate(fn):
         fn_name = fn.__name__
+
         def maybe(*args, **kw):
             if predicate():
                 msg = "'%s' skipped: %s" % (
@@ -61,6 +65,7 @@ def skip_if(predicate, reason=None):
         return function_named(maybe, fn_name)
     return decorate
 
+
 def assert_raises(except_cls, callable_, *args, **kw):
     """Assert the given exception is raised by the given function + arguments."""
 
@@ -69,7 +74,7 @@ def assert_raises(except_cls, callable_, *args, **kw):
         success = False
     except except_cls, e:
         success = True
- 
+
     # assert outside the block so it works for AssertionError too !
     assert success, "Callable did not raise an exception"
 
@@ -86,6 +91,7 @@ def verify_directory(dir):
         except:
             if tries > 5:
                 raise
+
 
 def has_self_arg(func):
     """Return True if the given function has a 'self' argument."""
@@ -136,6 +142,7 @@ class ThreadLocal(object):
     def remove(self):
         del self._tlocal.value
 
+
 class SyncDict(object):
     """
     An efficient/threadsafe singleton map algorithm, a.k.a.
@@ -158,7 +165,7 @@ class SyncDict(object):
 
     def get(self, key, createfunc, *args, **kwargs):
         try:
-            if self.has_key(key):
+            if key in self.dict:
                 return self.dict[key]
             else:
                 return self.sync_get(key, createfunc, *args, **kwargs)
@@ -169,7 +176,7 @@ class SyncDict(object):
         self.mutex.acquire()
         try:
             try:
-                if self.has_key(key):
+                if key in self.dict:
                     return self.dict[key]
                 else:
                     return self._create(key, createfunc, *args, **kwargs)
@@ -183,16 +190,20 @@ class SyncDict(object):
         return obj
 
     def has_key(self, key):
-        return self.dict.has_key(key)
+        return key in self.dict
 
     def __contains__(self, key):
         return self.dict.__contains__(key)
+
     def __getitem__(self, key):
         return self.dict.__getitem__(key)
+
     def __setitem__(self, key, value):
         self.dict.__setitem__(key, value)
+
     def __delitem__(self, key):
         return self.dict.__delitem__(key)
+
     def clear(self):
         self.dict.clear()
 
@@ -203,7 +214,9 @@ class WeakValuedRegistry(SyncDict):
         self.dict = weakref.WeakValueDictionary()
 
 sha1 = None
-def encoded_path(root, identifiers, extension = ".enc", depth = 3,
+
+
+def encoded_path(root, identifiers, extension=".enc", depth=3,
                  digest_filenames=True):
 
     """Generate a unique file-accessible path from the given list of
@@ -289,6 +302,8 @@ def coerce_session_params(params):
          "not a boolean, datetime, int, or timedelta instance."),
         ('cookie_domain', (str, types.NoneType), "Cookie domain must be a "
          "string."),
+        ('cookie_path', (str, types.NoneType), "Cookie path must be a "
+         "string."),
         ('id', (str,), "Session id must be a string."),
         ('key', (str,), "Session key must be a string."),
         ('secret', (str, types.NoneType), "Session secret must be a string."),
@@ -331,13 +346,56 @@ def coerce_cache_params(params):
     return verify_rules(params, rules)
 
 
+def coerce_memcached_behaviors(behaviors):
+    rules = [
+        ('cas', (bool, int), 'cas must be a boolean or an integer'),
+        ('no_block', (bool, int), 'no_block must be a boolean or an integer'),
+        ('receive_timeout', (int,), 'receive_timeout must be an integer'),
+        ('send_timeout', (int,), 'send_timeout must be an integer'),
+        ('ketama_hash', (str,), 'ketama_hash must be a string designating '
+         'a valid hashing strategy option'),
+        ('_poll_timeout', (int,), '_poll_timeout must be an integer'),
+        ('auto_eject', (bool, int), 'auto_eject must be an integer'),
+        ('retry_timeout', (int,), 'retry_timeout must be an integer'),
+        ('_sort_hosts', (bool, int), '_sort_hosts must be an integer'),
+        ('_io_msg_watermark', (int,), '_io_msg_watermark must be an integer'),
+        ('ketama', (bool, int), 'ketama must be a boolean or an integer'),
+        ('ketama_weighted', (bool, int), 'ketama_weighted must be a boolean or '
+         'an integer'),
+        ('_io_key_prefetch', (int, bool), '_io_key_prefetch must be a boolean '
+         'or an integer'),
+        ('_hash_with_prefix_key', (bool, int), '_hash_with_prefix_key must be '
+         'a boolean or an integer'),
+        ('tcp_nodelay', (bool, int), 'tcp_nodelay must be a boolean or an '
+         'integer'),
+        ('failure_limit', (int,), 'failure_limit must be an integer'),
+        ('buffer_requests', (bool, int), 'buffer_requests must be a boolean '
+         'or an integer'),
+        ('_socket_send_size', (int,), '_socket_send_size must be an integer'),
+        ('num_replicas', (int,), 'num_replicas must be an integer'),
+        ('remove_failed', (int,), 'remove_failed must be an integer'),
+        ('_noreply', (bool, int), '_noreply must be a boolean or an integer'),
+        ('_io_bytes_watermark', (int,), '_io_bytes_watermark must be an '
+         'integer'),
+        ('_socket_recv_size', (int,), '_socket_recv_size must be an integer'),
+        ('distribution', (str,), 'distribution must be a string designating '
+         'a valid distribution option'),
+        ('connect_timeout', (int,), 'connect_timeout must be an integer'),
+        ('hash', (str,), 'hash must be a string designating a valid hashing '
+         'option'),
+        ('verify_keys', (bool, int), 'verify_keys must be a boolean or an integer'),
+        ('dead_timeout', (int,), 'dead_timeout must be an integer')
+    ]
+    return verify_rules(behaviors, rules)
+
+
 def parse_cache_config_options(config, include_defaults=True):
     """Parse configuration options and validate for use with the
     CacheManager"""
 
     # Load default cache options
     if include_defaults:
-        options= dict(type='memory', data_dir=None, expire=None, 
+        options = dict(type='memory', data_dir=None, expire=None,
                            log_file=None)
     else:
         options = {}
@@ -357,7 +415,7 @@ def parse_cache_config_options(config, include_defaults=True):
     if regions:
         region_configs = {}
         for region in regions:
-            if not region: # ensure region name is valid
+            if not region:  # ensure region name is valid
                 continue
             # Setup the default cache options
             region_options = dict(data_dir=options.get('data_dir'),
@@ -375,6 +433,21 @@ def parse_cache_config_options(config, include_defaults=True):
             region_configs[region] = region_options
         options['cache_regions'] = region_configs
     return options
+
+
+def parse_memcached_behaviors(config):
+    """Parse behavior options and validate for use with pylibmc
+    client/PylibMCNamespaceManager, or potentially other memcached
+    NamespaceManagers that support behaviors"""
+    behaviors = {}
+
+    for key, val in config.iteritems():
+        if key.startswith('behavior.'):
+            behaviors[key[9:]] = val
+
+    coerce_memcached_behaviors(behaviors)
+    return behaviors
+
 
 def func_namespace(func):
     """Generates a unique namespace for a function"""

@@ -127,6 +127,20 @@ def test_cookie_id():
     new_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body)
     assert new_id == sess_id
 
+def test_invalidate_with_save_does_not_delete_session():
+    def invalidate_session_app(environ, start_response):
+        session = environ['beaker.session']
+        session.invalidate()
+        session.save()
+        start_response('200 OK', [('Content-type', 'text/plain')])
+        return ['Cookie is %s' % session]
+
+    options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
+               'session.type':'cookie'}
+    app = TestApp(SessionMiddleware(invalidate_session_app, **options))
+    res = app.get('/')
+    assert 'expires=' not in res.headers.getall('Set-Cookie')[0]
+
 if __name__ == '__main__':
     from paste import httpserver
     wsgi_app = SessionMiddleware(simple_app, {})

@@ -28,5 +28,6 @@ except ImportError:
                          counter=Counter.new(128, initial_value=0))
         return cipher.decrypt(data)
 
+
 def getKeyLength():
     return 32

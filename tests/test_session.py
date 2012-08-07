@@ -3,6 +3,9 @@ import sys
 import time
 import warnings
 
+from nose import SkipTest
+
+from beaker.crypto import has_aes
 from beaker.session import Session
 from beaker import util
 
@@ -34,6 +37,8 @@ def test_save_load():
 
 def test_save_load_encryption():
     """Test if the data is actually persistent across requests"""
+    if not has_aes:
+        raise SkipTest()
     session = get_session(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
     session[u'Suomi'] = u'Kimi Räikkönen'
@@ -54,6 +59,8 @@ def test_save_load_encryption():
 
 def test_decryption_failure():
     """Test if the data fails without the right keys"""
+    if not has_aes:
+        raise SkipTest()
     session = get_session(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
     session[u'Suomi'] = u'Kimi Räikkönen'
