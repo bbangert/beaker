@@ -683,6 +683,9 @@ class SessionObject(object):
     def __contains__(self, key):
         return key in self._session()
 
+    def has_key(self, key):
+        return key in self._session()
+
     def get_by_id(self, id):
         """Loads a session given a session ID"""
         params = self.__dict__['_params']

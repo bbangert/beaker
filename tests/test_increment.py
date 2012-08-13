@@ -28,7 +28,7 @@ def simple_app(environ, start_response):
     if not session:
         start_response('200 OK', [('Content-type', 'text/plain')])
         return ["No session id of %s found." % sess_id]
-    if not session.has_key('value'):
+    if not 'value' in session:
         session['value'] = 0
     session['value'] += 1
     if not environ['PATH_INFO'].startswith('/nosave'):
@@ -46,7 +46,7 @@ def simple_auto_app(environ, start_response):
     if not session:
         start_response('200 OK', [('Content-type', 'text/plain')])
         return ["No session id of %s found." % sess_id]
-    if not session.has_key('value'):
+    if not 'value' in session:
         session['value'] = 0
     session['value'] += 1
     if environ['PATH_INFO'].startswith('/nosave'):
