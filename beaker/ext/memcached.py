@@ -107,7 +107,9 @@ class MemcachedNamespaceManager(NamespaceManager):
                     (self.namespace, key), lock_dir=self.lock_dir)
 
     def _format_key(self, key):
-        formated_key = (self.namespace + '_' + (key if isinstance(key, str) else key.decode('ascii'))).replace(' ', '\302\267')
+        if not isinstance(key, str):
+            key = key.decode('ascii')
+        formated_key = (self.namespace + '_' + key).replace(' ', '\302\267')
         if len(formated_key) > MAX_KEY_LENGTH:
             formated_key = sha1(formated_key).hexdigest()
         return formated_key
