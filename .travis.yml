@@ -7,4 +7,4 @@ install:
     - python setup.py install
 script:
     - cd tests
-    - nosetests -d --with-coverage
+    - nosetests -d --with-coverage --cover-package=beaker
