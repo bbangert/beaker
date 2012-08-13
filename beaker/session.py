@@ -170,6 +170,9 @@ class Session(dict):
                 else:
                     raise
 
+    def has_key(self, name):
+        return name in self
+
     def _set_cookie_values(self, expires=None):
         self.cookie[self.key] = self.id
         if self._domain:
