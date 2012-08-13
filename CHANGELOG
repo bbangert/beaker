@@ -1,6 +1,12 @@
 Release 1.6.4 (8/13/2012)
 =========================
 
+.. warning::
+
+    Session hashing for encrypted sessions using PyCrypto has changed. This
+    will result in sessions being invalidated upon upgrading if PyCrypto is
+    used.
+
 * Fix bug with key_length not being coerced to a int for comparison. Patch by
   Greg Lavallee.
 * Fix bug with cookie invalidation not clearing the cookie data. Patch by
