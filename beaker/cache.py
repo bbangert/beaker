@@ -563,7 +563,7 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                 key_length = cache_regions[region]['key_length']
             else:
                 key_length = kwargs.pop('key_length', 250)
-            if len(cache_key) + len(namespace) > key_length:
+            if len(cache_key) + len(namespace) > int(key_length):
                 cache_key = sha1(cache_key).hexdigest()
 
             def go():

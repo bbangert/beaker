@@ -1,6 +1,16 @@
-Release 1.6.4 (**tip**)
-=======================
+Release 1.6.4 (8/13/2012)
+=========================
 
+* Fix bug with key_length not being coerced to a int for comparison. Patch by
+  Greg Lavallee.
+* Fix bug with cookie invalidation not clearing the cookie data. Patch by
+  Vasiliy Lozovoy.
+* Added ability to pass in cookie_path for the Session. Patch by Marcin
+  Kuzminski.
+* Add NSS crypto support to Beaker. Patch by Miloslav Trmac of Redhat.
+* Fix security bug with pycrypto not securing data such that an attacker could
+  possibly determine parts of the encrypted payload. Patch by Miloslav Trmac of
+  Redhat.
 * Add ability to specify schema for database-backed sessions. Patch by Vladimir
   Tananko.
 * Fix issue with long key names in memcached backend. Patch by Guillaume
