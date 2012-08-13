@@ -37,7 +37,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Beaker'
-copyright = u'2008-2011, Ben Bangert, Mike Bayer'
+copyright = u'2008-2012, Ben Bangert, Mike Bayer'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
