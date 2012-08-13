@@ -679,7 +679,7 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
     def do_remove(self):
         try:
             os.remove(self.file)
-        except OSError, err:
+        except OSError:
             # for instance, because we haven't yet used this cache,
             # but client code has asked for a clear() operation...
             pass

@@ -31,8 +31,8 @@ from beaker import exceptions
 from threading import local as _tlocal
 
 
-__all__ = ["ThreadLocal", "Registry", "WeakValuedRegistry", "SyncDict",
-            "encoded_path", "verify_directory"]
+__all__ = ["ThreadLocal", "WeakValuedRegistry", "SyncDict", "encoded_path",
+           "verify_directory"]
 
 
 def function_named(fn, name):
@@ -72,7 +72,7 @@ def assert_raises(except_cls, callable_, *args, **kw):
     try:
         callable_(*args, **kw)
         success = False
-    except except_cls, e:
+    except except_cls:
         success = True
 
     # assert outside the block so it works for AssertionError too !
