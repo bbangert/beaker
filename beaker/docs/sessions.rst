@@ -51,10 +51,7 @@ Complete example using a basic WSGI app with sessions::
         session = environ['beaker.session']
 
         # Check to see if a value is in the session
-        if 'logged_in' in session:
-            user = True
-        else:
-            user = False
+        user = 'logged_in' in session
 
         # Set some other session variable
         session['user_id'] = 10
