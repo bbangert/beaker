@@ -85,6 +85,8 @@ class MemcachedNamespaceManager(NamespaceManager):
         if not url:
             raise MissingCacheParameter("url is required")
 
+        self.lock_dir = None
+
         if lock_dir:
             self.lock_dir = lock_dir
         elif data_dir:
