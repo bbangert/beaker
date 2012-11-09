@@ -357,9 +357,11 @@ class Session(dict):
                     '_accessed_time': now
                 }
                 self.is_new = True
+                
+            timeout = session_data.get('_timeout', self.timeout)
 
-            if self.timeout is not None and \
-               now - session_data['_accessed_time'] > self.timeout:
+            if timeout is not None and \
+               now - session_data['_accessed_time'] > timeout:
                 timed_out = True
             else:
                 # Properly set the last_accessed time, which is different
