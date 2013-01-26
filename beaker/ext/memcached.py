@@ -127,6 +127,14 @@ class MemcachedNamespaceManager(NamespaceManager):
         return key in self
 
     def set_value(self, key, value, expiretime=None):
+        # Old format is to pass expiretime into each call, however, this
+        # is now set in the beaker code itself and passed in as part of
+        # the value, which is a 3 part tuple with the 2nd part being
+        # the expired time. Use it in memcached to avoid evicitions and
+        # properly expiure them
+        if not expiretime:
+            expiretime = value[1]
+
         if expiretime:
             self.mc.set(self._format_key(key), value, time=expiretime)
         else:
