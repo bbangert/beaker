@@ -263,8 +263,7 @@ class Session(dict):
             data = util.pickle.dumps(session_data, 2)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = util.pickle.dumps(session_data, 2)
-            return b64encode(data)
+            return util.pickle.dumps(session_data)
 
     def _decrypt_data(self, session_data):
         """Bas64, decipher, then un-serialize the data for the session
@@ -292,8 +291,7 @@ class Session(dict):
                 else:
                     raise
         else:
-            data = b64decode(session_data)
-            return util.pickle.loads(data)
+            return util.pickle.loads(session_data)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -333,7 +331,7 @@ class Session(dict):
             try:
                 session_data = self.namespace['session']
 
-                if (session_data is not None and self.encrypt_key):
+                if (session_data is not None):
                     session_data = self._decrypt_data(session_data)
 
                 # Memcached always returns a key, its None when its not
@@ -411,8 +409,7 @@ class Session(dict):
             else:
                 data = dict(self.items())
 
-            if self.encrypt_key:
-                data = self._encrypt_data(data)
+            data = self._encrypt_data(data)
 
             # Save the data
             if not data and 'session' in self.namespace:
