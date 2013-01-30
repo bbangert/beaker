@@ -263,7 +263,7 @@ class Session(dict):
             data = util.pickle.dumps(session_data, 2)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            return util.pickle.dumps(session_data)
+	    return b64encode(util.pickle.dumps(session_data))
 
     def _decrypt_data(self, session_data):
         """Bas64, decipher, then un-serialize the data for the session
@@ -291,7 +291,7 @@ class Session(dict):
                 else:
                     raise
         else:
-            return util.pickle.loads(session_data)
+            return util.pickle.loads(b64decode(session_data))
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
