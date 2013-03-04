@@ -118,6 +118,9 @@ class Session(dict):
         self.namespace_class = namespace_class or clsmap[self.type]
 
         self.namespace_args = namespace_args
+        if 'database_engine' in self.namespace_args:
+            self.namespace_args['engine'] = self.namespace_args['database_engine']
+            self.namespace_args.pop('database_engine')
 
         self.request = request
         self.data_dir = data_dir

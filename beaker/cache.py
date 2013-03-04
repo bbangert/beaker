@@ -281,8 +281,13 @@ class Cache(object):
                 raise cls
         except KeyError:
             raise TypeError("Unknown cache implementation %r" % type)
+        self.namespace_args = nsargs
+        if 'database_engine' in self.namespace_args:
+            self.namespace_args['engine'] = self.namespace_args['database_engine']
+            self.namespace_args.pop('database_engine')
+
         self.namespace_name = namespace
-        self.namespace = cls(namespace, **nsargs)
+        self.namespace = cls(namespace, **(self.namespace_args))
         self.expiretime = expiretime or expire
         self.starttime = starttime
         self.nsargs = nsargs

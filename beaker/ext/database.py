@@ -34,7 +34,7 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
 
     def __init__(self, namespace, url=None, sa_opts=None, optimistic=False,
                  table_name='beaker_cache', data_dir=None, lock_dir=None,
-                 schema_name=None, **params):
+                 schema_name=None, engine=None, **params):
         """Creates a database namespace manager
 
         ``url``
@@ -52,6 +52,8 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
             The schema name to use in the database for the cache.
         """
         OpenResourceNamespaceManager.__init__(self, namespace)
+
+        self.engine = engine
 
         if sa_opts is None:
             sa_opts = params
@@ -75,7 +77,7 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
                 # SQLAlchemy pops the url, this ensures it sticks around
                 # later
                 sa_opts['sa.url'] = url
-                engine = sa.engine_from_config(sa_opts, 'sa.')
+                engine = self.engine or sa.engine_from_config(sa_opts, 'sa.')
                 meta = sa.MetaData()
                 meta.bind = engine
                 return meta
