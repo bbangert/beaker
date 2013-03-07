@@ -12,7 +12,7 @@ which was ported for use in `Myghty`_. Beaker was then extracted from this
 code, and has been substantially rewritten and modernized.
 
 Several concepts still exist from this origin though. Beaker's caching (and
-its sessions, though its behind the scenes) utilize the concept of 
+its sessions, behind the scenes) utilize the concept of 
 :term:`NamespaceManager`, and :term:`Container` objects to handle storing
 cached data.
 
@@ -110,7 +110,7 @@ All of the values for a particular namespace can be removed by calling the
     tmpl_cache.clear()
 
 Note that this only clears the key's in the namespace that this particular
-Cache instance is aware of. Therefore its recommend to manually clear out
+Cache instance is aware of. Therefore, it is recommended to manually clear out
 specific keys in a cache namespace that should be removed::
 
     tmpl_cache.remove_value(key=search_param)
@@ -125,7 +125,7 @@ When using the decorator API, a namespace does not need to be specified and
 will instead be created for you with the name of the module + the name of the
 function that will have its output cached.
 
-Since its possible that multiple functions in the same module might have the
+Since it's possible that multiple functions in the same module might have the
 same name, additional arguments can be provided to the decorators that will be
 used in the namespace to prevent multiple functions from caching their values
 in the same location.
@@ -204,7 +204,7 @@ This can be useful if there are a few common cache schemes used by an
 application that should be setup in a single place then used as appropriate
 throughout the application.
 
-Setting up cache region's is documented in the
+Setting up cache regions is documented in the
 :ref:`cache region options <cache_region_options>` section in
 :ref:`configuration`.
 
@@ -230,7 +230,7 @@ Or using the :func:`~beaker.cache.cache_region` decorator::
     results = get_results('gophers')
 
 The only difference with the :func:`~beaker.cache.cache_region` decorator is
-that the cache does not need to be configured when its used. This allows one
+that the cache does not need to be configured when it is used. This allows one
 to decorate functions in a module before the Beaker cache is configured.
 
 Invalidating
