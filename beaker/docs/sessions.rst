@@ -117,7 +117,7 @@ saved should something catastrophic happen during a request.
 **Order Matters**: When using the Beaker middleware, you **must call save before
 the headers are sent to the client**. Since Beaker's middleware watches for when
 the ``start_response`` function is called to know that it should add its cookie
-header, the session must be saved before its called.
+header, the session must be saved before it is called.
 
 Keep in mind that Response objects in popular frameworks (WebOb, Werkzeug,
 etc.) call start_response immediately, so if you are using one of those
@@ -149,7 +149,7 @@ Auto-save
 
 Saves can be done automatically by setting the ``auto`` configuration option
 for sessions. When set, calling the :meth:`~beaker.session.Session.save` method
-is no longer required, and the session will be saved automatically anytime its
+is no longer required, and the session will be saved automatically anytime it is
 accessed during a request.
 
 

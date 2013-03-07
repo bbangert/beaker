@@ -4,10 +4,10 @@
 Configuration
 =============
 
-Beaker can be configured several different ways, depending on how it's used.
-The most recommended style is to use a dictionary of preferences that are to
-be passed to either the :class:`~beaker.middleware.SessionMiddleware` or the
-:class:`~beaker.cache.CacheManager`.
+Beaker can be configured several different ways, depending on how it is to be
+used.  The most recommended style is to use a dictionary of preferences that
+are to be passed to either the :class:`~beaker.middleware.SessionMiddleware` or
+the :class:`~beaker.cache.CacheManager`.
 
 Since both Beaker's sessions and caching use the same back-end container
 storage system, there's some options that are applicable to both of them in
@@ -139,7 +139,7 @@ auto (**optional**, bool)
 
     Defaults to False.
 
-cookie_expires (**optional**, bool, datetime, timedelta, int)
+cookie_expires (**optional**, boob, datetime, timedelta, int)
     Determines when the cookie used to track the client-side of the session
     will expire. When set to a boolean value, it will either expire at the
     end of the browsers session, or never expire.
