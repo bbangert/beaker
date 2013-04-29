@@ -33,8 +33,13 @@ def _load_client(name='auto'):
         import memcache
         return memcache
 
+    def _bmemcached():
+        global bmemcached
+        import bmemcached
+        return bmemcached
+
     def _auto():
-        for _client in (_pylibmc, _cmemcache, _memcache):
+        for _client in (_pylibmc, _cmemcache, _memcache, _bmemcached):
             try:
                 return _client()
             except ImportError:
@@ -48,6 +53,7 @@ def _load_client(name='auto'):
         'pylibmc': _pylibmc,
         'cmemcache': _cmemcache,
         'memcache': _memcache,
+        'bmemcached': _bmemcached,
         'auto': _auto
     }
     _client_libs[name] = clib = clients[name]()
