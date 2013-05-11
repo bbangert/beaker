@@ -8,23 +8,20 @@ keyLength = None
 
 if util.jython:
     try:
-        from beaker.crypto.jcecrypto import getKeyLength, aesEncrypt
+        from beaker.crypto.jcecrypto import getKeyLength
         keyLength = getKeyLength()
     except ImportError:
-        pass
+        warn('Import of beaker.crypto.jcecrypto has failed.')
+
 else:
     try:
-        from beaker.crypto.pycrypto import getKeyLength, aesEncrypt, aesDecrypt
+        from beaker.crypto.pycrypto import getKeyLength
         keyLength = getKeyLength()
     except ImportError:
-        pass
+        warn('Import of beaker.crypto.pycrypto has failed.')
 
-if not keyLength:
-    has_aes = False
-else:
-    has_aes = True
 
-if has_aes and keyLength < 32:
+if keyLength is not None and keyLength < 32:
     warn('Crypto implementation only supports key lengths up to %d bits. '
          'Generated session cookies may be incompatible with other '
          'environments' % (keyLength * 8))
@@ -35,6 +32,9 @@ def generateCryptoKeys(master_key, salt, iterations):
     # in case os.urandom() isn't as random as it should be.  Note that if
     # os.urandom() returns truly random data, this will have no effect on the
     # overall security.
+    if keyLength is None or keyLength < 32:
+        raise Exception('Incorrect keyLength: %s' % repr(keyLength))
+
     keystream = PBKDF2(master_key, salt, iterations=iterations)
     cipher_key = keystream.read(keyLength)
     return cipher_key
