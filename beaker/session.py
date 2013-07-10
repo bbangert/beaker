@@ -2,7 +2,7 @@ import Cookie
 import os
 from datetime import datetime, timedelta
 import time
-from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1
+from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1
 from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
@@ -35,10 +35,10 @@ except ImportError:
         # NB: nothing against second parameter to b64encode, but it seems
         #     to be slower than simple chained replacement
         if util.py3k:
-            raw_id = b64encode(SHA1(id_str.encode('ascii')).digest())
+            raw_id = b64encode(sha1(id_str.encode('ascii')).digest())
             return str(raw_id.replace(b'+', b'-').replace(b'/', b'_').rstrip(b'='))
         else:
-            raw_id = b64encode(SHA1(id_str).digest())
+            raw_id = b64encode(sha1(id_str).digest())
             return raw_id.replace('+', '-').replace('/', '_').rstrip('=')
 
 
