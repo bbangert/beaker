@@ -190,6 +190,15 @@ def test_unicode_keys():
     cache.remove_value(u'hiŏ')
     assert u'hiŏ' not in cache
 
+def test_long_unicode_keys():
+    cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
+    o = object()
+    long_str = u'Очень длинная строка, которая не влезает в сто двадцать восемь байт и поэтому не проходит ограничение в check_key, что очень прискорбно, не правда ли, друзья? Давайте же скорее исправим это досадное недоразумение!'
+    cache.set_value(long_str, o)
+    assert long_str in cache
+    cache.remove_value(long_str)
+    assert long_str not in cache
+
 def test_spaces_in_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()

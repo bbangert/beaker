@@ -23,7 +23,7 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
     CachedWidget.delay = delay
 
     # allow for python overhead when checking current time against expire times
-    fudge = 1
+    fudge = 10
 
     starttime = time.time()
 
@@ -101,28 +101,28 @@ def test_file_container(totaltime=10, expiretime=None, delay=0, threadlocal=Fals
     _run_container_test(clsmap['file'], totaltime, expiretime, delay, threadlocal)
 
 def test_memory_container_tlocal():
-    test_memory_container(expiretime=5, delay=2, threadlocal=True)
+    test_memory_container(expiretime=15, delay=2, threadlocal=True)
 
 def test_memory_container_2():
-    test_memory_container(expiretime=2)
+    test_memory_container(expiretime=12)
 
 def test_memory_container_3():
-    test_memory_container(expiretime=5, delay=2)
+    test_memory_container(expiretime=15, delay=2)
 
 def test_dbm_container_2():
-    test_dbm_container(expiretime=2)
+    test_dbm_container(expiretime=12)
 
 def test_dbm_container_3():
-    test_dbm_container(expiretime=5, delay=2)
+    test_dbm_container(expiretime=15, delay=2)
 
 def test_file_container_2():
-    test_file_container(expiretime=2)
+    test_file_container(expiretime=12)
 
 def test_file_container_3():
-    test_file_container(expiretime=5, delay=2)
+    test_file_container(expiretime=15, delay=2)
 
 def test_file_container_tlocal():
-    test_file_container(expiretime=5, delay=2, threadlocal=True)
+    test_file_container(expiretime=15, delay=2, threadlocal=True)
 
 def test_file_open_bug():
     """ensure errors raised during reads or writes don't lock the namespace open."""
