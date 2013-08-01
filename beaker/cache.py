@@ -6,6 +6,7 @@ as well as the function decorators :func:`.region_decorate`,
 :func:`.region_invalidate`.
 
 """
+import sys
 import warnings
 
 import beaker.container as container
