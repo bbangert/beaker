@@ -565,7 +565,7 @@ def _cache_decorate(deco_args, manager, kwargs, region):
             else:
                 key_length = kwargs.pop('key_length', 250)
             if len(cache_key) + len(namespace) > int(key_length):
-                if sys.version_info > (3,0):
+                if sys.version_info >= (3,0):
                     cache_key = cache_key.encode('utf-8')
                 cache_key = sha1(cache_key).hexdigest()
 
@@ -588,5 +588,7 @@ def _cache_decorator_invalidate(cache, key_length, args):
     except UnicodeEncodeError:
         cache_key = " ".join(map(unicode, args))
     if len(cache_key) + len(cache.namespace_name) > key_length:
+        if sys.version_info >= (3,0):
+            cache_key = cache_key.encode('utf-8')
         cache_key = sha1(cache_key).hexdigest()
     cache.remove_value(cache_key)

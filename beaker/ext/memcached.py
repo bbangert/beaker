@@ -120,7 +120,7 @@ class MemcachedNamespaceManager(NamespaceManager):
             key = key.decode('ascii')
         formated_key = (self.namespace + '_' + key).replace(' ', '\302\267')
         if len(formated_key) > MAX_KEY_LENGTH:
-            if sys.version_info > (3,0):
+            if sys.version_info >= (3,0):
                 formated_key = formated_key.encode('utf-8')
             formated_key = sha1(formated_key).hexdigest()
         return formated_key
