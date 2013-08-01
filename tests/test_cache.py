@@ -157,12 +157,12 @@ def test_remove_stale():
 
     cache = Cache('test', type='memory')
     o = object()
-    cache.namespace['key'] = (time.time() - 30, 10, o)
+    cache.namespace[b'key'] = (time.time() - 60, 5, o)
     container = cache._get_value('key')
     assert not container.has_current_value()
-    assert 'key' in container.namespace
+    assert b'key' in container.namespace
     cache.remove_value('key')
-    assert 'key' not in container.namespace
+    assert b'key' not in container.namespace
 
     # safe to call again
     cache.remove_value('key')
