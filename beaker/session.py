@@ -2,7 +2,7 @@ import Cookie
 import os
 from datetime import datetime, timedelta
 import time
-from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, md5
+from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1
 from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
@@ -32,14 +32,14 @@ except ImportError:
                     random.random(),
                     getpid()
                 )
+        # NB: nothing against second parameter to b64encode, but it seems
+        #     to be slower than simple chained replacement
         if util.py3k:
-            return md5(
-                            md5(
-                                id_str.encode('ascii')
-                            ).hexdigest().encode('ascii')
-                        ).hexdigest()
+            raw_id = b64encode(sha1(id_str.encode('ascii')).digest())
+            return str(raw_id.replace(b'+', b'-').replace(b'/', b'_').rstrip(b'='))
         else:
-            return md5(md5(id_str).hexdigest()).hexdigest()
+            raw_id = b64encode(sha1(id_str).digest())
+            return raw_id.replace('+', '-').replace('/', '_').rstrip('=')
 
 
 class SignedCookie(Cookie.BaseCookie):
