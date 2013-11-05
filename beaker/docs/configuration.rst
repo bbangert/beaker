@@ -139,7 +139,7 @@ auto (**optional**, bool)
 
     Defaults to False.
 
-cookie_expires (**optional**, boob, datetime, timedelta, int)
+cookie_expires (**optional**, bool, datetime, timedelta, int)
     Determines when the cookie used to track the client-side of the session
     will expire. When set to a boolean value, it will either expire at the
     end of the browsers session, or never expire.
