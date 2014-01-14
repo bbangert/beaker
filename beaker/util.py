@@ -25,6 +25,7 @@ if py3k or jython:
     import pickle
 else:
     import cPickle as pickle
+import json
 
 from beaker.converters import asbool
 from beaker import exceptions
@@ -32,7 +33,8 @@ from threading import local as _tlocal
 
 
 __all__ = ["ThreadLocal", "WeakValuedRegistry", "SyncDict", "encoded_path",
-           "verify_directory"]
+           "verify_directory",
+           "serialize", "deserialize"]
 
 
 def function_named(fn, name):
@@ -460,3 +462,18 @@ def func_namespace(func):
         return '%s.%s' % (kls.__module__, kls.__name__)
     else:
         return '%s|%s' % (inspect.getsourcefile(func), func.__name__)
+
+def serialize(data, method):
+    if method == 'json':
+        return json.dumps(data).encode('zlib')
+    else:
+        return pickle.dumps(data, 2)
+
+def deserialize(data_string, method):
+    try:
+        return pickle.loads(data_string)
+    except pickle.PickleError:
+        try:
+            return json.loads(data_string.decode('zlib'))
+        except:
+            raise
