@@ -151,7 +151,7 @@ class SessionMiddleware(object):
                     cookie = session.__dict__['_headers']['cookie_out']
                     if cookie:
                         headers.append(('Set-cookie', cookie))
-            return start_response(status, headers, exc_info)
+            return start_response(status, headers)
         return self.wrap_app(environ, session_start_response)
 
     def _get_session(self):
