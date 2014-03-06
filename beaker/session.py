@@ -2,6 +2,7 @@ import Cookie
 import os
 from datetime import datetime, timedelta
 import time
+from re import match
 from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1
 from beaker import crypto, util
 from beaker.cache import clsmap
@@ -152,6 +153,9 @@ class Session(dict):
 
             if not self.id and self.key in self.cookie:
                 self.id = self.cookie[self.key].value
+
+            if self.id and not match("^[0-9a-zA-Z-_]+\Z", self.id):
+                self.id = None
 
         self.is_new = self.id is None
         if self.is_new:
