@@ -19,6 +19,14 @@ def fred(x):
 def george(x):
     return time.time()
 
+@cache_region('short_term')
+def alfred(x, xx, y=None):
+    return time.time()
+
+@cache_region('short_term')
+def alfred_self(self, xx, y=None):
+    return time.time()
+
 def make_cache_obj(**kwargs):
     opts = defaults.copy()
     opts.update(kwargs)
@@ -216,3 +224,23 @@ def test_class_key_region_invalidate():
 
     assert x == y
     assert x != z
+
+
+def test_check_region_decorator_with_kwargs():
+    result = alfred(1, xx=5, y=3)
+    time.sleep(1)
+    result2 = alfred(1, y=3, xx=5)
+    assert result == result2
+
+    result3 = alfred(1, 5, y=5)
+    assert result != result3
+
+
+def test_check_region_decorator_with_kwargs_and_self():
+    result = alfred_self('fake_self', xx=5, y='blah')
+    time.sleep(1)
+    result2 = alfred_self('fake_self2', y='blah', xx=5)
+    assert result == result2
+
+    result3 = alfred_self('fake_self2', 5, y=5)
+    assert result != result3
