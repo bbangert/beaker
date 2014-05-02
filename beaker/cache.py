@@ -6,6 +6,7 @@ as well as the function decorators :func:`.region_decorate`,
 :func:`.region_invalidate`.
 
 """
+from functools import wraps
 import warnings
 
 import beaker.container as container
@@ -533,6 +534,7 @@ def _cache_decorate(deco_args, manager, deco_kwargs, region):
         namespace = util.func_namespace(func)
         skip_self = util.has_self_arg(func)
 
+        @wraps(func)
         def cached(*args, **kwargs):
             if not cache[0]:
                 if region is not None:

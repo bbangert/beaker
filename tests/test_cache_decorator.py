@@ -24,6 +24,11 @@ def alfred(x, xx, y=None):
     return time.time()
 
 @cache_region('short_term')
+def albert(x):
+    """A doc string"""
+    return time.time()
+
+@cache_region('short_term')
 def alfred_self(self, xx, y=None):
     return time.time()
 
@@ -244,3 +249,13 @@ def test_check_region_decorator_with_kwargs_and_self():
 
     result3 = alfred_self('fake_self2', 5, y=5)
     assert result != result3
+
+
+def test_check_region_decorator_keeps_docstring_and_name():
+    result = albert(1)
+    time.sleep(1)
+    result2 = albert(1)
+    assert result == result2
+
+    assert albert.__doc__ == "A doc string"
+    assert albert.__name__ == "albert"
