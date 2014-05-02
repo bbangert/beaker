@@ -6,6 +6,7 @@ as well as the function decorators :func:`.region_decorate`,
 :func:`.region_invalidate`.
 
 """
+from functools import wraps
 import warnings
 
 import beaker.container as container
@@ -524,7 +525,7 @@ class CacheManager(object):
         _cache_decorator_invalidate(cache, key_length, args)
 
 
-def _cache_decorate(deco_args, manager, kwargs, region):
+def _cache_decorate(deco_args, manager, deco_kwargs, region):
     """Return a caching function decorator."""
 
     cache = [None]
@@ -533,7 +534,8 @@ def _cache_decorate(deco_args, manager, kwargs, region):
         namespace = util.func_namespace(func)
         skip_self = util.has_self_arg(func)
 
-        def cached(*args):
+        @wraps(func)
+        def cached(*args, **kwargs):
             if not cache[0]:
                 if region is not None:
                     if region not in cache_regions:
@@ -541,35 +543,40 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                             'Cache region not configured: %s' % region)
                     reg = cache_regions[region]
                     if not reg.get('enabled', True):
-                        return func(*args)
+                        return func(*args, **kwargs)
                     cache[0] = Cache._get_cache(namespace, reg)
                 elif manager:
-                    cache[0] = manager.get_cache(namespace, **kwargs)
+                    cache[0] = manager.get_cache(namespace, **deco_kwargs)
                 else:
                     raise Exception("'manager + kwargs' or 'region' "
                                     "argument is required")
 
             if skip_self:
                 try:
-                    cache_key = " ".join(map(str, deco_args + args[1:]))
+                    joined_kwargs = " ".join(['{0}:{1}'.format(key, value) for key, value in kwargs.items()])
+                    cache_key = " ".join(map(str, deco_args + args[1:])) + joined_kwargs
                 except UnicodeEncodeError:
-                    cache_key = " ".join(map(unicode, deco_args + args[1:]))
+                    joined_kwargs = " ".join([u'{0}:{1}'.format(key, value) for key, value in kwargs.items()])
+                    cache_key = " ".join(map(unicode, deco_args + args[1:])) + joined_kwargs
+
             else:
                 try:
-                    cache_key = " ".join(map(str, deco_args + args))
+                    joined_kwargs = " ".join(['{0}:{1}'.format(key, value) for key, value in kwargs.items()])
+                    cache_key = " ".join(map(str, deco_args + args)) + joined_kwargs
                 except UnicodeEncodeError:
-                    cache_key = " ".join(map(unicode, deco_args + args))
+                    joined_kwargs = " ".join([u'{0}:{1}'.format(key, value) for key, value in kwargs.items()])
+                    cache_key = " ".join(map(unicode, deco_args + args)) + joined_kwargs
             if region:
                 key_length = cache_regions[region]['key_length']
             else:
-                key_length = kwargs.pop('key_length', 250)
+                key_length = deco_kwargs.pop('key_length', 250)
             if len(cache_key) + len(namespace) > int(key_length):
                 if util.py3k:
                     cache_key = cache_key.encode('utf-8')
                 cache_key = sha1(cache_key).hexdigest()
 
             def go():
-                return func(*args)
+                return func(*args, **kwargs)
 
             return cache[0].get_value(cache_key, createfunc=go)
         cached._arg_namespace = namespace
