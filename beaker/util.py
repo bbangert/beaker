@@ -470,10 +470,7 @@ def serialize(data, method):
         return pickle.dumps(data, 2)
 
 def deserialize(data_string, method):
-    try:
+    if method == 'json':
+        return json.loads(data_string.decode('zlib'))
+    else:
         return pickle.loads(data_string)
-    except pickle.PickleError:
-        try:
-            return json.loads(data_string.decode('zlib'))
-        except:
-            raise
