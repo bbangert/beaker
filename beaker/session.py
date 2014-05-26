@@ -507,7 +507,7 @@ class CookieSession(Session):
         self.secure = secure
         self.httponly = httponly
         self._domain = cookie_domain
-        self._path = cookie_path
+        self.path = cookie_path
 
         try:
             cookieheader = request['cookie']
