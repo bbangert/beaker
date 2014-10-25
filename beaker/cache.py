@@ -283,6 +283,10 @@ class Cache(object):
                 raise cls
         except KeyError:
             raise TypeError("Unknown cache implementation %r" % type)
+
+        if expire is not None:
+            expire = int(expire)
+
         self.namespace_name = namespace
         self.namespace = cls(namespace, **nsargs)
         self.expiretime = expiretime or expire
