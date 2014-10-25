@@ -535,9 +535,13 @@ class CookieSession(Session):
                 self._path = self.get('_path', '/')
             except:
                 pass
-            if self.timeout is not None and time.time() - \
-               self['_accessed_time'] > self.timeout:
-                self.clear()
+
+            if self.timeout is not None:
+                now = time.time()
+                last_accessed_time = self.get('_accessed_time', now)
+                if now - last_accessed_time > self.timeout:
+                    self.clear()
+
             self.accessed_dict = self.copy()
             self._create_cookie()
 

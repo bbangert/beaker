@@ -1,4 +1,4 @@
-import datetime
+import datetime, time
 import re
 import os
 
@@ -140,6 +140,65 @@ def test_invalidate_with_save_does_not_delete_session():
     app = TestApp(SessionMiddleware(invalidate_session_app, **options))
     res = app.get('/')
     assert 'expires=' not in res.headers.getall('Set-Cookie')[0]
+
+
+def test_changing_encrypt_key_with_timeout():
+    COMMON_ENCRYPT_KEY = '666a19cf7f61c64c'
+    DIFFERENT_ENCRYPT_KEY = 'hello-world'
+
+    options = {'session.encrypt_key': COMMON_ENCRYPT_KEY,
+               'session.timeout': 300,
+               'session.validate_key': 'hoobermas',
+               'session.type': 'cookie'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    res = app.get('/')
+    assert 'The current value is: 1' in res, res
+
+    # Get the session cookie, so we can reuse it.
+    cookies = res.headers['Set-Cookie']
+
+    # Check that we get the same session with the same cookie
+    options = {'session.encrypt_key': COMMON_ENCRYPT_KEY,
+               'session.timeout': 300,
+               'session.validate_key': 'hoobermas',
+               'session.type': 'cookie'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    res = app.get('/', headers={'Cookie': cookies})
+    assert 'The current value is: 2' in res, res
+
+    # Now that we are sure that it reuses the same session,
+    # change the encrypt_key so that it is unable to understand the cookie.
+    options = {'session.encrypt_key': DIFFERENT_ENCRYPT_KEY,
+               'session.timeout': 300,
+               'session.validate_key': 'hoobermas',
+               'session.type': 'cookie'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    res = app.get('/', headers={'Cookie': cookies})
+
+    # Let's check it created a new session as the old one is invalid
+    # in the past it just crashed.
+    assert 'The current value is: 1' in res, res
+
+
+def test_cookie_properly_expires():
+    COMMON_ENCRYPT_KEY = '666a19cf7f61c64c'
+
+    options = {'session.encrypt_key': COMMON_ENCRYPT_KEY,
+               'session.timeout': 1,
+               'session.validate_key': 'hoobermas',
+               'session.type': 'cookie'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    res = app.get('/')
+    assert 'The current value is: 1' in res, res
+
+    res = app.get('/')
+    assert 'The current value is: 2' in res, res
+
+    # Wait session to expire and check it starts with a clean one
+    time.sleep(1)
+    res = app.get('/')
+    assert 'The current value is: 1' in res, res
+
 
 if __name__ == '__main__':
     from paste import httpserver
