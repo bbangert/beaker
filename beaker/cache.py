@@ -34,11 +34,11 @@ of configuration arguments.  Example::
     from beaker.cache import cache_regions
     cache_regions.update({
         'short_term':{
-            'expire':'60',
+            'expire':60,
             'type':'memory'
         },
         'long_term':{
-            'expire':'1800',
+            'expire':1800,
             'type':'dbm',
             'data_dir':'/tmp',
         }
@@ -130,7 +130,7 @@ def cache_region(region, *args):
         # configure regions
         cache_regions.update({
             'short_term':{
-                'expire':'60',
+                'expire':60,
                 'type':'memory'
             }
         })
@@ -215,7 +215,7 @@ def region_invalidate(namespace, region, *args):
         # configure regions
         cache_regions.update({
             'short_term':{
-                'expire':'60',
+                'expire':60,
                 'type':'memory'
             }
         })
@@ -256,7 +256,9 @@ def region_invalidate(namespace, region, *args):
         region = cache_regions[region]
 
     cache = Cache._get_cache(namespace, region)
-    _cache_decorator_invalidate(cache, region['key_length'], args)
+    _cache_decorator_invalidate(cache,
+                                region.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH),
+                                args)
 
 
 class Cache(object):
@@ -518,9 +520,10 @@ class CacheManager(object):
 
         cache = self.get_cache(namespace, **kwargs)
         if hasattr(func, '_arg_region'):
-            key_length = cache_regions[func._arg_region]['key_length']
+            cachereg = cache_regions[func._arg_region]
+            key_length = cachereg.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
         else:
-            key_length = kwargs.pop('key_length', 250)
+            key_length = kwargs.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
         _cache_decorator_invalidate(cache, key_length, args)
 
 
@@ -560,9 +563,10 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                 except UnicodeEncodeError:
                     cache_key = " ".join(map(unicode, deco_args + args))
             if region:
-                key_length = cache_regions[region]['key_length']
+                cachereg = cache_regions[region]
+                key_length = cachereg.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
             else:
-                key_length = kwargs.pop('key_length', 250)
+                key_length = kwargs.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
             if len(cache_key) + len(namespace) > int(key_length):
                 if util.py3k:
                     cache_key = cache_key.encode('utf-8')

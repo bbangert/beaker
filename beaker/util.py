@@ -30,6 +30,7 @@ from beaker.converters import asbool
 from beaker import exceptions
 from threading import local as _tlocal
 
+DEFAULT_CACHE_KEY_LENGTH = 250
 
 __all__ = ["ThreadLocal", "WeakValuedRegistry", "SyncDict", "encoded_path",
            "verify_directory"]
@@ -423,7 +424,7 @@ def parse_cache_config_options(config, include_defaults=True):
                                   type=options.get('type'),
                                   enabled=options['enabled'],
                                   expire=options.get('expire'),
-                                  key_length=options.get('key_length', 250))
+                                  key_length=options.get('key_length', DEFAULT_CACHE_KEY_LENGTH))
             region_prefix = '%s.' % region
             region_len = len(region_prefix)
             for key in options.keys():
