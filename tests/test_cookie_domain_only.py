@@ -26,7 +26,8 @@ def simple_app(environ, start_response):
     if not environ['PATH_INFO'].startswith('/nosave'):
         session.save()
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %d and cookie is %s' % (session['value'], session)]
+    msg = 'The current value is: %d and cookie is %s' % (session['value'], session)
+    return [msg.encode('utf-8')]
 
 def test_increment():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}

@@ -23,8 +23,9 @@ def simple_app(environ, start_response):
     if not environ['PATH_INFO'].startswith('/nosave'):
         session.save()
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %d, session id is %s' % (session['value'],
-                                                            session.id)]
+    msg = 'The current value is: %s, session id is %s' % (session.get('value', 0),
+                                                          session.id)
+    return [msg.encode('utf-8')]
 
 
 def test_domain():

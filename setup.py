@@ -11,11 +11,7 @@ v.close()
 extra = {}
 tests_require = ['nose', 'webtest', 'Mock']
 pycryptopp = 'pycryptopp>=0.5.12'
-if sys.version_info >= (3, 0):
-    extra.update(
-        use_2to3=True,
-    )
-else:
+if not sys.version_info >= (3, 0):
     tests_require.append(pycryptopp)
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
@@ -88,8 +84,6 @@ The latest developer version is available in a `github repository
       'Intended Audience :: Developers',
       'License :: OSI Approved :: BSD License',
       'Programming Language :: Python',
-      'Programming Language :: Python :: 2.4',
-      'Programming Language :: Python :: 2.5',
       'Programming Language :: Python :: 2.6',
       'Programming Language :: Python :: 2.7',
       'Programming Language :: Python :: 3',

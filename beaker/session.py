@@ -1,4 +1,5 @@
-import Cookie
+from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64decode
+
 import os
 from datetime import datetime, timedelta
 import time
@@ -6,7 +7,6 @@ from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1
 from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
-from base64 import b64encode, b64decode
 
 
 __all__ = ['SignedCookie', 'Session']
@@ -34,7 +34,7 @@ except ImportError:
                 )
         # NB: nothing against second parameter to b64encode, but it seems
         #     to be slower than simple chained replacement
-        if util.py3k:
+        if not PY2:
             raw_id = b64encode(sha1(id_str.encode('ascii')).digest())
             return str(raw_id.replace(b'+', b'-').replace(b'/', b'_').rstrip(b'='))
         else:
@@ -42,15 +42,15 @@ except ImportError:
             return raw_id.replace('+', '-').replace('/', '_').rstrip('=')
 
 
-class SignedCookie(Cookie.BaseCookie):
+class SignedCookie(http_cookies.BaseCookie):
     """Extends python cookie to give digital signature support"""
     def __init__(self, secret, input=None):
         self.secret = secret.encode('UTF-8')
-        Cookie.BaseCookie.__init__(self, input)
+        http_cookies.BaseCookie.__init__(self, input)
 
     def value_decode(self, val):
         val = val.strip('"')
-        sig = HMAC.new(self.secret, val[40:].encode('UTF-8'), SHA1).hexdigest()
+        sig = HMAC.new(self.secret, val[40:].encode('utf-8'), SHA1).hexdigest()
 
         # Avoid timing attacks
         invalid_bits = 0
@@ -67,7 +67,7 @@ class SignedCookie(Cookie.BaseCookie):
             return val[40:], val
 
     def value_encode(self, val):
-        sig = HMAC.new(self.secret, val.encode('UTF-8'), SHA1).hexdigest()
+        sig = HMAC.new(self.secret, val.encode('utf-8'), SHA1).hexdigest()
         return str(val), ("%s%s" % (sig, val))
 
 
@@ -145,10 +145,10 @@ class Session(dict):
             if secret:
                 try:
                     self.cookie = SignedCookie(secret, input=cookieheader)
-                except Cookie.CookieError:
+                except http_cookies.CookieError:
                     self.cookie = SignedCookie(secret, input=None)
             else:
-                self.cookie = Cookie.SimpleCookie(input=cookieheader)
+                self.cookie = http_cookies.SimpleCookie(input=cookieheader)
 
             if not self.id and self.key in self.cookie:
                 self.id = self.cookie[self.key].value
@@ -160,7 +160,7 @@ class Session(dict):
         else:
             try:
                 self.load()
-            except Exception, e:
+            except Exception as e:
                 if invalidate_corrupt:
                     util.warn(
                         "Invalidating corrupt session %s; "
@@ -213,7 +213,7 @@ class Session(dict):
         try:
             if self.httponly:
                 self.cookie[self.key]['httponly'] = True
-        except Cookie.CookieError, e:
+        except http_cookies.CookieError as e:
             if 'Invalid Attribute httponly' not in str(e):
                 raise
             util.warn('Python 2.6+ is required to use httponly')
@@ -259,11 +259,11 @@ class Session(dict):
         if self.encrypt_key:
             nonce = b64encode(os.urandom(6))[:8]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                             self.validate_key + nonce, 1)
-            data = util.pickle.dumps(session_data, 2)
+                                                    self.validate_key + nonce, 1)
+            data = pickle.dumps(session_data, 2)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = util.pickle.dumps(session_data, 2)
+            data = pickle.dumps(session_data, 2)
             return b64encode(data)
 
     def _decrypt_data(self, session_data):
@@ -273,7 +273,7 @@ class Session(dict):
             try:
                 nonce = session_data[:8]
                 encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                                 self.validate_key + nonce, 1)
+                                                        self.validate_key + nonce, 1)
                 payload = b64decode(session_data[8:])
                 data = crypto.aesDecrypt(payload, encrypt_key)
             except:
@@ -285,7 +285,7 @@ class Session(dict):
                 else:
                     raise
             try:
-                return util.pickle.loads(data)
+                return pickle.loads(data)
             except:
                 if self.invalidate_corrupt:
                     return None
@@ -293,7 +293,7 @@ class Session(dict):
                     raise
         else:
             data = b64decode(session_data)
-            return util.pickle.loads(data)
+            return pickle.loads(data)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -520,7 +520,7 @@ class CookieSession(Session):
 
         try:
             self.cookie = SignedCookie(validate_key, input=cookieheader)
-        except Cookie.CookieError:
+        except http_cookies.CookieError:
             self.cookie = SignedCookie(validate_key, input=None)
 
         self['_id'] = _session_id()

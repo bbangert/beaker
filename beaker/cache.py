@@ -7,6 +7,7 @@ as well as the function decorators :func:`.region_decorate`,
 
 """
 import warnings
+from beaker._compat import u_, unicode_text
 
 import beaker.container as container
 import beaker.util as util
@@ -60,7 +61,7 @@ class _backends(object):
     def __getitem__(self, key):
         try:
             return self._clsmap[key]
-        except KeyError, e:
+        except KeyError as e:
             if not self.initialized:
                 self._mutex.acquire()
                 try:
@@ -96,7 +97,11 @@ class _backends(object):
                     # Warn when there's a problem loading a NamespaceManager
                     if not isinstance(sys.exc_info()[1], DistributionNotFound):
                         import traceback
-                        from StringIO import StringIO
+                        try:
+                            from io import StringIO
+                        except ImportError:
+                            from StringIO import StringIO
+
                         tb = StringIO()
                         traceback.print_exc(file=tb)
                         warnings.warn(
@@ -318,7 +323,7 @@ class Cache(object):
     remove = remove_value
 
     def _get_value(self, key, **kw):
-        if isinstance(key, unicode):
+        if isinstance(key, unicode_text):
             key = key.encode('ascii', 'backslashreplace')
 
         if 'type' in kw:
@@ -558,25 +563,21 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                     raise Exception("'manager + kwargs' or 'region' "
                                     "argument is required")
 
+            cache_key_args = args
             if skip_self:
-                try:
-                    cache_key = " ".join(map(str, deco_args + args[1:]))
-                except UnicodeEncodeError:
-                    cache_key = " ".join(map(unicode, deco_args + args[1:]))
-            else:
-                try:
-                    cache_key = " ".join(map(str, deco_args + args))
-                except UnicodeEncodeError:
-                    cache_key = " ".join(map(unicode, deco_args + args))
+                cache_key_args = args[1:]
+            cache_key = u_(" ").join(map(u_, deco_args + cache_key_args))
+
             if region:
                 cachereg = cache_regions[region]
                 key_length = cachereg.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
             else:
                 key_length = kwargs.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
+
+            # TODO: This is probably a bug as length is checked before converting to UTF8
+            # which will cause cache_key to grow in size.
             if len(cache_key) + len(namespace) > int(key_length):
-                if util.py3k:
-                    cache_key = cache_key.encode('utf-8')
-                cache_key = sha1(cache_key).hexdigest()
+                cache_key = sha1(cache_key.encode('utf-8')).hexdigest()
 
             def go():
                 return func(*args)
@@ -592,12 +593,7 @@ def _cache_decorate(deco_args, manager, kwargs, region):
 def _cache_decorator_invalidate(cache, key_length, args):
     """Invalidate a cache key based on function arguments."""
 
-    try:
-        cache_key = " ".join(map(str, args))
-    except UnicodeEncodeError:
-        cache_key = " ".join(map(unicode, args))
+    cache_key = u_(" ").join(map(u_, args))
     if len(cache_key) + len(cache.namespace_name) > key_length:
-        if util.py3k:
-            cache_key = cache_key.encode('utf-8')
-        cache_key = sha1(cache_key).hexdigest()
+        cache_key = sha1(cache_key.encode('utf-8')).hexdigest()
     cache.remove_value(cache_key)

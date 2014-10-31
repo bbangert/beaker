@@ -1,12 +1,14 @@
+from .._compat import JYTHON
+
 from warnings import warn
 
-from beaker.crypto.pbkdf2 import PBKDF2, strxor
+from beaker.crypto.pbkdf2 import pbkdf2
 from beaker.crypto.util import hmac, sha1, hmac_sha1, md5
 from beaker import util
 
 keyLength = None
 
-if util.jython:
+if JYTHON:
     try:
         from beaker.crypto.jcecrypto import getKeyLength, aesEncrypt
         keyLength = getKeyLength()
@@ -39,6 +41,5 @@ def generateCryptoKeys(master_key, salt, iterations):
     # in case os.urandom() isn't as random as it should be.  Note that if
     # os.urandom() returns truly random data, this will have no effect on the
     # overall security.
-    keystream = PBKDF2(master_key, salt, iterations=iterations)
-    cipher_key = keystream.read(keyLength)
-    return cipher_key
+    keystream = pbkdf2(master_key, salt, iterations=iterations)
+    return keystream[:keyLength]

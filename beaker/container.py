@@ -1,14 +1,7 @@
 """Container and Namespace classes"""
+from ._compat import pickle, anydbm, add_metaclass
 
 import beaker.util as util
-if util.py3k:
-    try:
-        import dbm as anydbm
-    except:
-        import dumbdbm as anydbm
-else:
-    import anydbm
-import cPickle
 import logging
 import os
 import time
@@ -592,13 +585,13 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
             os.remove(f)
 
     def __getitem__(self, key):
-        return cPickle.loads(self.dbm[key])
+        return pickle.loads(self.dbm[key])
 
     def __contains__(self, key):
         return key in self.dbm
 
     def __setitem__(self, key, value):
-        self.dbm[key] = cPickle.dumps(value)
+        self.dbm[key] = pickle.dumps(value)
 
     def __delitem__(self, key):
         del self.dbm[key]
@@ -662,7 +655,7 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
     def do_open(self, flags, replace):
         if not replace and self.file_exists(self.file):
             fh = open(self.file, 'rb')
-            self.hash = cPickle.load(fh)
+            self.hash = pickle.load(fh)
             fh.close()
 
         self.flags = flags
@@ -670,7 +663,7 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
     def do_close(self):
         if self.flags == 'c' or self.flags == 'w':
             fh = open(self.file, 'wb')
-            cPickle.dump(self.hash, fh)
+            pickle.dump(self.hash, fh)
             fh.close()
 
         self.hash = {}
@@ -723,7 +716,7 @@ class ContainerMeta(type):
         return Value(key, ns, createfunc=createfunc,
                      expiretime=expiretime, starttime=starttime)
 
-
+@add_metaclass(ContainerMeta)
 class Container(object):
     """Implements synchronization and value-creation logic
     for a 'value' stored in a :class:`.NamespaceManager`.
@@ -732,7 +725,6 @@ class Container(object):
     :class:`.Value` class is now used for this purpose.
 
     """
-    __metaclass__ = ContainerMeta
     namespace_class = NamespaceManager
 
 

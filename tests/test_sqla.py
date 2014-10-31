@@ -1,4 +1,5 @@
 # coding: utf-8
+from beaker._compat import u_
 from beaker.cache import clsmap, Cache, util
 from beaker.exceptions import InvalidCacheBackendError
 from beaker.middleware import CacheMiddleware
@@ -40,23 +41,23 @@ def simple_app(environ, start_response):
         value = 0
     cache.set_value('value', value+1)
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %s' % cache.get_value('value')]
+    return [('The current value is: %s' % cache.get_value('value')).encode('utf-8')]
 
 def cache_manager_app(environ, start_response):
     cm = environ['beaker.cache']
     cm.get_cache('test')['test_key'] = 'test value'
 
     start_response('200 OK', [('Content-type', 'text/plain')])
-    yield "test_key is: %s\n" % cm.get_cache('test')['test_key']
+    yield ("test_key is: %s\n" % cm.get_cache('test')['test_key']).encode('utf-8')
     cm.get_cache('test').clear()
 
     try:
         test_value = cm.get_cache('test')['test_key']
     except KeyError:
-        yield "test_key cleared"
+        yield ("test_key cleared").encode('utf-8')
     else:
-        yield "test_key wasn't cleared, is: %s\n" % \
-            cm.get_cache('test')['test_key']
+        test_value = cm.get_cache('test')['test_key']
+        yield ("test_key wasn't cleared, is: %s\n" % test_value).encode('utf-8')
 
 def make_cache():
     """Return a ``Cache`` for use by the unit tests."""
@@ -95,11 +96,11 @@ def test_clear():
 def test_unicode_keys():
     cache = make_cache()
     o = object()
-    cache.set_value(u'hiŏ', o)
-    assert u'hiŏ' in cache
-    assert u'hŏa' not in cache
-    cache.remove_value(u'hiŏ')
-    assert u'hiŏ' not in cache
+    cache.set_value(u_('hiŏ'), o)
+    assert u_('hiŏ') in cache
+    assert u_('hŏa') not in cache
+    cache.remove_value(u_('hiŏ'))
+    assert u_('hiŏ') not in cache
 
 @util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_increment():
