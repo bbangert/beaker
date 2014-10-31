@@ -6,6 +6,6 @@ python:
   - "3.3"
   - "3.4"
 install:
-    - python setup.py install
+    - pip install -e .[testsuite]
 script:
     - nosetests -v --where=tests -d --with-coverage --cover-package=beaker
