@@ -8,10 +8,7 @@ v = open(os.path.join(os.path.dirname(__file__), 'beaker', '__init__.py'))
 VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
 v.close()
 
-tests_require = ['nose', 'webtest', 'Mock', 'coverage']
-pycryptopp = 'pycryptopp>=0.5.12'
-if not sys.version_info >= (3, 0):
-    tests_require.append(pycryptopp)
+tests_require = ['nose', 'webtest', 'Mock', 'coverage', 'pycrypto']
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
     tests_require.extend(['SQLALchemy'])
@@ -102,7 +99,8 @@ The latest developer version is available in a `github repository
       zip_safe=False,
       install_requires=[],
       extras_require={
-          'crypto': [pycryptopp],
+          'crypto': ['pycryptopp>=0.5.12'],
+          'pycrypto': ['pycrypto'],
           'testsuite': [tests_require]
       },
       test_suite='nose.collector',
