@@ -8,7 +8,7 @@ v = open(os.path.join(os.path.dirname(__file__), 'beaker', '__init__.py'))
 VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
 v.close()
 
-tests_require = ['nose', 'webtest', 'Mock']
+tests_require = ['nose', 'webtest', 'Mock', 'coverage']
 pycryptopp = 'pycryptopp>=0.5.12'
 if not sys.version_info >= (3, 0):
     tests_require.append(pycryptopp)

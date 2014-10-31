@@ -8,4 +8,4 @@ python:
 install:
     - pip install -e .[testsuite]
 script:
-    - nosetests -v --where=tests -d --with-coverage --cover-package=beaker
+    - nosetests -v -d --with-coverage --cover-package=beaker
