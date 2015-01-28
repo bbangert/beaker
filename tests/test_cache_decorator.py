@@ -19,6 +19,11 @@ def fred(x):
 def george(x):
     return time.time()
 
+@cache_region('short_term')
+def albert(x):
+    """A doc string"""
+    return time.time()
+
 def make_cache_obj(**kwargs):
     opts = defaults.copy()
     opts.update(kwargs)
@@ -216,3 +221,12 @@ def test_class_key_region_invalidate():
 
     assert x == y
     assert x != z
+
+def test_check_region_decorator_keeps_docstring_and_name():
+    result = albert(1)
+    time.sleep(1)
+    result2 = albert(1)
+    assert result == result2
+
+    assert albert.__doc__ == "A doc string"
+    assert albert.__name__ == "albert"
