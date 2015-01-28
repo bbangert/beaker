@@ -56,6 +56,8 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
         if sa_opts is None:
             sa_opts = params
 
+        self.lock_dir = None
+
         if lock_dir:
             self.lock_dir = lock_dir
         elif data_dir:
