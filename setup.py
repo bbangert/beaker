@@ -56,7 +56,7 @@ setup(name='Beaker',
       author_email='ben@groovie.org, pjenvey@groovie.org',
       url='http://beaker.rtfd.org/',
       license='BSD',
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=find_packages(exclude=['ez_setup', 'examples', 'tests', 'tests.*']),
       zip_safe=False,
       install_requires=[],
       extras_require={
