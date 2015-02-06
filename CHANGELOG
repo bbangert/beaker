@@ -1,3 +1,14 @@
+Release 1.6.5 (2015-02-06)
+=========================
+
+* @cached decorator now keeps docstring of decorated method.
+* Fix crash when Session ``accessed_time`` is not available, this happened
+  when session ``encrypt_key`` was changed.
+* Fix cache regions not providing a default key length even though this was
+  required and examples in the doc didn't provide it.
+* Fix crash when cache expire wasn't an int, this happened when caching options
+  were loaded from a config file.
+
 Release 1.6.4 (8/13/2012)
 =========================
 
