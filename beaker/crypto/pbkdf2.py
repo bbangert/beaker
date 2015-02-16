@@ -62,11 +62,15 @@
 #   anything that silently reduces the security margin from what is
 #   expected.
 #
+#  2015-02-16 Federico Ceratto <federico.ceratto@gmail.com>
+#   - Add Python3 support
+#
 ###########################################################################
 
-__version__ = "1.1"
+__version__ = "1.2"
 
 from struct import pack
+from sys import version_info
 from binascii import b2a_hex
 from random import randint
 
@@ -74,10 +78,20 @@ from base64 import b64encode
 
 from beaker.crypto.util import hmac as HMAC, hmac_sha1 as SHA1
 
+py2 = (version_info[0] == 2)
+py3 = (version_info[0] == 3)
+
 
 def strxor(a, b):
-    return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b)])
+    if py2:
+        return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b)])
 
+    if isinstance(a, str):
+        a = a.encode('UTF-8')
+
+    assert isinstance(a, bytes)
+    assert isinstance(b, bytes)
+    return bytes(x ^ y for x, y in zip(a, b))
 
 class PBKDF2(object):
     """PBKDF2.py : PKCS#5 v2.0 Password-Based Key Derivation
@@ -128,7 +142,7 @@ class PBKDF2(object):
             block = self.__f(i)
             blocks.append(block)
             size += len(block)
-        buf = "".join(blocks)
+        buf = b"".join(blocks)
         retval = buf[:bytes]
         self.__buf = buf[bytes:]
         self.__blockNum = i
@@ -158,11 +172,11 @@ class PBKDF2(object):
         # case, we convert to UTF-8)
         if isinstance(passphrase, unicode):
             passphrase = passphrase.encode("UTF-8")
-        if not isinstance(passphrase, str):
+        if py2 and not isinstance(passphrase, str):
             raise TypeError("passphrase must be str or unicode")
         if isinstance(salt, unicode):
             salt = salt.encode("UTF-8")
-        if not isinstance(salt, str):
+        if py2 and not isinstance(salt, str):
             raise TypeError("salt must be str or unicode")
 
         # iterations must be an integer >= 1
@@ -180,7 +194,7 @@ class PBKDF2(object):
         self.__iterations = iterations
         self.__prf = prf
         self.__blockNum = 0
-        self.__buf = ""
+        self.__buf = b""
         self.closed = False
 
     def close(self):
@@ -211,41 +225,51 @@ def crypt(word, salt=None, iterations=None):
     # salt must be a string or the us-ascii subset of unicode
     if isinstance(salt, unicode):
         salt = salt.encode("us-ascii")
-    if not isinstance(salt, str):
+    elif not isinstance(salt, str):
         raise TypeError("salt must be a string")
 
     # word must be a string or unicode (in the latter case, we convert to UTF-8)
     if isinstance(word, unicode):
         word = word.encode("UTF-8")
-    if not isinstance(word, str):
+    elif not isinstance(word, str):
         raise TypeError("word must be a string or unicode")
 
+    assert isinstance(salt, bytes)
+    assert isinstance(word, bytes)
+
     # Try to extract the real salt and iteration count from the salt
-    if salt.startswith("$p5k2$"):
-        (iterations, salt, dummy) = salt.split("$")[2:5]
-        if iterations == "":
+    if salt.startswith(b"$p5k2$"):
+        (iterations, salt, dummy) = salt.split(b"$")[2:5]
+        assert isinstance(iterations, bytes)
+        assert isinstance(salt, bytes)
+        if iterations == b"":
             iterations = 400
         else:
             converted = int(iterations, 16)
-            if iterations != "%x" % converted:  # lowercase hex, minimum digits
-                raise ValueError("Invalid salt")
+            lh = "%x" % converted  # lowercase hex, minimum digits
+            lh = lh.encode('UTF-8')
+            if iterations != lh:
+                raise ValueError("Invalid salt %r" % iterations)
             iterations = converted
             if not (iterations >= 1):
                 raise ValueError("Invalid salt")
 
     # Make sure the salt matches the allowed character set
-    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./"
+    allowed = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./"
     for ch in salt:
         if ch not in allowed:
             raise ValueError("Illegal character %r in salt" % (ch,))
 
     if iterations is None or iterations == 400:
         iterations = 400
-        salt = "$p5k2$$" + salt
+        salt = b'$p5k2$$' + salt
     else:
-        salt = "$p5k2$%x$%s" % (iterations, salt)
+        it = "%x" % iterations
+        salt = b'$p5k2$' + it.encode('UTF-8') + b'$' + salt
+
     rawhash = PBKDF2(word, salt, iterations).read(24)
-    return salt + "$" + b64encode(rawhash, "./")
+    assert isinstance(rawhash, bytes)
+    return salt + b"$" + b64encode(rawhash, b"./")
 
 # Add crypt as a static method of the PBKDF2 class
 # This makes it easier to do "from PBKDF2 import PBKDF2" and still use
@@ -284,14 +308,14 @@ def test_pbkdf2():
         raise RuntimeError("self-test failed")
 
     # Test 3
-    result = PBKDF2("X" * 64, "pass phrase equals block size", 1200).hexread(32)
+    result = PBKDF2("X"*64, "pass phrase equals block size", 1200).hexread(32)
     expected = ("139c30c0966bc32ba55fdbf212530ac9"
                 "c5ec59f1a452f5cc9ad940fea0598ed1")
     if result != expected:
         raise RuntimeError("self-test failed")
 
     # Test 4
-    result = PBKDF2("X" * 65, "pass phrase exceeds block size", 1200).hexread(32)
+    result = PBKDF2("X"*65, "pass phrase exceeds block size", 1200).hexread(32)
     expected = ("9ccad6d468770cd51b10e6a68721be61"
                 "1a8b4d282601db3b36be9246915ec82a")
     if result != expected:
