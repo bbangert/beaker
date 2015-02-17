@@ -21,11 +21,6 @@ py3k = getattr(sys, 'py3kwarning', False) or sys.version_info >= (3, 0)
 py24 = sys.version_info < (2, 5)
 jython = sys.platform.startswith('java')
 
-if py3k or jython:
-    import pickle
-else:
-    import cPickle as pickle
-
 from beaker.converters import asbool
 from beaker import exceptions
 from threading import local as _tlocal

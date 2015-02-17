@@ -7,6 +7,7 @@ from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
 from base64 import b64encode, b64decode
+import json
 
 
 __all__ = ['SignedCookie', 'Session']
@@ -260,10 +261,10 @@ class Session(dict):
             nonce = b64encode(os.urandom(6))[:8]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                              self.validate_key + nonce, 1)
-            data = util.pickle.dumps(session_data, 2)
+            data = util.json.dumps(session_data, 2).encode('zlib')
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = util.pickle.dumps(session_data, 2)
+            data = util.json.dumps(session_data, 2).encode('zlib')
             return b64encode(data)
 
     def _decrypt_data(self, session_data):
@@ -285,7 +286,7 @@ class Session(dict):
                 else:
                     raise
             try:
-                return util.pickle.loads(data)
+                return util.json.loads(data.decode('zlib'))
             except:
                 if self.invalidate_corrupt:
                     return None
@@ -293,7 +294,7 @@ class Session(dict):
                     raise
         else:
             data = b64decode(session_data)
-            return util.pickle.loads(data)
+            return util.json.loads(data.decode('zlib'))
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
