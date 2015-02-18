@@ -154,6 +154,13 @@ class SessionMiddleware(object):
             return start_response(status, headers, exc_info)
         return self.wrap_app(environ, session_start_response)
 
+    def __enter__(self):
+        self.app.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.app.__exit__(exc_type, exc_value, traceback)
+        
     def _get_session(self):
         return Session({}, use_cookies=False, **self.options)
 
