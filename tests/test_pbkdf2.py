@@ -4,7 +4,7 @@ from beaker.crypto.pbkdf2 import pbkdf2
 
 def test_pbkdf2_test1():
     result = pbkdf2("password", "ATHENA.MIT.EDUraeburn", 1, dklen=16)
-    expected = a2b_hex("cdedb5281bb2f801565a1122b2563515")
+    expected = a2b_hex(b"cdedb5281bb2f801565a1122b2563515")
     assert result == expected, (result, expected)
 
 
