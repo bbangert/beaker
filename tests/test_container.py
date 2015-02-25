@@ -16,8 +16,8 @@ class CachedWidget(object):
         self.time = time.time()
 
 def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
-    print "\ntesting %s for %d secs with expiretime %s delay %d" % (
-        cls, totaltime, expiretime, delay)
+    print("\ntesting %s for %d secs with expiretime %s delay %d" % (
+        cls, totaltime, expiretime, delay))
 
     CachedWidget.totalcreates = 0
     CachedWidget.delay = delay
@@ -30,7 +30,7 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
     running = [True]
     class RunThread(Thread):
         def run(self):
-            print "%s starting" % self
+            print("%s starting" % self)
 
             if threadlocal:
                 localvalue = Value(
@@ -56,7 +56,7 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
             except:
                 running[0] = False
                 raise
-            print "%s finishing" % self
+            print("%s finishing" % self)
 
     if not threadlocal:
         value = Value(

@@ -23,7 +23,8 @@ def simple_app(environ, start_response):
     if not environ['PATH_INFO'].startswith('/nosave'):
         session.save()
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %d and cookie is %s' % (session['value'], session)]
+    msg = 'The current value is: %d and cookie is %s' % (session['value'], session)
+    return [msg.encode('UTF-8')]
 
 def test_increment():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
@@ -120,11 +121,12 @@ def test_cookie_id():
     options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
                'session.type':'cookie'}
     app = TestApp(SessionMiddleware(simple_app, **options))
+
     res = app.get('/')
     assert "_id':" in res
-    sess_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body)
+    sess_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body.decode('utf-8'))
     res = app.get('/')
-    new_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body)
+    new_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body.decode('utf-8'))
     assert new_id == sess_id
 
 def test_invalidate_with_save_does_not_delete_session():
@@ -133,7 +135,7 @@ def test_invalidate_with_save_does_not_delete_session():
         session.invalidate()
         session.save()
         start_response('200 OK', [('Content-type', 'text/plain')])
-        return ['Cookie is %s' % session]
+        return [('Cookie is %s' % session).encode('UTF-8')]
 
     options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
                'session.type':'cookie'}

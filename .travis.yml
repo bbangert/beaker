@@ -6,8 +6,6 @@ python:
   - "3.3"
   - "3.4"
 install:
-    - python setup.py install
+    - pip install -e .[testsuite]
 script:
-    - mkdir tests_py3
-    - 2to3 -w -n -o tests_py3 tests/*.py
-    - nosetests -v --where=tests --py3where=tests_py3 -d --with-coverage --cover-package=beaker
+    - nosetests -v -d --with-coverage --cover-package=beaker

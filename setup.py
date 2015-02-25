@@ -14,15 +14,7 @@ try:
 except IOError:
     README = ''
 
-extra = {}
-tests_require = ['nose', 'webtest', 'Mock']
-pycryptopp = 'pycryptopp>=0.5.12'
-if sys.version_info >= (3, 0):
-    extra.update(
-        use_2to3=True,
-    )
-else:
-    tests_require.append(pycryptopp)
+tests_require = ['nose', 'webtest', 'Mock', 'coverage', 'pycrypto']
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
     tests_require.extend(['SQLALchemy'])
@@ -41,12 +33,12 @@ setup(name='Beaker',
       'Intended Audience :: Developers',
       'License :: OSI Approved :: BSD License',
       'Programming Language :: Python',
-      'Programming Language :: Python :: 2.4',
-      'Programming Language :: Python :: 2.5',
       'Programming Language :: Python :: 2.6',
       'Programming Language :: Python :: 2.7',
       'Programming Language :: Python :: 3',
       'Programming Language :: Python :: 3.2',
+      'Programming Language :: Python :: 3.3',
+      'Programming Language :: Python :: 3.4',
       'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
       'Topic :: Internet :: WWW/HTTP :: WSGI',
       'Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware',
@@ -60,7 +52,9 @@ setup(name='Beaker',
       zip_safe=False,
       install_requires=[],
       extras_require={
-          'crypto':[pycryptopp]
+          'crypto': ['pycryptopp>=0.5.12'],
+          'pycrypto': ['pycrypto'],
+          'testsuite': [tests_require]
       },
       test_suite='nose.collector',
       tests_require=tests_require,
@@ -76,6 +70,5 @@ setup(name='Beaker',
           memcached = beaker.ext.memcached:MemcachedNamespaceManager
           google = beaker.ext.google:GoogleNamespaceManager
           sqla = beaker.ext.sqla:SqlaNamespaceManager
-      """,
-      **extra
+      """
 )

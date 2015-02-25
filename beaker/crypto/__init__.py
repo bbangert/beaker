@@ -1,3 +1,5 @@
+from .._compat import JYTHON
+
 from warnings import warn
 
 from beaker.crypto.pbkdf2 import pbkdf2
@@ -6,7 +8,7 @@ from beaker import util
 
 keyLength = None
 
-if util.jython:
+if JYTHON:
     try:
         from beaker.crypto.jcecrypto import getKeyLength, aesEncrypt
         keyLength = getKeyLength()

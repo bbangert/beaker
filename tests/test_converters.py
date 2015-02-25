@@ -1,3 +1,4 @@
+from beaker._compat import u_
 import unittest
 
 from beaker.converters import asbool, aslist
@@ -26,7 +27,7 @@ class AsBool(unittest.TestCase):
 
     def test_bad_values(self):
         self.assertRaises(ValueError, asbool, ('mommy!'))
-        self.assertRaises(ValueError, asbool, (u'Blargl?'))
+        self.assertRaises(ValueError, asbool, (u_('Blargl?')))
 
 
 class AsList(unittest.TestCase):

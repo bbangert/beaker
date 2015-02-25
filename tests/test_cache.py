@@ -1,4 +1,6 @@
 # coding: utf-8
+from beaker._compat import u_, bytes_
+
 import os
 import platform
 import shutil
@@ -12,6 +14,7 @@ from nose import SkipTest
 from beaker.util import skip_if
 import base64
 import zlib
+
 try:
     from webtest import TestApp
 except ImportError:
@@ -22,7 +25,7 @@ except ImportError:
 # >>> c = Cache('test', data_dir='db', type='dbm')
 # >>> c['foo'] = 'bar'
 # in the old format, Beaker @ revision: 24f57102d310
-dbm_cache_tar = """\
+dbm_cache_tar = bytes_("""\
 eJzt3EtOwkAAgOEBjTHEBDfu2ekKZ6bTTnsBL+ABzPRB4osSRBMXHsNruXDl3nMYLaEbpYRAaIn6
 f8kwhFcn/APLSeNTUTdZsL4/m4Pg21wSqiCt9D1PC6mUZ7Xo+bWvrHB/N3HjXk+MrrLhQ/a48HXL
 nv+l0vg0yYcTdznMxhdpfFvHbpj1lyv0N8oq+jdhrr/b/A5Yo79R9G9ERX8XbXgLrNHfav7/G1Hd
@@ -31,22 +34,18 @@ nv+l0vg0yYcTdznMxhdpfFvHbpj1lyv0N8oq+jdhrr/b/A5Yo79R9G9ERX8XbXgLrNHfav7/G1Hd
 pRjbXgkAAAAAAFjVyc1Idc6U1lYGgbSmL0Mjpe248+PYjY87I91x/UGeb3udAAAAAACgfh+fAAAA
 AADgr/t5/sPFTZ5cb/38D19Lzn9pRHX/zR4CtEZ/o+nfiEX9N3kI0Gr9vWl/W0z0BwAAAAAAAAAA
 AAAAAAAAqPAFyOvcKA==
-"""
-if util.py3k:
-    dbm_cache_tar = dbm_cache_tar.encode('ascii')
+""")
 dbm_cache_tar = zlib.decompress(base64.b64decode(dbm_cache_tar))
 
 # dumbdbm format
-dumbdbm_cache_tar = """\
+dumbdbm_cache_tar = bytes_("""\
 eJzt191qgzAYBmCPvYqc2UGx+ZKY6A3scCe7gJKoha6binOD3f2yn5Ouf3TTlNH3AQlEJcE3nyGV
 W0RT457Jsq9W6632W0Se0JI49/1E0vCIZZPPzHt5HmzPWNQ91M1r/XbwuVP3/6nKLcq2Gey6qftl
 5Z6mWA3n56/IKOQfwk7+dvwV8Iv8FSH/IPbkb4uRl8BZ+fvg/WUE8g9if/62UDZf1VlZOiqc1VSq
 kudGVrKgushNkYuVc5VM/Rups5vjY3wErJU6nD+Z7fyFNFpEjIf4AFeef7Jq22TOZnzOpLiJLz0d
 CGyE+q/scHyMk/Wv+E79G0L9hzC7JSFMpv0PN0+J4rv7xNk+iTuKh07E6aXnB9Mao/7X/fExzt//
 FecS9R8C9v/r9rP+l49tubnk+e/z/J8JjvMfAAAAAAAAAADAn70DFJAAwQ==
-"""
-if util.py3k:
-    dumbdbm_cache_tar = dumbdbm_cache_tar.encode('ascii')
+""")
 dumbdbm_cache_tar = zlib.decompress(base64.b64decode(dumbdbm_cache_tar))
 
 def simple_app(environ, start_response):
@@ -62,23 +61,24 @@ def simple_app(environ, start_response):
         value = 0
     cache.set_value('value', value+1)
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %s' % cache.get_value('value')]
+    msg = 'The current value is: %s' % cache.get_value('value')
+    return [msg.encode('utf-8')]
 
 def cache_manager_app(environ, start_response):
     cm = environ['beaker.cache']
     cm.get_cache('test')['test_key'] = 'test value'
 
     start_response('200 OK', [('Content-type', 'text/plain')])
-    yield "test_key is: %s\n" % cm.get_cache('test')['test_key']
+    yield ("test_key is: %s\n" % cm.get_cache('test')['test_key']).encode('utf-8')
     cm.get_cache('test').clear()
 
     try:
         test_value = cm.get_cache('test')['test_key']
     except KeyError:
-        yield "test_key cleared"
+        yield "test_key cleared".encode('utf-8')
     else:
-        yield "test_key wasn't cleared, is: %s\n" % \
-            cm.get_cache('test')['test_key']
+        test_value = cm.get_cache('test')['test_key']
+        yield ("test_key wasn't cleared, is: %s\n" % test_value).encode('utf-8')
 
 def test_has_key():
     cache = Cache('test', data_dir='./cache', type='dbm')
@@ -146,11 +146,11 @@ def test_has_key_multicache():
 def test_unicode_keys():
     cache = Cache('test', data_dir='./cache', type='dbm')
     o = object()
-    cache.set_value(u'hiŏ', o)
-    assert u'hiŏ' in cache
-    assert u'hŏa' not in cache
-    cache.remove_value(u'hiŏ')
-    assert u'hiŏ' not in cache
+    cache.set_value(u_('hiŏ'), o)
+    assert u_('hiŏ') in cache
+    assert u_('hŏa') not in cache
+    cache.remove_value(u_('hiŏ'))
+    assert u_('hiŏ') not in cache
 
 def test_remove_stale():
     """test that remove_value() removes even if the value is expired."""

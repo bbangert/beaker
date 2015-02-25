@@ -1,11 +1,9 @@
+from beaker._compat import bytes_, xrange_
+
 import hmac
 import struct
 import hashlib
 import binascii
-
-
-def bytes_(s):
-    return str(s).encode('ascii', 'strict')
 
 
 def _bin_to_long(x):
@@ -78,7 +76,7 @@ else:
         def F(i):
             u = salt + struct.pack(b'>I', i)
             result = 0
-            for j in range(int(iterations)):
+            for j in xrange_(int(iterations)):
                 dig1, dig2 = inner.copy(), outer.copy()
                 dig1.update(u)
                 dig2.update(dig1.digest())
@@ -86,5 +84,5 @@ else:
                 result ^= _bin_to_long(u)
             return _long_to_bin(result, hex_format_string)
 
-        T = [F(x) for x in range(1, l)]
+        T = [F(x) for x in xrange_(1, l)]
         return b''.join(T) + F(l)[:r]

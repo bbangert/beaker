@@ -3,17 +3,17 @@ import time
 
 
 def go():
-    import namespace_get
+    from . import namespace_get
     a = namespace_get.get_cached_value()
     time.sleep(0.3)
     b = namespace_get.get_cached_value()
 
     time.sleep(0.3)
 
-    import test_namespacing_files.namespace_get
-    c = test_namespacing_files.namespace_get.get_cached_value()
+    from ..test_namespacing_files import namespace_get as upper_ns_get
+    c = upper_ns_get.get_cached_value()
     time.sleep(0.3)
-    d = test_namespacing_files.namespace_get.get_cached_value()
+    d = upper_ns_get.get_cached_value()
 
     print(a)
     print(b)
