@@ -259,7 +259,8 @@ class Session(dict):
         if self.encrypt_key:
             nonce = b64encode(os.urandom(6))[:8]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                             self.validate_key + nonce, 1)
+                                                    self.validate_key + nonce.decode('ascii'),
+                                                    1)
             data = util.pickle.dumps(session_data, 2)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
@@ -273,7 +274,8 @@ class Session(dict):
             try:
                 nonce = session_data[:8]
                 encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                                 self.validate_key + nonce, 1)
+                                                        self.validate_key + nonce.decode('ascii'),
+                                                        1)
                 payload = b64decode(session_data[8:])
                 data = crypto.aesDecrypt(payload, encrypt_key)
             except:
