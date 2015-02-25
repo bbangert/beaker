@@ -1,3 +1,12 @@
+Release 1.7.0dev (2015-02-25)
+=============================
+
+* Beaker no longer supports python 2.4 and 2.5
+* Beaker now supports Python 2.6, 2.7, 3.2, 3.3, 3.4 without 2to3 usage
+* Fixed Encrypted Cookie Session on Python3 #57
+* New pbkdf2 mobule working on Python3 #21
+* Fixed Test suite on Python 3.3 #53, #51
+
 Release 1.6.5 (2015-02-06)
 =========================
 
