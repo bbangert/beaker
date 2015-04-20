@@ -42,6 +42,8 @@ if not PY2:  # pragma: no cover
         return str(s)
 
     def bytes_(s):
+        if isinstance(s, byte_string):
+            return s
         return str(s).encode('ascii', 'strict')
 
     def dictkeyslist(d):
@@ -73,6 +75,8 @@ else:
         return unicode(s, 'utf-8')
 
     def bytes_(s):
+        if isinstance(s, byte_string):
+            return s
         return str(s)
 
     def dictkeyslist(d):

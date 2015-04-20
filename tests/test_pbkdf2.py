@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from binascii import b2a_hex, a2b_hex
 from beaker.crypto.pbkdf2 import pbkdf2
 
@@ -23,4 +25,14 @@ def test_pbkdf2_test3():
 def test_pbkdf2_test4():
     result = b2a_hex(pbkdf2("X"*65, "pass phrase exceeds block size", 1200, dklen=32))
     expected = b"9ccad6d468770cd51b10e6a68721be611a8b4d282601db3b36be9246915ec82a"
+    assert result == expected, (result, expected)
+
+
+def test_pbkd2_issue81():
+    """Test for Regression on Incorrect behavior of bytes_() under Python3.4
+
+    https://github.com/bbangert/beaker/issues/81
+    """
+    result = pbkdf2("MASTER_KEY", b"SALT", 1)
+    expected = pbkdf2("MASTER_KEY", "SALT", 1)
     assert result == expected, (result, expected)
