@@ -8,7 +8,7 @@ Release 1.7.0dev (2015-02-25)
 * Fixed Test suite on Python 3.3 #53, #51
 
 Release 1.6.5 (2015-02-06)
-=========================
+==========================
 
 * @cached decorator now keeps docstring of decorated method.
 * Fix crash when Session ``accessed_time`` is not available, this happened
@@ -353,7 +353,7 @@ Release 1.0 (8/13/2008)
 * Added cookie delete to both cookie only sessions and normal sessions, to
   help with proxies and such that may determine whether a user is logged in
   via a cookie. (cookie varies, etc.). Suggested by Felix Schwarz.
-* cache.get_value() now uses the given **kwargs in all cases in the same
+* cache.get_value() now uses the given **kwargs** in all cases in the same
   manner as cache.set_value().  This way you can send a new createfunc
   to cache.get_value() each time and it will be used.
 
@@ -512,7 +512,7 @@ Release 0.7 (05/18/07)
 * Cleanup of container/cache/container_test
 * Namespaces no longer require a context, removed NamespaceContext?
 * Logging in container.py uses logging module
-* Cleanup of argument passing, use name **kwargs instead of **params for 
+* Cleanup of argument passing, use name **kwargs** instead of **params** for 
   generic kwargs
 * Container classes contain a static create_namespace() method, namespaces are 
   accessed from the ContainerContext? via string name + container class alone
