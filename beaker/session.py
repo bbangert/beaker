@@ -226,7 +226,7 @@ class Session(dict):
             self.last_accessed = None
         if self.use_cookies:
             self._set_cookie_values()
-            sc = set_new == False
+            sc = set_new is False
             self._update_cookie_out(set_cookie=sc)
 
     @property

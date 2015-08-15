@@ -218,7 +218,8 @@ def test_cookies_enabled():
 
     # test for secure
     session = get_session(use_cookies=True, secure=True)
-    assert 'secure' in session.request['cookie_out']
+    cookie = session.request['cookie_out'].lower()  # Python3.4.3 outputs "Secure", while previous output "secure"
+    assert 'secure' in cookie, cookie
 
     # test for httponly
     class ShowWarning(object):
@@ -233,7 +234,9 @@ def test_cookies_enabled():
     if sys.version_info < (2, 6):
         assert sw.msg == 'Python 2.6+ is required to use httponly'
     else:
-        assert 'httponly' in session.request['cookie_out']
+        # Python3.4.3 outputs "HttpOnly", while previous output "httponly"
+        cookie = session.request['cookie_out'].lower()
+        assert 'httponly' in cookie, cookie
     warnings.showwarning = orig_sw
 
 def test_cookies_disabled():
