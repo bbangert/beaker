@@ -66,6 +66,9 @@ Complete example using a basic WSGI app with sessions::
     }
     wsgi_app = SessionMiddleware(simple_app, session_opts)
 
+Now ``wsgi_app`` is a replacement of original application ``simple_app``.
+You should specify it as a request handler in your WSGI configuration file.
+
 .. note::
     This example does **not** actually save the session for the next request.
     Adding the :meth:`~beaker.session.Session.save` call explained below is
