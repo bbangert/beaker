@@ -109,6 +109,12 @@ on the session object::
 This flags a session to be saved, and it will be stored on the chosen back-end
 at the end of the request.
 
+.. warning::
+
+    When using the ``memory`` backend, session will only be valid for the process
+    that created it and will be lost when process is restarted. It is usually
+    suggested to only use the ``memory`` backend for development and not for production.
+
 If it's necessary to immediately save the session to the back-end, the
 :meth:`~beaker.session.SessionObject.persist` method should be used::
 
