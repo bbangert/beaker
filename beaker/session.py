@@ -655,8 +655,7 @@ class SessionObject(object):
             if params.get('type') == 'cookie':
                 self.__dict__['_sess'] = CookieSession(req, **params)
             else:
-                self.__dict__['_sess'] = Session(req, use_cookies=True,
-                                                 **params)
+                self.__dict__['_sess'] = Session(req, **params)
         return self.__dict__['_sess']
 
     def __getattr__(self, attr):
