@@ -4,6 +4,7 @@ import re
 
 from setuptools import setup, find_packages
 
+py_version = sys.version_info[:2]
 here = os.path.abspath(os.path.dirname(__file__))
 v = open(os.path.join(here, 'beaker', '__init__.py'))
 VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
@@ -14,7 +15,14 @@ try:
 except IOError:
     README = ''
 
-tests_require = ['nose', 'webtest', 'Mock', 'coverage', 'pycrypto']
+
+tests_require = ['nose', 'webtest', 'Mock', 'pycrypto']
+
+if py_version == (3, 2):
+    tests_require.append('coverage < 4.0')
+else:
+    tests_require.append('coverage')
+
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
     tests_require.extend(['SQLALchemy'])
