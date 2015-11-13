@@ -7,8 +7,9 @@ as well as the function decorators :func:`.region_decorate`,
 
 """
 import warnings
-from beaker._compat import u_, unicode_text
+from itertools import chain
 
+from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
 import beaker.container as container
 import beaker.util as util
 from beaker.crypto.util import sha1
@@ -537,7 +538,7 @@ class CacheManager(object):
         _cache_decorator_invalidate(cache, key_length, args)
 
 
-def _cache_decorate(deco_args, manager, kwargs, region):
+def _cache_decorate(deco_args, manager, options, region):
     """Return a caching function decorator."""
 
     cache = [None]
@@ -545,9 +546,10 @@ def _cache_decorate(deco_args, manager, kwargs, region):
     def decorate(func):
         namespace = util.func_namespace(func)
         skip_self = util.has_self_arg(func)
+        signature = func_signature(func)
 
         @wraps(func)
-        def cached(*args):
+        def cached(*args, **kwargs):
             if not cache[0]:
                 if region is not None:
                     if region not in cache_regions:
@@ -555,24 +557,32 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                             'Cache region not configured: %s' % region)
                     reg = cache_regions[region]
                     if not reg.get('enabled', True):
-                        return func(*args)
+                        return func(*args, **kwargs)
                     cache[0] = Cache._get_cache(namespace, reg)
                 elif manager:
-                    cache[0] = manager.get_cache(namespace, **kwargs)
+                    cache[0] = manager.get_cache(namespace, **options)
                 else:
                     raise Exception("'manager + kwargs' or 'region' "
                                     "argument is required")
 
+            cache_key_kwargs = []
+            if kwargs:
+                # kwargs provided, merge them in positional args
+                # to avoid having different cache keys.
+                args, kwargs = bindfuncargs(signature, args, kwargs)
+                cache_key_kwargs = [u_(':').join((u_(key), u_(value))) for key, value in kwargs.items()]
+
             cache_key_args = args
             if skip_self:
                 cache_key_args = args[1:]
-            cache_key = u_(" ").join(map(u_, deco_args + cache_key_args))
+
+            cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args, cache_key_kwargs)))
 
             if region:
                 cachereg = cache_regions[region]
                 key_length = cachereg.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
             else:
-                key_length = kwargs.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
+                key_length = options.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
 
             # TODO: This is probably a bug as length is checked before converting to UTF8
             # which will cause cache_key to grow in size.
@@ -580,7 +590,7 @@ def _cache_decorate(deco_args, manager, kwargs, region):
                 cache_key = sha1(cache_key.encode('utf-8')).hexdigest()
 
             def go():
-                return func(*args)
+                return func(*args, **kwargs)
 
             return cache[0].get_value(cache_key, createfunc=go)
         cached._arg_namespace = namespace

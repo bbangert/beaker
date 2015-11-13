@@ -82,6 +82,7 @@ else:
     def dictkeyslist(d):
         return d.keys()
 
+
 def im_func(f):
     if not PY2:  # pragma: no cover
         return getattr(f, '__func__', None)
@@ -154,3 +155,14 @@ else:  # pragma: no cover
     exec_("""def reraise(tp, value, tb=None):
     raise tp, value, tb
 """)
+
+
+try:
+    from inspect import signature as func_signature
+except ImportError:
+    from funcsigs import signature as func_signature
+
+
+def bindfuncargs(arginfo, args, kwargs):
+    boundargs = arginfo.bind(*args, **kwargs)
+    return boundargs.args, boundargs.kwargs

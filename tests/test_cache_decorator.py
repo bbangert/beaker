@@ -24,6 +24,15 @@ def albert(x):
     """A doc string"""
     return time.time()
 
+@cache_region('short_term')
+def alfred(x, xx, y=None):
+    return time.time() + str(x) + str(xx) + str(y)
+
+@cache_region('short_term')
+def alfred_self(self, xx, y=None):
+    return time.time() + str(self) + str(xx) + str(y)
+
+
 def make_cache_obj(**kwargs):
     opts = defaults.copy()
     opts.update(kwargs)
@@ -75,13 +84,13 @@ def test_check_region_decorator():
     result4 = func('George')
     assert result3 == result4
 
-    time.sleep(2)
+    time.sleep(2)  # Now it should have expired as cache is 2secs
     result2 = func('Fred')
     assert result != result2
 
 def test_different_default_names():
     result = fred(1)
-    time.sleep(1)
+    time.sleep(0.1)
     result2 = george(1)
     assert result != result2
 
@@ -127,7 +136,7 @@ def test_check_invalidate_region_2():
 def test_invalidate_cache():
     cache, func = make_cached_func()
     val = func('foo')
-    time.sleep(.1)
+    time.sleep(0.1)
     val2 = func('foo')
     assert val == val2
 
@@ -214,7 +223,7 @@ def test_class_key_region_invalidate():
             region_invalidate(self.go, None, "method", x, y)
 
     x = Foo().go(1, 2)
-    time.sleep(1)
+    time.sleep(0.1)
     y = Foo().go(1, 2)
     Foo().invalidate(1, 2)
     z = Foo().go(1, 2)
@@ -224,9 +233,43 @@ def test_class_key_region_invalidate():
 
 def test_check_region_decorator_keeps_docstring_and_name():
     result = albert(1)
-    time.sleep(1)
+    time.sleep(0.1)
     result2 = albert(1)
     assert result == result2
 
     assert albert.__doc__ == "A doc string"
     assert albert.__name__ == "albert"
+
+
+def test_check_region_decorator_with_kwargs():
+    result = alfred(1, xx=5, y=3)
+    time.sleep(0.1)
+
+    result2 = alfred(1, y=3, xx=5)
+    assert result == result2
+
+    result3 = alfred(1, 5, y=5)
+    assert result != result3
+
+    result4 = alfred(1, 5, 3)
+    assert result == result4
+
+    result5 = alfred(1, 5, y=3)
+    assert result == result5
+
+
+def test_check_region_decorator_with_kwargs_and_self():
+    result = alfred_self('fake_self', xx=5, y='blah')
+    time.sleep(0.1)
+
+    result2 = alfred_self('fake_self2', y='blah', xx=5)
+    assert result == result2
+
+    result3 = alfred_self('fake_self2', 5, y=5)
+    assert result != result3
+
+    result4 = alfred_self('fake_self2', 5, 'blah')
+    assert result == result4
+
+    result5 = alfred_self('fake_self2', 5, y='blah')
+    assert result == result5

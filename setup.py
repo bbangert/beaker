@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import inspect
 
 from setuptools import setup, find_packages
 
@@ -16,20 +17,25 @@ except IOError:
     README = ''
 
 
-tests_require = ['nose', 'webtest', 'Mock', 'pycrypto']
+INSTALL_REQUIRES = []
+if not hasattr(inspect, 'signature'):
+    # On Python 2.6, 2.7 and 3.2 we need funcsigs dependency
+    INSTALL_REQUIRES.append('funcsigs')
+
+
+TESTS_REQUIRE = ['nose', 'webtest', 'Mock', 'pycrypto']
 
 if py_version == (3, 2):
-    tests_require.append('coverage < 4.0')
+    TESTS_REQUIRE.append('coverage < 4.0')
 else:
-    tests_require.append('coverage')
-
+    TESTS_REQUIRE.append('coverage')
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
-    tests_require.extend(['SQLALchemy'])
+    TESTS_REQUIRE.extend(['SQLALchemy'])
     try:
         import sqlite3
     except ImportError:
-        tests_require.append('pysqlite')
+        TESTS_REQUIRE.append('pysqlite')
 
 setup(name='Beaker',
       version=VERSION,
@@ -58,14 +64,14 @@ setup(name='Beaker',
       license='BSD',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests', 'tests.*']),
       zip_safe=False,
-      install_requires=[],
+      install_requires=INSTALL_REQUIRES,
       extras_require={
           'crypto': ['pycryptopp>=0.5.12'],
           'pycrypto': ['pycrypto'],
-          'testsuite': [tests_require]
+          'testsuite': [TESTS_REQUIRE]
       },
       test_suite='nose.collector',
-      tests_require=tests_require,
+      tests_require=TESTS_REQUIRE,
       entry_points="""
           [paste.filter_factory]
           beaker_session = beaker.middleware:session_filter_factory
