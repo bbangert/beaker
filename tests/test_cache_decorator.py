@@ -26,11 +26,11 @@ def albert(x):
 
 @cache_region('short_term')
 def alfred(x, xx, y=None):
-    return time.time() + str(x) + str(xx) + str(y)
+    return str(time.time()) + str(x) + str(xx) + str(y)
 
 @cache_region('short_term')
 def alfred_self(self, xx, y=None):
-    return time.time() + str(self) + str(xx) + str(y)
+    return str(time.time()) + str(self) + str(xx) + str(y)
 
 
 def make_cache_obj(**kwargs):
