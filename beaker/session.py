@@ -93,6 +93,8 @@ class Session(dict):
     :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
+    :param data_serializer: If ``"json"`` or ``"pickle"`` should be used
+                              to serialize data. By default ``pickle`` is used.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
@@ -104,7 +106,7 @@ class Session(dict):
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
                  key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, cookie_path='/', secret=None,
+                 cookie_domain=None, cookie_path='/', data_serializer='pickle', secret=None,
                  secure=False, namespace_class=None, httponly=False,
                  encrypt_key=None, validate_key=None, **namespace_args):
         if not type:
@@ -126,6 +128,7 @@ class Session(dict):
         self.timeout = timeout
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
+        self.data_serializer = data_serializer
 
         # Default cookie domain/path
         self._domain = cookie_domain
@@ -260,10 +263,10 @@ class Session(dict):
             nonce = b64encode(os.urandom(6))[:8]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                                     self.validate_key + nonce, 1)
-            data = pickle.dumps(session_data, 2)
+            data = util.serialize(session_data, self.data_serializer)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = pickle.dumps(session_data, 2)
+            data = util.serialize(session_data, self.data_serializer)
             return b64encode(data)
 
     def _decrypt_data(self, session_data):
@@ -285,7 +288,7 @@ class Session(dict):
                 else:
                     raise
             try:
-                return pickle.loads(data)
+                return util.deserialize(data, self.data_serializer)
             except:
                 if self.invalidate_corrupt:
                     return None
@@ -293,7 +296,7 @@ class Session(dict):
                     raise
         else:
             data = b64decode(session_data)
-            return pickle.loads(data)
+            return util.deserialize(data, self.data_serializer)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -480,6 +483,8 @@ class CookieSession(Session):
     :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
+    :param data_serializer: If ``"json"`` or ``"pickle"`` should be used
+                              to serialize data. By default ``pickle`` is used.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
@@ -491,7 +496,7 @@ class CookieSession(Session):
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  cookie_expires=True, cookie_domain=None, cookie_path='/',
                  encrypt_key=None, validate_key=None, secure=False,
-                 httponly=False, **kwargs):
+                 httponly=False, data_serializer='pickle', **kwargs):
 
         if not crypto.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
@@ -508,6 +513,7 @@ class CookieSession(Session):
         self.httponly = httponly
         self._domain = cookie_domain
         self._path = cookie_path
+        self.data_serializer = data_serializer
 
         try:
             cookieheader = request['cookie']
