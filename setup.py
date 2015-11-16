@@ -1,99 +1,58 @@
 import os
 import sys
 import re
+import inspect
 
 from setuptools import setup, find_packages
 
-v = open(os.path.join(os.path.dirname(__file__), 'beaker', '__init__.py'))
+py_version = sys.version_info[:2]
+here = os.path.abspath(os.path.dirname(__file__))
+v = open(os.path.join(here, 'beaker', '__init__.py'))
 VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
 v.close()
 
-extra = {}
-tests_require = ['nose', 'webtest', 'Mock']
-pycryptopp = 'pycryptopp>=0.5.12'
-if sys.version_info >= (3, 0):
-    extra.update(
-        use_2to3=True,
-    )
+try:
+    README = open(os.path.join(here, 'README.rst')).read()
+except IOError:
+    README = ''
+
+
+INSTALL_REQUIRES = []
+if not hasattr(inspect, 'signature'):
+    # On Python 2.6, 2.7 and 3.2 we need funcsigs dependency
+    INSTALL_REQUIRES.append('funcsigs')
+
+
+TESTS_REQUIRE = ['nose', 'webtest', 'Mock', 'pycrypto']
+
+if py_version == (3, 2):
+    TESTS_REQUIRE.append('coverage < 4.0')
 else:
-    tests_require.append(pycryptopp)
+    TESTS_REQUIRE.append('coverage')
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
-    tests_require.extend(['SQLALchemy'])
+    TESTS_REQUIRE.extend(['SQLALchemy'])
     try:
         import sqlite3
     except ImportError:
-        tests_require.append('pysqlite')
+        TESTS_REQUIRE.append('pysqlite')
 
 setup(name='Beaker',
       version=VERSION,
       description="A Session and Caching library with WSGI Middleware",
-      long_description="""\
-Cache and Session Library
-+++++++++++++++++++++++++
-
-About
-=====
-
-Beaker is a web session and general caching library that includes WSGI
-middleware for use in web applications.
-
-As a general caching library, Beaker can handle storing for various times
-any Python object that can be pickled with optional back-ends on a
-fine-grained basis.
-
-Beaker was built largely on the code from MyghtyUtils, then refactored and
-extended with database support.
-
-Beaker includes Cache and Session WSGI middleware to ease integration with
-WSGI capable frameworks, and is automatically used by `Pylons
-<http://pylonshq.com/>`_.
-
-
-Features
-========
-
-* Fast, robust performance
-* Multiple reader/single writer lock system to avoid duplicate simultaneous
-  cache creation
-* Cache back-ends include dbm, file, memory, memcached, and database (Using
-  SQLAlchemy for multiple-db vendor support)
-* Signed cookie's to prevent session hijacking/spoofing
-* Cookie-only sessions to remove the need for a db or file backend (ideal
-  for clustered systems)
-* Extensible Container object to support new back-ends
-* Cache's can be divided into namespaces (to represent templates, objects,
-  etc.) then keyed for different copies
-* Create functions for automatic call-backs to create new cache copies after
-  expiration
-* Fine-grained toggling of back-ends, keys, and expiration per Cache object
-
-
-Documentation
-=============
-
-Documentation can be found on the `Official Beaker Docs site
-<http://beaker.groovie.org/>`_.
-
-
-Source
-======
-
-The latest developer version is available in a `github repository
-<https://github.com/bbangert/beaker>`_.
-""",
+      long_description=README,
       classifiers=[
       'Development Status :: 5 - Production/Stable',
       'Environment :: Web Environment',
       'Intended Audience :: Developers',
       'License :: OSI Approved :: BSD License',
       'Programming Language :: Python',
-      'Programming Language :: Python :: 2.4',
-      'Programming Language :: Python :: 2.5',
       'Programming Language :: Python :: 2.6',
       'Programming Language :: Python :: 2.7',
       'Programming Language :: Python :: 3',
       'Programming Language :: Python :: 3.2',
+      'Programming Language :: Python :: 3.3',
+      'Programming Language :: Python :: 3.4',
       'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
       'Topic :: Internet :: WWW/HTTP :: WSGI',
       'Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware',
@@ -103,14 +62,16 @@ The latest developer version is available in a `github repository
       author_email='ben@groovie.org, pjenvey@groovie.org',
       url='http://beaker.rtfd.org/',
       license='BSD',
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=find_packages(exclude=['ez_setup', 'examples', 'tests', 'tests.*']),
       zip_safe=False,
-      install_requires=[],
+      install_requires=INSTALL_REQUIRES,
       extras_require={
-          'crypto':[pycryptopp]
+          'crypto': ['pycryptopp>=0.5.12'],
+          'pycrypto': ['pycrypto'],
+          'testsuite': [TESTS_REQUIRE]
       },
       test_suite='nose.collector',
-      tests_require=tests_require,
+      tests_require=TESTS_REQUIRE,
       entry_points="""
           [paste.filter_factory]
           beaker_session = beaker.middleware:session_filter_factory
@@ -123,6 +84,5 @@ The latest developer version is available in a `github repository
           memcached = beaker.ext.memcached:MemcachedNamespaceManager
           google = beaker.ext.google:GoogleNamespaceManager
           sqla = beaker.ext.sqla:SqlaNamespaceManager
-      """,
-      **extra
+      """
 )

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from beaker._compat import u_, pickle
+
 import sys
 import time
 import warnings
@@ -20,19 +22,19 @@ def get_session(**kwargs):
 def test_save_load():
     """Test if the data is actually persistent across requests"""
     session = get_session()
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
     session = get_session(id=session.id)
-    assert u'Suomi' in session
-    assert u'Great Britain' in session
-    assert u'Deutchland' in session
+    assert u_('Suomi') in session
+    assert u_('Great Britain') in session
+    assert u_('Deutchland') in session
 
-    assert session[u'Suomi'] == u'Kimi Räikkönen'
-    assert session[u'Great Britain'] == u'Jenson Button'
-    assert session[u'Deutchland'] == u'Sebastian Vettel'
+    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
+    assert session[u_('Great Britain')] == u_('Jenson Button')
+    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
 
 def test_save_load_encryption():
@@ -41,20 +43,20 @@ def test_save_load_encryption():
         raise SkipTest()
     session = get_session(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
     session = get_session(id=session.id, encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
-    assert u'Suomi' in session
-    assert u'Great Britain' in session
-    assert u'Deutchland' in session
+    assert u_('Suomi') in session
+    assert u_('Great Britain') in session
+    assert u_('Deutchland') in session
 
-    assert session[u'Suomi'] == u'Kimi Räikkönen'
-    assert session[u'Great Britain'] == u'Jenson Button'
-    assert session[u'Deutchland'] == u'Sebastian Vettel'
+    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
+    assert session[u_('Great Britain')] == u_('Jenson Button')
+    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
 
 def test_decryption_failure():
@@ -63,49 +65,49 @@ def test_decryption_failure():
         raise SkipTest()
     session = get_session(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
     session = get_session(id=session.id, encrypt_key='asfdasdfadsfsadf',
                           validate_key='hoobermas', invalidate_corrupt=True)
-    assert u'Suomi' not in session
-    assert u'Great Britain' not in session
+    assert u_('Suomi') not in session
+    assert u_('Great Britain') not in session
 
 
 def test_delete():
     """Test :meth:`Session.delete`"""
     session = get_session()
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.delete()
 
-    assert u'Suomi' not in session
-    assert u'Great Britain' not in session
-    assert u'Deutchland' not in session
+    assert u_('Suomi') not in session
+    assert u_('Great Britain') not in session
+    assert u_('Deutchland') not in session
 
 
 def test_revert():
     """Test :meth:`Session.revert`"""
     session = get_session()
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
     session = get_session(id=session.id)
-    del session[u'Suomi']
-    session[u'Great Britain'] = u'Lewis Hamilton'
-    session[u'Deutchland'] = u'Michael Schumacher'
-    session[u'España'] = u'Fernando Alonso'
+    del session[u_('Suomi')]
+    session[u_('Great Britain')] = u_('Lewis Hamilton')
+    session[u_('Deutchland')] = u_('Michael Schumacher')
+    session[u_('España')] = u_('Fernando Alonso')
     session.revert()
 
-    assert session[u'Suomi'] == u'Kimi Räikkönen'
-    assert session[u'Great Britain'] == u'Jenson Button'
-    assert session[u'Deutchland'] == u'Sebastian Vettel'
-    assert u'España' not in session
+    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
+    assert session[u_('Great Britain')] == u_('Jenson Button')
+    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
+    assert u_('España') not in session
 
 
 def test_invalidate():
@@ -113,16 +115,16 @@ def test_invalidate():
     session = get_session()
     id = session.id
     created = session.created
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.invalidate()
 
     assert session.id != id
     assert session.created != created
-    assert u'Suomi' not in session
-    assert u'Great Britain' not in session
-    assert u'Deutchland' not in session
+    assert u_('Suomi') not in session
+    assert u_('Great Britain') not in session
+    assert u_('Deutchland') not in session
 
 
 def test_regenerate_id():
@@ -130,13 +132,13 @@ def test_regenerate_id():
     # new session & save
     session = get_session()
     orig_id = session.id
-    session[u'foo'] = u'bar'
+    session[u_('foo')] = u_('bar')
     session.save()
 
     # load session
     session = get_session(id=session.id)
     # data should still be there
-    assert session[u'foo'] == u'bar'
+    assert session[u_('foo')] == u_('bar')
 
     # regenerate the id
     session.regenerate_id()
@@ -144,21 +146,21 @@ def test_regenerate_id():
     assert session.id != orig_id
 
     # data is still there
-    assert session[u'foo'] == u'bar'
+    assert session[u_('foo')] == u_('bar')
 
     # should be the new id
     assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
 
     # get a new session before calling save
     bunk_sess = get_session(id=session.id)
-    assert u'foo' not in bunk_sess
+    assert u_('foo') not in bunk_sess
 
     # save it
     session.save()
 
     # make sure we get the data back
     session = get_session(id=session.id)
-    assert session[u'foo'] == u'bar'
+    assert session[u_('foo')] == u_('bar')
 
 
 def test_timeout():
@@ -166,25 +168,25 @@ def test_timeout():
     session = get_session(timeout=2)
     id = session.id
     created = session.created
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
     session = get_session(id=session.id, timeout=2)
     assert session.id == id
     assert session.created == created
-    assert session[u'Suomi'] == u'Kimi Räikkönen'
-    assert session[u'Great Britain'] == u'Jenson Button'
-    assert session[u'Deutchland'] == u'Sebastian Vettel'
+    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
+    assert session[u_('Great Britain')] == u_('Jenson Button')
+    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
     time.sleep(2)
     session = get_session(id=session.id, timeout=2)
     assert session.id != id
     assert session.created != created
-    assert u'Suomi' not in session
-    assert u'Great Britain' not in session
-    assert u'Deutchland' not in session
+    assert u_('Suomi') not in session
+    assert u_('Great Britain') not in session
+    assert u_('Deutchland') not in session
 
 
 def test_cookies_enabled():
@@ -216,7 +218,8 @@ def test_cookies_enabled():
 
     # test for secure
     session = get_session(use_cookies=True, secure=True)
-    assert 'secure' in session.request['cookie_out']
+    cookie = session.request['cookie_out'].lower()  # Python3.4.3 outputs "Secure", while previous output "secure"
+    assert 'secure' in cookie, cookie
 
     # test for httponly
     class ShowWarning(object):
@@ -231,7 +234,9 @@ def test_cookies_enabled():
     if sys.version_info < (2, 6):
         assert sw.msg == 'Python 2.6+ is required to use httponly'
     else:
-        assert 'httponly' in session.request['cookie_out']
+        # Python3.4.3 outputs "HttpOnly", while previous output "httponly"
+        cookie = session.request['cookie_out'].lower()
+        assert 'httponly' in cookie, cookie
     warnings.showwarning = orig_sw
 
 def test_cookies_disabled():
@@ -311,7 +316,7 @@ def test_invalidate_corrupt():
     f.close()
 
     util.assert_raises(
-        util.pickle.UnpicklingError,
+        pickle.UnpicklingError,
         get_session,
         use_cookies=False, type='file',
                 data_dir='./cache', id=session.id

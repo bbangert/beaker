@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 
-from beaker.cache import CacheManager
+from beaker.cache import CacheManager, cache_regions
 from beaker.util import parse_cache_config_options
 
 defaults = {'cache.data_dir':'./cache', 'cache.type':'dbm', 'cache.expire': 2}
@@ -130,3 +130,61 @@ def test_long_name():
     _cache_obj.invalidate(func, 'loader', name)
     result4 = func(name)
     assert result3 != result4
+
+
+def test_cache_region_has_default_key_length():
+    try:
+        cache = CacheManager(cache_regions={
+            'short_term_without_key_length':{
+                'expire': 60,
+                'type': 'memory'
+            }
+        })
+
+        # Check CacheManager registered the region in global regions
+        assert 'short_term_without_key_length' in cache_regions
+
+        @cache.region('short_term_without_key_length')
+        def load_without_key_length(person):
+            now = datetime.now()
+            return "Hi there %s, its currently %s" % (person, now)
+
+        # Ensure that same person gets same time
+        msg = load_without_key_length('fred')
+        msg2 = load_without_key_length('fred')
+        assert msg == msg2, (msg, msg2)
+
+        # Ensure that different person gets different time
+        msg3 = load_without_key_length('george')
+        assert msg3.split(',')[-1] != msg2.split(',')[-1]
+
+    finally:
+        # throw away region for this test
+        cache_regions.pop('short_term_without_key_length', None)
+
+
+def test_cache_region_expire_is_always_int():
+    try:
+        cache = CacheManager(cache_regions={
+            'short_term_with_string_expire': {
+                'expire': '60',
+                'type': 'memory'
+            }
+        })
+
+        # Check CacheManager registered the region in global regions
+        assert 'short_term_with_string_expire' in cache_regions
+
+        @cache.region('short_term_with_string_expire')
+        def load_with_str_expire(person):
+            now = datetime.now()
+            return "Hi there %s, its currently %s" % (person, now)
+
+        # Ensure that same person gets same time
+        msg = load_with_str_expire('fred')
+        msg2 = load_with_str_expire('fred')
+        assert msg == msg2, (msg, msg2)
+
+    finally:
+        # throw away region for this test
+        cache_regions.pop('short_term_with_string_expire', None)

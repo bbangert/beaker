@@ -6,9 +6,10 @@ as well as the function decorators :func:`.region_decorate`,
 :func:`.region_invalidate`.
 
 """
-from functools import wraps
 import warnings
+from itertools import chain
 
+from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
 import beaker.container as container
 import beaker.util as util
 from beaker.crypto.util import sha1
@@ -19,6 +20,7 @@ import beaker.ext.memcached as memcached
 import beaker.ext.database as database
 import beaker.ext.sqla as sqla
 import beaker.ext.google as google
+from functools import wraps
 
 # Initialize the cache region dict
 cache_regions = {}
@@ -35,11 +37,11 @@ of configuration arguments.  Example::
     from beaker.cache import cache_regions
     cache_regions.update({
         'short_term':{
-            'expire':'60',
+            'expire':60,
             'type':'memory'
         },
         'long_term':{
-            'expire':'1800',
+            'expire':1800,
             'type':'dbm',
             'data_dir':'/tmp',
         }
@@ -60,7 +62,7 @@ class _backends(object):
     def __getitem__(self, key):
         try:
             return self._clsmap[key]
-        except KeyError, e:
+        except KeyError as e:
             if not self.initialized:
                 self._mutex.acquire()
                 try:
@@ -96,7 +98,11 @@ class _backends(object):
                     # Warn when there's a problem loading a NamespaceManager
                     if not isinstance(sys.exc_info()[1], DistributionNotFound):
                         import traceback
-                        from StringIO import StringIO
+                        try:
+                            from io import StringIO
+                        except ImportError:
+                            from StringIO import StringIO
+
                         tb = StringIO()
                         traceback.print_exc(file=tb)
                         warnings.warn(
@@ -131,7 +137,7 @@ def cache_region(region, *args):
         # configure regions
         cache_regions.update({
             'short_term':{
-                'expire':'60',
+                'expire':60,
                 'type':'memory'
             }
         })
@@ -216,7 +222,7 @@ def region_invalidate(namespace, region, *args):
         # configure regions
         cache_regions.update({
             'short_term':{
-                'expire':'60',
+                'expire':60,
                 'type':'memory'
             }
         })
@@ -257,7 +263,9 @@ def region_invalidate(namespace, region, *args):
         region = cache_regions[region]
 
     cache = Cache._get_cache(namespace, region)
-    _cache_decorator_invalidate(cache, region['key_length'], args)
+    _cache_decorator_invalidate(cache,
+                                region.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH),
+                                args)
 
 
 class Cache(object):
@@ -282,6 +290,10 @@ class Cache(object):
                 raise cls
         except KeyError:
             raise TypeError("Unknown cache implementation %r" % type)
+
+        if expire is not None:
+            expire = int(expire)
+
         self.namespace_name = namespace
         self.namespace = cls(namespace, **nsargs)
         self.expiretime = expiretime or expire
@@ -312,7 +324,7 @@ class Cache(object):
     remove = remove_value
 
     def _get_value(self, key, **kw):
-        if isinstance(key, unicode):
+        if isinstance(key, unicode_text):
             key = key.encode('ascii', 'backslashreplace')
 
         if 'type' in kw:
@@ -519,13 +531,14 @@ class CacheManager(object):
 
         cache = self.get_cache(namespace, **kwargs)
         if hasattr(func, '_arg_region'):
-            key_length = cache_regions[func._arg_region]['key_length']
+            cachereg = cache_regions[func._arg_region]
+            key_length = cachereg.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
         else:
-            key_length = kwargs.pop('key_length', 250)
+            key_length = kwargs.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
         _cache_decorator_invalidate(cache, key_length, args)
 
 
-def _cache_decorate(deco_args, manager, deco_kwargs, region):
+def _cache_decorate(deco_args, manager, options, region):
     """Return a caching function decorator."""
 
     cache = [None]
@@ -533,6 +546,7 @@ def _cache_decorate(deco_args, manager, deco_kwargs, region):
     def decorate(func):
         namespace = util.func_namespace(func)
         skip_self = util.has_self_arg(func)
+        signature = func_signature(func)
 
         @wraps(func)
         def cached(*args, **kwargs):
@@ -546,34 +560,34 @@ def _cache_decorate(deco_args, manager, deco_kwargs, region):
                         return func(*args, **kwargs)
                     cache[0] = Cache._get_cache(namespace, reg)
                 elif manager:
-                    cache[0] = manager.get_cache(namespace, **deco_kwargs)
+                    cache[0] = manager.get_cache(namespace, **options)
                 else:
                     raise Exception("'manager + kwargs' or 'region' "
                                     "argument is required")
 
-            if skip_self:
-                try:
-                    joined_kwargs = " ".join(['{0}:{1}'.format(key, value) for key, value in kwargs.items()])
-                    cache_key = " ".join(map(str, deco_args + args[1:])) + joined_kwargs
-                except UnicodeEncodeError:
-                    joined_kwargs = " ".join([u'{0}:{1}'.format(key, value) for key, value in kwargs.items()])
-                    cache_key = " ".join(map(unicode, deco_args + args[1:])) + joined_kwargs
+            cache_key_kwargs = []
+            if kwargs:
+                # kwargs provided, merge them in positional args
+                # to avoid having different cache keys.
+                args, kwargs = bindfuncargs(signature, args, kwargs)
+                cache_key_kwargs = [u_(':').join((u_(key), u_(value))) for key, value in kwargs.items()]
 
-            else:
-                try:
-                    joined_kwargs = " ".join(['{0}:{1}'.format(key, value) for key, value in kwargs.items()])
-                    cache_key = " ".join(map(str, deco_args + args)) + joined_kwargs
-                except UnicodeEncodeError:
-                    joined_kwargs = " ".join([u'{0}:{1}'.format(key, value) for key, value in kwargs.items()])
-                    cache_key = " ".join(map(unicode, deco_args + args)) + joined_kwargs
+            cache_key_args = args
+            if skip_self:
+                cache_key_args = args[1:]
+
+            cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args, cache_key_kwargs)))
+
             if region:
-                key_length = cache_regions[region]['key_length']
+                cachereg = cache_regions[region]
+                key_length = cachereg.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
             else:
-                key_length = deco_kwargs.pop('key_length', 250)
+                key_length = options.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
+
+            # TODO: This is probably a bug as length is checked before converting to UTF8
+            # which will cause cache_key to grow in size.
             if len(cache_key) + len(namespace) > int(key_length):
-                if util.py3k:
-                    cache_key = cache_key.encode('utf-8')
-                cache_key = sha1(cache_key).hexdigest()
+                cache_key = sha1(cache_key.encode('utf-8')).hexdigest()
 
             def go():
                 return func(*args, **kwargs)
@@ -589,12 +603,7 @@ def _cache_decorate(deco_args, manager, deco_kwargs, region):
 def _cache_decorator_invalidate(cache, key_length, args):
     """Invalidate a cache key based on function arguments."""
 
-    try:
-        cache_key = " ".join(map(str, args))
-    except UnicodeEncodeError:
-        cache_key = " ".join(map(unicode, args))
+    cache_key = u_(" ").join(map(u_, args))
     if len(cache_key) + len(cache.namespace_name) > key_length:
-        if util.py3k:
-            cache_key = cache_key.encode('utf-8')
-        cache_key = sha1(cache_key).hexdigest()
+        cache_key = sha1(cache_key.encode('utf-8')).hexdigest()
     cache.remove_value(cache_key)

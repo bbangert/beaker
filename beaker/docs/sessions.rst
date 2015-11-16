@@ -66,6 +66,9 @@ Complete example using a basic WSGI app with sessions::
     }
     wsgi_app = SessionMiddleware(simple_app, session_opts)
 
+Now ``wsgi_app`` is a replacement of original application ``simple_app``.
+You should specify it as a request handler in your WSGI configuration file.
+
 .. note::
     This example does **not** actually save the session for the next request.
     Adding the :meth:`~beaker.session.Session.save` call explained below is
@@ -105,6 +108,12 @@ on the session object::
 
 This flags a session to be saved, and it will be stored on the chosen back-end
 at the end of the request.
+
+.. warning::
+
+    When using the ``memory`` backend, session will only be valid for the process
+    that created it and will be lost when process is restarted. It is usually
+    suggested to only use the ``memory`` backend for development and not for production.
 
 If it's necessary to immediately save the session to the back-end, the
 :meth:`~beaker.session.SessionObject.persist` method should be used::

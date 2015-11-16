@@ -20,7 +20,7 @@ def create(id):
     return Value()
 
 def threadtest(s, id):
-    print "create thread %d starting" % id
+    print("create thread %d starting" % id)
 
     global running
     global totalgets
@@ -28,8 +28,8 @@ def threadtest(s, id):
         try:
             value = s.get('test', lambda: create(id))
             value.do_something(id)
-        except Exception, e:
-            print "Error", e
+        except Exception as e:
+            print("Error", e)
             running = False
             break
         else:
@@ -73,18 +73,18 @@ def runtest(s):
 
     assert not failed, "test failed"
 
-    print "total object creates %d" % totalcreates
-    print "total object gets %d" % totalgets
+    print("total object creates %d" % totalcreates)
+    print("total object gets %d" % totalgets)
 
 
 def test_dict():
     # normal dictionary test, where we will remove the value
     # periodically. the number of creates should be equal to
     # the number of removes plus one.
-    print "\ntesting with normal dict"
+    print("\ntesting with normal dict")
     runtest(SyncDict())
 
 
 def test_weakdict():
-    print "\ntesting with weak dict"
+    print("\ntesting with weak dict")
     runtest(WeakValuedRegistry())

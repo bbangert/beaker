@@ -1,10 +1,9 @@
 """Beaker utilities"""
+from ._compat import PY2, string_type, unicode_text, NoneType, dictkeyslist, im_class, im_func
 
 try:
-    import thread as _thread
     import threading as _threading
 except ImportError:
-    import dummy_thread as _thread
     import dummy_threading as _threading
 
 from datetime import datetime, timedelta
@@ -17,19 +16,12 @@ import warnings
 import sys
 import inspect
 
-py3k = getattr(sys, 'py3kwarning', False) or sys.version_info >= (3, 0)
-py24 = sys.version_info < (2, 5)
-jython = sys.platform.startswith('java')
-
-if py3k or jython:
-    import pickle
-else:
-    import cPickle as pickle
 
 from beaker.converters import asbool
 from beaker import exceptions
 from threading import local as _tlocal
 
+DEFAULT_CACHE_KEY_LENGTH = 250
 
 __all__ = ["ThreadLocal", "WeakValuedRegistry", "SyncDict", "encoded_path",
            "verify_directory"]
@@ -104,7 +96,7 @@ def has_self_arg(func):
 
 def warn(msg, stacklevel=3):
     """Issue a warning."""
-    if isinstance(msg, basestring):
+    if isinstance(msg, string_type):
         warnings.warn(msg, exceptions.BeakerWarning, stacklevel=stacklevel)
     else:
         warnings.warn(msg, stacklevel=stacklevel)
@@ -160,7 +152,7 @@ class SyncDict(object):
 
     """
     def __init__(self):
-        self.mutex = _thread.allocate_lock()
+        self.mutex = _threading.Lock()
         self.dict = {}
 
     def get(self, key, createfunc, *args, **kwargs):
@@ -228,7 +220,7 @@ def encoded_path(root, identifiers, extension=".enc", depth=3,
         from beaker.crypto import sha1
 
     if digest_filenames:
-        if py3k:
+        if isinstance(ident, unicode_text):
             ident = sha1(ident.encode('utf-8')).hexdigest()
         else:
             ident = sha1(ident).hexdigest()
@@ -248,7 +240,7 @@ def encoded_path(root, identifiers, extension=".enc", depth=3,
 def asint(obj):
     if isinstance(obj, int):
         return obj
-    elif isinstance(obj, basestring) and re.match(r'^\d+$', obj):
+    elif isinstance(obj, string_type) and re.match(r'^\d+$', obj):
         return int(obj)
     else:
         raise Exception("This is not a proper int")
@@ -293,30 +285,30 @@ def verify_rules(params, ruleset):
 
 def coerce_session_params(params):
     rules = [
-        ('data_dir', (str, types.NoneType), "data_dir must be a string "
+        ('data_dir', (str, NoneType), "data_dir must be a string "
          "referring to a directory."),
-        ('lock_dir', (str, types.NoneType), "lock_dir must be a string referring to a "
+        ('lock_dir', (str, NoneType), "lock_dir must be a string referring to a "
          "directory."),
-        ('type', (str, types.NoneType), "Session type must be a string."),
+        ('type', (str, NoneType), "Session type must be a string."),
         ('cookie_expires', (bool, datetime, timedelta, int), "Cookie expires was "
          "not a boolean, datetime, int, or timedelta instance."),
-        ('cookie_domain', (str, types.NoneType), "Cookie domain must be a "
+        ('cookie_domain', (str, NoneType), "Cookie domain must be a "
          "string."),
-        ('cookie_path', (str, types.NoneType), "Cookie path must be a "
+        ('cookie_path', (str, NoneType), "Cookie path must be a "
          "string."),
         ('id', (str,), "Session id must be a string."),
         ('key', (str,), "Session key must be a string."),
-        ('secret', (str, types.NoneType), "Session secret must be a string."),
-        ('validate_key', (str, types.NoneType), "Session encrypt_key must be "
+        ('secret', (str, NoneType), "Session secret must be a string."),
+        ('validate_key', (str, NoneType), "Session encrypt_key must be "
          "a string."),
-        ('encrypt_key', (str, types.NoneType), "Session validate_key must be "
+        ('encrypt_key', (str, NoneType), "Session validate_key must be "
          "a string."),
-        ('secure', (bool, types.NoneType), "Session secure must be a boolean."),
-        ('httponly', (bool, types.NoneType), "Session httponly must be a boolean."),
-        ('timeout', (int, types.NoneType), "Session timeout must be an "
+        ('secure', (bool, NoneType), "Session secure must be a boolean."),
+        ('httponly', (bool, NoneType), "Session httponly must be a boolean."),
+        ('timeout', (int, NoneType), "Session timeout must be an "
          "integer."),
-        ('auto', (bool, types.NoneType), "Session is created if accessed."),
-        ('webtest_varname', (str, types.NoneType), "Session varname must be "
+        ('auto', (bool, NoneType), "Session is created if accessed."),
+        ('webtest_varname', (str, NoneType), "Session varname must be "
          "a string."),
     ]
     opts = verify_rules(params, rules)
@@ -329,18 +321,18 @@ def coerce_session_params(params):
 
 def coerce_cache_params(params):
     rules = [
-        ('data_dir', (str, types.NoneType), "data_dir must be a string "
+        ('data_dir', (str, NoneType), "data_dir must be a string "
          "referring to a directory."),
-        ('lock_dir', (str, types.NoneType), "lock_dir must be a string referring to a "
+        ('lock_dir', (str, NoneType), "lock_dir must be a string referring to a "
          "directory."),
         ('type', (str,), "Cache type must be a string."),
-        ('enabled', (bool, types.NoneType), "enabled must be true/false "
+        ('enabled', (bool, NoneType), "enabled must be true/false "
          "if present."),
-        ('expire', (int, types.NoneType), "expire must be an integer representing "
+        ('expire', (int, NoneType), "expire must be an integer representing "
          "how many seconds the cache is valid for"),
-        ('regions', (list, tuple, types.NoneType), "Regions must be a "
+        ('regions', (list, tuple, NoneType), "Regions must be a "
          "comma seperated list of valid regions"),
-        ('key_length', (int, types.NoneType), "key_length must be an integer "
+        ('key_length', (int, NoneType), "key_length must be an integer "
          "which indicates the longest a key can be before hashing"),
     ]
     return verify_rules(params, rules)
@@ -399,7 +391,7 @@ def parse_cache_config_options(config, include_defaults=True):
                            log_file=None)
     else:
         options = {}
-    for key, val in config.iteritems():
+    for key, val in config.items():
         if key.startswith('beaker.cache.'):
             options[key[13:]] = val
         if key.startswith('cache.'):
@@ -423,10 +415,10 @@ def parse_cache_config_options(config, include_defaults=True):
                                   type=options.get('type'),
                                   enabled=options['enabled'],
                                   expire=options.get('expire'),
-                                  key_length=options.get('key_length', 250))
+                                  key_length=options.get('key_length', DEFAULT_CACHE_KEY_LENGTH))
             region_prefix = '%s.' % region
             region_len = len(region_prefix)
-            for key in options.keys():
+            for key in dictkeyslist(options):
                 if key.startswith(region_prefix):
                     region_options[key[region_len:]] = options.pop(key)
             coerce_cache_params(region_options)
@@ -441,7 +433,7 @@ def parse_memcached_behaviors(config):
     NamespaceManagers that support behaviors"""
     behaviors = {}
 
-    for key, val in config.iteritems():
+    for key, val in config.items():
         if key.startswith('behavior.'):
             behaviors[key[9:]] = val
 
@@ -452,9 +444,9 @@ def parse_memcached_behaviors(config):
 def func_namespace(func):
     """Generates a unique namespace for a function"""
     kls = None
-    if hasattr(func, 'im_func'):
-        kls = func.im_class
-        func = func.im_func
+    if hasattr(func, 'im_func') or hasattr(func, '__func__'):
+        kls = im_class(func)
+        func = im_func(func)
 
     if kls:
         return '%s.%s' % (kls.__module__, kls.__name__)
