@@ -36,6 +36,50 @@ def test_increment():
     res = app.get('/')
     assert 'current value is: 3' in res
 
+def test_json_serializer():
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': 'json'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    res = app.get('/')
+    from beaker.session import SignedCookie
+    cookie = SignedCookie('hoobermas')
+    session_data = cookie.value_decode(app.cookies['beaker.session.id'])[0]
+
+    import base64
+    session_data = base64.b64decode(session_data)
+
+    import beaker.util
+    data = beaker.util.deserialize(session_data, 'json')
+    assert data['value'] == 2
+
+    res = app.get('/')
+    assert 'current value is: 3' in res
+
+def test_pickle_serializer():
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': 'pickle'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    res = app.get('/')
+    from beaker.session import SignedCookie
+    cookie = SignedCookie('hoobermas')
+    session_data = cookie.value_decode(app.cookies['beaker.session.id'])[0]
+
+    import base64
+    session_data = base64.b64decode(session_data)
+
+    import beaker.util
+    data = beaker.util.deserialize(session_data, 'pickle')
+    assert data['value'] == 2
+
+    res = app.get('/')
+    assert 'current value is: 3' in res
+
 def test_expires():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie',
                'session.cookie_expires': datetime.timedelta(days=1)}
