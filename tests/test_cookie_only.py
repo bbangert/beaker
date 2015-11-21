@@ -3,6 +3,9 @@ import re
 import os
 
 import beaker.session
+import beaker.util
+from beaker.session import SignedCookie
+from beaker._compat import b64decode
 from beaker.middleware import SessionMiddleware
 from nose import SkipTest
 try:
@@ -44,14 +47,9 @@ def test_json_serializer():
     assert 'current value is: 1' in res
 
     res = app.get('/')
-    from beaker.session import SignedCookie
     cookie = SignedCookie('hoobermas')
     session_data = cookie.value_decode(app.cookies['beaker.session.id'])[0]
-
-    import base64
-    session_data = base64.b64decode(session_data)
-
-    import beaker.util
+    session_data = b64decode(session_data)
     data = beaker.util.deserialize(session_data, 'json')
     assert data['value'] == 2
 
@@ -66,14 +64,9 @@ def test_pickle_serializer():
     assert 'current value is: 1' in res
 
     res = app.get('/')
-    from beaker.session import SignedCookie
     cookie = SignedCookie('hoobermas')
     session_data = cookie.value_decode(app.cookies['beaker.session.id'])[0]
-
-    import base64
-    session_data = base64.b64decode(session_data)
-
-    import beaker.util
+    session_data = b64decode(session_data)
     data = beaker.util.deserialize(session_data, 'pickle')
     assert data['value'] == 2
 
