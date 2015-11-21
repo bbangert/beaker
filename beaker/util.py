@@ -16,6 +16,7 @@ import warnings
 import sys
 import inspect
 import json
+import zlib
 
 from beaker.converters import asbool
 from beaker import exceptions
@@ -457,13 +458,13 @@ def func_namespace(func):
 
 def serialize(data, method):
     if method == 'json':
-        return json.dumps(data).encode('zlib')
+        return zlib.compress(json.dumps(data).encode('utf-8'))
     else:
         return pickle.dumps(data, 2)
 
 
 def deserialize(data_string, method):
     if method == 'json':
-        return json.loads(data_string.decode('zlib'))
+        return json.loads(zlib.decompress(data_string).decode('utf-8'))
     else:
         return pickle.loads(data_string)
