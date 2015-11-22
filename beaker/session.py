@@ -7,7 +7,7 @@ from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1
 from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
-
+from beaker.cookie import SimpleCookie
 
 __all__ = ['SignedCookie', 'Session']
 
@@ -42,7 +42,7 @@ except ImportError:
             return raw_id.replace('+', '-').replace('/', '_').rstrip('=')
 
 
-class SignedCookie(http_cookies.BaseCookie):
+class SignedCookie(SimpleCookie):
     """Extends python cookie to give digital signature support"""
     def __init__(self, secret, input=None):
         self.secret = secret.encode('UTF-8')
@@ -151,7 +151,7 @@ class Session(dict):
                 except http_cookies.CookieError:
                     self.cookie = SignedCookie(secret, input=None)
             else:
-                self.cookie = http_cookies.SimpleCookie(input=cookieheader)
+                self.cookie = SimpleCookie(input=cookieheader)
 
             if not self.id and self.key in self.cookie:
                 self.id = self.cookie[self.key].value

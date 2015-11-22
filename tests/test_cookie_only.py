@@ -39,6 +39,38 @@ def test_increment():
     res = app.get('/')
     assert 'current value is: 3' in res
 
+def test_invalid_cookie():
+    # This is not actually a cookie only session, but we still test the cookie part.
+    options = {'session.validate_key':'hoobermas'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    # Set an invalid cookie.
+    app.set_cookie('cb_/zabbix/actionconf.php_parts', 'HI')
+    res = app.get('/')
+    assert 'current value is: 2' in res, res
+
+    res = app.get('/')
+    assert 'current value is: 3' in res, res
+
+def test_invalid_cookie_cookietype():
+    # This is not actually a cookie only session, but we still test the cookie part.
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    # Set an invalid cookie.
+    app.set_cookie('cb_/zabbix/actionconf.php_parts', 'HI')
+    res = app.get('/')
+    assert 'current value is: 2' in res, res
+
+    res = app.get('/')
+    assert 'current value is: 3' in res, res
+
 def test_json_serializer():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': 'json'}
     app = TestApp(SessionMiddleware(simple_app, **options))
