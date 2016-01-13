@@ -8,10 +8,10 @@ ease of use with any Python based application.
 
 * **Lazy-Loading Sessions**: No performance hit for having sessions active in a request unless they're actually used
 * **Performance**: Utilizes a multiple-reader / single-writer locking system to prevent the Dog Pile effect when caching.
-* **Mulitple Back-ends**: File-based, DBM files, memcached, memory, and database (via SQLAlchemy) back-ends available for sessions and caching
+* **Multiple Back-ends**: File-based, DBM files, memcached, memory, and database (via SQLAlchemy) back-ends available for sessions and caching
 * **Cookie-based Sessions**: SHA-1 signatures with optional AES encryption for client-side cookie-based session storage
 * **Flexible Caching**: Data can be cached per function to different back-ends, with different expirations, and different keys
-* **Extensible Back-ends**: Add more backends using setuptools entrypoints to support new back-ends.
+* **Extensible Back-ends**: Add more back-ends using setuptools entrypoints to support new back-ends.
 
 .. toctree::
    :maxdepth: 2
