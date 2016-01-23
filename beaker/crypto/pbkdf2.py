@@ -1,3 +1,8 @@
+"""
+PBKDF2 Implementation adapted from django.utils.crypto.
+
+This is used to generate the encryption key for enciphered sessions.
+"""
 from beaker._compat import bytes_, xrange_
 
 import hmac
