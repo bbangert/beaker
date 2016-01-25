@@ -104,7 +104,8 @@ on the session object::
 
     Beaker relies on Python's pickle module to pickle data objects for storage
     in the session. Objects that cannot be pickled should **not** be stored in
-    the session.
+    the session. It's suggested to switch to **json** ``data_serializer`` to avoid
+    possible security issues with pickle.
 
 This flags a session to be saved, and it will be stored on the chosen back-end
 at the end of the request.
