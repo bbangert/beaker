@@ -288,32 +288,24 @@ def verify_rules(params, ruleset):
 
 def coerce_session_params(params):
     rules = [
-        ('data_dir', (str, NoneType), "data_dir must be a string "
-         "referring to a directory."),
-        ('lock_dir', (str, NoneType), "lock_dir must be a string referring to a "
-         "directory."),
+        ('data_dir', (str, NoneType), "data_dir must be a string referring to a directory."),
+        ('lock_dir', (str, NoneType), "lock_dir must be a string referring to a directory."),
         ('type', (str, NoneType), "Session type must be a string."),
-        ('cookie_expires', (bool, datetime, timedelta, int), "Cookie expires was "
-         "not a boolean, datetime, int, or timedelta instance."),
-        ('cookie_domain', (str, NoneType), "Cookie domain must be a "
-         "string."),
-        ('cookie_path', (str, NoneType), "Cookie path must be a "
-         "string."),
+        ('cookie_expires', (bool, datetime, timedelta, int),
+         "Cookie expires was not a boolean, datetime, int, or timedelta instance."),
+        ('cookie_domain', (str, NoneType), "Cookie domain must be a string."),
+        ('cookie_path', (str, NoneType), "Cookie path must be a string."),
         ('id', (str,), "Session id must be a string."),
         ('key', (str,), "Session key must be a string."),
         ('secret', (str, NoneType), "Session secret must be a string."),
-        ('validate_key', (str, NoneType), "Session encrypt_key must be "
-         "a string."),
-        ('encrypt_key', (str, NoneType), "Session validate_key must be "
-         "a string."),
+        ('validate_key', (str, NoneType), "Session encrypt_key must be a string."),
+        ('encrypt_key', (str, NoneType), "Session validate_key must be a string."),
         ('encrypt_nonce_bits', (int, NoneType), "Session encrypt_nonce_bits must be a number"),
         ('secure', (bool, NoneType), "Session secure must be a boolean."),
         ('httponly', (bool, NoneType), "Session httponly must be a boolean."),
-        ('timeout', (int, NoneType), "Session timeout must be an "
-         "integer."),
+        ('timeout', (int, NoneType), "Session timeout must be an integer."),
         ('auto', (bool, NoneType), "Session is created if accessed."),
-        ('webtest_varname', (str, NoneType), "Session varname must be "
-         "a string."),
+        ('webtest_varname', (str, NoneType), "Session varname must be a string."),
     ]
     opts = verify_rules(params, rules)
     cookie_expires = opts.get('cookie_expires')
@@ -325,19 +317,16 @@ def coerce_session_params(params):
 
 def coerce_cache_params(params):
     rules = [
-        ('data_dir', (str, NoneType), "data_dir must be a string "
-         "referring to a directory."),
-        ('lock_dir', (str, NoneType), "lock_dir must be a string referring to a "
-         "directory."),
+        ('data_dir', (str, NoneType), "data_dir must be a string referring to a directory."),
+        ('lock_dir', (str, NoneType), "lock_dir must be a string referring to a directory."),
         ('type', (str,), "Cache type must be a string."),
-        ('enabled', (bool, NoneType), "enabled must be true/false "
-         "if present."),
-        ('expire', (int, NoneType), "expire must be an integer representing "
-         "how many seconds the cache is valid for"),
-        ('regions', (list, tuple, NoneType), "Regions must be a "
-         "comma seperated list of valid regions"),
-        ('key_length', (int, NoneType), "key_length must be an integer "
-         "which indicates the longest a key can be before hashing"),
+        ('enabled', (bool, NoneType), "enabled must be true/false if present."),
+        ('expire', (int, NoneType),
+         "expire must be an integer representing how many seconds the cache is valid for"),
+        ('regions', (list, tuple, NoneType),
+         "Regions must be a comma seperated list of valid regions"),
+        ('key_length', (int, NoneType),
+         "key_length must be an integer which indicates the longest a key can be before hashing"),
     ]
     return verify_rules(params, rules)
 
@@ -348,37 +337,31 @@ def coerce_memcached_behaviors(behaviors):
         ('no_block', (bool, int), 'no_block must be a boolean or an integer'),
         ('receive_timeout', (int,), 'receive_timeout must be an integer'),
         ('send_timeout', (int,), 'send_timeout must be an integer'),
-        ('ketama_hash', (str,), 'ketama_hash must be a string designating '
-         'a valid hashing strategy option'),
+        ('ketama_hash', (str,),
+         'ketama_hash must be a string designating a valid hashing strategy option'),
         ('_poll_timeout', (int,), '_poll_timeout must be an integer'),
         ('auto_eject', (bool, int), 'auto_eject must be an integer'),
         ('retry_timeout', (int,), 'retry_timeout must be an integer'),
         ('_sort_hosts', (bool, int), '_sort_hosts must be an integer'),
         ('_io_msg_watermark', (int,), '_io_msg_watermark must be an integer'),
         ('ketama', (bool, int), 'ketama must be a boolean or an integer'),
-        ('ketama_weighted', (bool, int), 'ketama_weighted must be a boolean or '
-         'an integer'),
-        ('_io_key_prefetch', (int, bool), '_io_key_prefetch must be a boolean '
-         'or an integer'),
-        ('_hash_with_prefix_key', (bool, int), '_hash_with_prefix_key must be '
-         'a boolean or an integer'),
-        ('tcp_nodelay', (bool, int), 'tcp_nodelay must be a boolean or an '
-         'integer'),
+        ('ketama_weighted', (bool, int), 'ketama_weighted must be a boolean or an integer'),
+        ('_io_key_prefetch', (int, bool), '_io_key_prefetch must be a boolean or an integer'),
+        ('_hash_with_prefix_key', (bool, int),
+         '_hash_with_prefix_key must be a boolean or an integer'),
+        ('tcp_nodelay', (bool, int), 'tcp_nodelay must be a boolean or an integer'),
         ('failure_limit', (int,), 'failure_limit must be an integer'),
-        ('buffer_requests', (bool, int), 'buffer_requests must be a boolean '
-         'or an integer'),
+        ('buffer_requests', (bool, int), 'buffer_requests must be a boolean or an integer'),
         ('_socket_send_size', (int,), '_socket_send_size must be an integer'),
         ('num_replicas', (int,), 'num_replicas must be an integer'),
         ('remove_failed', (int,), 'remove_failed must be an integer'),
         ('_noreply', (bool, int), '_noreply must be a boolean or an integer'),
-        ('_io_bytes_watermark', (int,), '_io_bytes_watermark must be an '
-         'integer'),
+        ('_io_bytes_watermark', (int,), '_io_bytes_watermark must be an integer'),
         ('_socket_recv_size', (int,), '_socket_recv_size must be an integer'),
-        ('distribution', (str,), 'distribution must be a string designating '
-         'a valid distribution option'),
+        ('distribution', (str,),
+         'distribution must be a string designating a valid distribution option'),
         ('connect_timeout', (int,), 'connect_timeout must be an integer'),
-        ('hash', (str,), 'hash must be a string designating a valid hashing '
-         'option'),
+        ('hash', (str,), 'hash must be a string designating a valid hashing option'),
         ('verify_keys', (bool, int), 'verify_keys must be a boolean or an integer'),
         ('dead_timeout', (int,), 'dead_timeout must be an integer')
     ]
