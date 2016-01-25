@@ -1,5 +1,6 @@
 """Beaker utilities"""
-from ._compat import PY2, string_type, unicode_text, NoneType, dictkeyslist, im_class, im_func, pickle
+from ._compat import PY2, string_type, unicode_text, NoneType, dictkeyslist, im_class, im_func, pickle, func_signature, \
+    default_im_func
 
 try:
     import threading as _threading
@@ -89,8 +90,8 @@ def verify_directory(dir):
 
 def has_self_arg(func):
     """Return True if the given function has a 'self' argument."""
-    args = inspect.getargspec(func)
-    if args and args[0] and args[0][0] in ('self', 'cls'):
+    args = list(func_signature(func).parameters)
+    if args and args[0] in ('self', 'cls'):
         return True
     else:
         return False

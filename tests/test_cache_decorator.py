@@ -4,6 +4,7 @@ from datetime import datetime
 import beaker.cache as cache
 from beaker.cache import CacheManager, cache_region, region_invalidate
 from beaker import util
+from nose import SkipTest
 
 defaults = {'cache.data_dir':'./cache', 'cache.type':'dbm', 'cache.expire': 2}
 
@@ -28,9 +29,15 @@ def albert(x):
 def alfred(x, xx, y=None):
     return str(time.time()) + str(x) + str(xx) + str(y)
 
-@cache_region('short_term')
-def alfred_self(self, xx, y=None):
-    return str(time.time()) + str(self) + str(xx) + str(y)
+class AlfredCacher(object):
+    @cache_region('short_term')
+    def alfred_self(self, xx, y=None):
+        return str(time.time()) + str(self) + str(xx) + str(y)
+
+try:
+    from .annotated_functions import AnnotatedAlfredCacher
+except (ImportError, SyntaxError):
+    AnnotatedAlfredCacher = None
 
 
 def make_cache_obj(**kwargs):
@@ -259,17 +266,49 @@ def test_check_region_decorator_with_kwargs():
 
 
 def test_check_region_decorator_with_kwargs_and_self():
-    result = alfred_self('fake_self', xx=5, y='blah')
+    a1 = AlfredCacher()
+    a2 = AlfredCacher()
+
+    result = a1.alfred_self(xx=5, y='blah')
     time.sleep(0.1)
 
-    result2 = alfred_self('fake_self2', y='blah', xx=5)
+    result2 = a2.alfred_self(y='blah', xx=5)
     assert result == result2
 
-    result3 = alfred_self('fake_self2', 5, y=5)
+    result3 = a2.alfred_self(5, y=5)
     assert result != result3
 
-    result4 = alfred_self('fake_self2', 5, 'blah')
+    result4 = a2.alfred_self(5, 'blah')
     assert result == result4
 
-    result5 = alfred_self('fake_self2', 5, y='blah')
+    result5 = a2.alfred_self(5, y='blah')
     assert result == result5
+
+    result6 = a2.alfred_self(6, 'blah')
+    assert result != result6
+
+
+def test_check_region_decorator_with_kwargs_self_and_annotations():
+    if AnnotatedAlfredCacher is None:
+        raise SkipTest('Python version not supporting annotations')
+
+    a1 = AnnotatedAlfredCacher()
+    a2 = AnnotatedAlfredCacher()
+
+    result = a1.alfred_self(xx=5, y='blah')
+    time.sleep(0.1)
+
+    result2 = a2.alfred_self(y='blah', xx=5)
+    assert result == result2
+
+    result3 = a2.alfred_self(5, y=5)
+    assert result != result3
+
+    result4 = a2.alfred_self(5, 'blah')
+    assert result == result4
+
+    result5 = a2.alfred_self(5, y='blah')
+    assert result == result5
+
+    result6 = a2.alfred_self(6, 'blah')
+    assert result != result6
