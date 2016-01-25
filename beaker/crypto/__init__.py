@@ -7,6 +7,7 @@ from beaker.crypto.util import hmac, sha1, hmac_sha1, md5
 from beaker import util
 
 keyLength = None
+DEFAULT_NONCE_BITS = 128
 
 if JYTHON:
     try:
@@ -42,3 +43,12 @@ def generateCryptoKeys(master_key, salt, iterations):
     # os.urandom() returns truly random data, this will have no effect on the
     # overall security.
     return pbkdf2(master_key, salt, iterations=iterations, dklen=keyLength)
+
+
+def get_nonce_size(number_of_bits):
+    if number_of_bits % 8:
+        raise ValueError('Nonce complexity currently supports multiples of 8')
+
+    bytes = number_of_bits // 8
+    b64bytes = ((4 * bytes // 3) + 3) & ~3
+    return bytes, b64bytes

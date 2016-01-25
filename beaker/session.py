@@ -3,7 +3,7 @@ from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64deco
 import os
 import time
 from datetime import datetime, timedelta
-from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1
+from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1, get_nonce_size, DEFAULT_NONCE_BITS
 from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
@@ -101,14 +101,18 @@ class Session(dict):
     :param encrypt_key: The key to use for the local session encryption, if not
                         provided the session will not be encrypted.
     :param validate_key: The key used to sign the local encrypted session
-
+    :param encrypt_nonce_bits: Number of bits used to generate nonce for encryption key salt.
+                               For security reason this is 128bits be default. If you want
+                               to keep backward compatibility with sessions generated before 1.8.0
+                               set this to 48.
     """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
                  key='beaker.session.id', timeout=None, cookie_expires=True,
                  cookie_domain=None, cookie_path='/', data_serializer='pickle', secret=None,
                  secure=False, namespace_class=None, httponly=False,
-                 encrypt_key=None, validate_key=None, **namespace_args):
+                 encrypt_key=None, validate_key=None, encrypt_nonce_bits=DEFAULT_NONCE_BITS,
+                 **namespace_args):
         if not type:
             if data_dir:
                 self.type = 'file'
@@ -139,6 +143,7 @@ class Session(dict):
         self.httponly = httponly
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
+        self.encrypt_nonce_size = get_nonce_size(encrypt_nonce_bits)
         self.id = id
         self.accessed_dict = {}
         self.invalidate_corrupt = invalidate_corrupt
@@ -260,7 +265,8 @@ class Session(dict):
         """Serialize, encipher, and base64 the session dict"""
         session_data = session_data or self.copy()
         if self.encrypt_key:
-            nonce = b64encode(os.urandom(6))[:8]
+            nonce_len, nonce_b64len = self.encrypt_nonce_size
+            nonce = b64encode(os.urandom(nonce_len))[:nonce_b64len]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                                     self.validate_key + nonce, 1)
             data = util.serialize(session_data, self.data_serializer)
@@ -274,10 +280,11 @@ class Session(dict):
         dict"""
         if self.encrypt_key:
             try:
-                nonce = session_data[:8]
+                __, nonce_b64len = self.encrypt_nonce_size
+                nonce = session_data[:nonce_b64len]
                 encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                                         self.validate_key + nonce, 1)
-                payload = b64decode(session_data[8:])
+                payload = b64decode(session_data[nonce_b64len:])
                 data = crypto.aesDecrypt(payload, encrypt_key)
             except:
                 # As much as I hate a bare except, we get some insane errors
@@ -287,16 +294,16 @@ class Session(dict):
                     return None
                 else:
                     raise
-            try:
-                return util.deserialize(data, self.data_serializer)
-            except:
-                if self.invalidate_corrupt:
-                    return None
-                else:
-                    raise
         else:
             data = b64decode(session_data)
+
+        try:
             return util.deserialize(data, self.data_serializer)
+        except:
+            if self.invalidate_corrupt:
+                return None
+            else:
+                raise
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -496,11 +503,12 @@ class CookieSession(Session):
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  cookie_expires=True, cookie_domain=None, cookie_path='/',
                  encrypt_key=None, validate_key=None, secure=False,
-                 httponly=False, data_serializer='pickle', **kwargs):
+                 httponly=False, data_serializer='pickle',
+                 encrypt_nonce_bits=DEFAULT_NONCE_BITS, **kwargs):
 
         if not crypto.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
-                                  "encrypted cookie-only Session.")
+                                            "encrypted cookie-only Session.")
 
         self.request = request
         self.key = key
@@ -508,6 +516,7 @@ class CookieSession(Session):
         self.cookie_expires = cookie_expires
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
+        self.encrypt_nonce_size = get_nonce_size(encrypt_nonce_bits)
         self.request['set_cookie'] = False
         self.secure = secure
         self.httponly = httponly

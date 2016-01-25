@@ -306,6 +306,7 @@ def coerce_session_params(params):
          "a string."),
         ('encrypt_key', (str, NoneType), "Session validate_key must be "
          "a string."),
+        ('encrypt_nonce_bits', (int, NoneType), "Session encrypt_nonce_bits must be a number"),
         ('secure', (bool, NoneType), "Session secure must be a boolean."),
         ('httponly', (bool, NoneType), "Session httponly must be a boolean."),
         ('timeout', (int, NoneType), "Session timeout must be an "
