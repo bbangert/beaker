@@ -1,5 +1,16 @@
-Release 1.7.0dev (2015-02-25)
-=============================
+Release 1.8.0 (2016-01-26)
+==========================
+
+* Encrypted sessions can now specify nonce length for salt generation through ``encrypt_nonce_bits`` parameter.
+  set it to ``48`` for backward compatibility with sessions generated before 1.8.0
+* kwargs support in @cache_region decorator
+* annotations support in @cache_region decorator
+* data_serializer parameter in Session can now specify ``json`` to avoid pickle security issues
+* Invalid cookies are now skipped in cookie based sessions
+* Memcached based on PyLibMC now share same connection pool for same url
+
+Release 1.7.0 (2015-04-20)
+==========================
 
 * Beaker no longer supports python 2.4 and 2.5
 * Beaker now supports Python 2.6, 2.7, 3.2, 3.3, 3.4 without 2to3 usage

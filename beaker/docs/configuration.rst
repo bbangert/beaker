@@ -264,6 +264,6 @@ regions (**optional**, list, tuple)
 
 
 .. _Pylons: http://pylonshq.com/
-.. _TurboGears2: http://turbogears.org/2.0/
+.. _TurboGears2: http://turbogears.org/
 .. _SQLAlchemy: http://www.sqlalchemy.org/
 .. _pycryptopp: http://pypi.python.org/pypi/pycryptopp
