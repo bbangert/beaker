@@ -112,7 +112,7 @@ def test_custom_serializer():
             return json.loads(data_string).decode('utf-8')
 
         def dumps(self, data):
-            return json.dumps(data_string.encode('utf-8'))
+            return json.dumps(data.encode('utf-8'))
 
     serializer = CustomSerializer()
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'serializer': serializer}
