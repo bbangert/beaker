@@ -105,14 +105,15 @@ class Session(dict):
                                For security reason this is 128bits be default. If you want
                                to keep backward compatibility with sessions generated before 1.8.0
                                set this to 48.
+    :param serializer: Custom serializer object, with ``"loads"`` and ``"dumps"`` methods.
     """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
                  key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, cookie_path='/', data_serializer='pickle', secret=None,
+                 cookie_domain=None, cookie_path='/', data_serializer=None, secret=None,
                  secure=False, namespace_class=None, httponly=False,
                  encrypt_key=None, validate_key=None, encrypt_nonce_bits=DEFAULT_NONCE_BITS,
-                 **namespace_args):
+                 serializer=None, **namespace_args):
         if not type:
             if data_dir:
                 self.type = 'file'
@@ -132,7 +133,8 @@ class Session(dict):
         self.timeout = timeout
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
-        self.data_serializer = data_serializer
+
+        self._set_serializer(data_serializer, serializer)
 
         # Default cookie domain/path
         self._domain = cookie_domain
@@ -177,6 +179,20 @@ class Session(dict):
                     self.invalidate()
                 else:
                     raise
+
+    def _set_serializer(self, data_serializer, serializer):
+        self.data_serializer = data_serializer
+        if data_serializer is None and serializer is None:
+            self.data_serializer = 'pickle'
+
+        if self.data_serializer == 'json':
+            self.serializer = util.JsonSerializer()
+        elif self.data_serializer == 'pickle':
+            self.serializer = util.PickleSerializer()
+        elif serializer is not None:
+            self.serializer = serializer
+        else:
+            raise BeakerException('Invalid value for data_serializer: %s' % data_serializer)
 
     def has_key(self, name):
         return name in self
@@ -269,10 +285,10 @@ class Session(dict):
             nonce = b64encode(os.urandom(nonce_len))[:nonce_b64len]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                                     self.validate_key + nonce, 1)
-            data = util.serialize(session_data, self.data_serializer)
+            data = self.serializer.dumps(session_data)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = util.serialize(session_data, self.data_serializer)
+            data = self.serializer.dumps(session_data)
             return b64encode(data)
 
     def _decrypt_data(self, session_data):
@@ -298,7 +314,7 @@ class Session(dict):
             data = b64decode(session_data)
 
         try:
-            return util.deserialize(data, self.data_serializer)
+            return self.serializer.loads(data)
         except:
             if self.invalidate_corrupt:
                 return None
@@ -498,13 +514,14 @@ class CookieSession(Session):
     :param encrypt_key: The key to use for the local session encryption, if not
                         provided the session will not be encrypted.
     :param validate_key: The key used to sign the local encrypted session
+    :param serializer: Custom serializer object, with ``"loads"`` and ``"dumps"`` methods.
 
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  cookie_expires=True, cookie_domain=None, cookie_path='/',
                  encrypt_key=None, validate_key=None, secure=False,
-                 httponly=False, data_serializer='pickle',
-                 encrypt_nonce_bits=DEFAULT_NONCE_BITS, **kwargs):
+                 httponly=False, data_serializer=None,
+                 encrypt_nonce_bits=DEFAULT_NONCE_BITS, serializer=None, **kwargs):
 
         if not crypto.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
@@ -522,7 +539,8 @@ class CookieSession(Session):
         self.httponly = httponly
         self._domain = cookie_domain
         self._path = cookie_path
-        self.data_serializer = data_serializer
+
+        self._set_serializer(data_serializer, serializer)
 
         try:
             cookieheader = request['cookie']
