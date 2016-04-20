@@ -107,7 +107,14 @@ def test_pickle_serializer():
     assert 'current value is: 3' in res
 
 def test_custom_serializer():
-    serializer = json
+    class CustomSerializer(object):
+        def loads(self, data_string):
+            return json.loads(data_string).decode('utf-8')
+
+        def dumps(self, data):
+            return json.dumps(data_string.encode('utf-8'))
+
+    serializer = CustomSerializer()
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'serializer': serializer}
     app = TestApp(SessionMiddleware(simple_app, **options))
 
