@@ -115,7 +115,7 @@ def test_custom_serializer():
             return json.dumps(data.encode('utf-8'))
 
     serializer = CustomSerializer()
-    options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'serializer': serializer}
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': serializer}
     app = TestApp(SessionMiddleware(simple_app, **options))
 
     res = app.get('/')
