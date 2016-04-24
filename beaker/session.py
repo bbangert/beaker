@@ -169,7 +169,7 @@ class Session(dict):
             try:
                 self.load()
             except Exception as e:
-                if invalidate_corrupt:
+                if self.invalidate_corrupt:
                     util.warn(
                         "Invalidating corrupt session %s; "
                         "error was: %s.  Set invalidate_corrupt=False "
@@ -498,13 +498,19 @@ class CookieSession(Session):
     :param encrypt_key: The key to use for the local session encryption, if not
                         provided the session will not be encrypted.
     :param validate_key: The key used to sign the local encrypted session
+    :param invalidate_corrupt: How to handle corrupt data when loading. When
+                               set to True, then corrupt data will be silently
+                               invalidated and a new session created,
+                               otherwise invalid data will cause an exception.
+    :type invalidate_corrupt: bool
 
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  cookie_expires=True, cookie_domain=None, cookie_path='/',
                  encrypt_key=None, validate_key=None, secure=False,
                  httponly=False, data_serializer='pickle',
-                 encrypt_nonce_bits=DEFAULT_NONCE_BITS, **kwargs):
+                 encrypt_nonce_bits=DEFAULT_NONCE_BITS, invalidate_corrupt=False,
+                 **kwargs):
 
         if not crypto.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
@@ -523,6 +529,7 @@ class CookieSession(Session):
         self._domain = cookie_domain
         self._path = cookie_path
         self.data_serializer = data_serializer
+        self.invalidate_corrupt = invalidate_corrupt
 
         try:
             cookieheader = request['cookie']
@@ -548,8 +555,15 @@ class CookieSession(Session):
                 cookie_data = self.cookie[self.key].value
                 self.update(self._decrypt_data(cookie_data))
                 self._path = self.get('_path', '/')
-            except:
-                pass
+            except Exception as e:
+                if self.invalidate_corrupt:
+                    util.warn(
+                        "Invalidating corrupt session %s; "
+                        "error was: %s.  Set invalidate_corrupt=False "
+                        "to propagate this exception." % (self.id, e))
+                    self.invalidate()
+                else:
+                    raise
 
             if self.timeout is not None:
                 now = time.time()
