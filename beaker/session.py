@@ -279,31 +279,16 @@ class Session(dict):
         """Bas64, decipher, then un-serialize the data for the session
         dict"""
         if self.encrypt_key:
-            try:
-                __, nonce_b64len = self.encrypt_nonce_size
-                nonce = session_data[:nonce_b64len]
-                encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                                        self.validate_key + nonce, 1)
-                payload = b64decode(session_data[nonce_b64len:])
-                data = crypto.aesDecrypt(payload, encrypt_key)
-            except:
-                # As much as I hate a bare except, we get some insane errors
-                # here that get tossed when crypto fails, so we raise the
-                # 'right' exception
-                if self.invalidate_corrupt:
-                    return None
-                else:
-                    raise
+            __, nonce_b64len = self.encrypt_nonce_size
+            nonce = session_data[:nonce_b64len]
+            encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
+                                                    self.validate_key + nonce, 1)
+            payload = b64decode(session_data[nonce_b64len:])
+            data = crypto.aesDecrypt(payload, encrypt_key)
         else:
             data = b64decode(session_data)
 
-        try:
-            return util.deserialize(data, self.data_serializer)
-        except:
-            if self.invalidate_corrupt:
-                return None
-            else:
-                raise
+        return util.deserialize(data, self.data_serializer)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
