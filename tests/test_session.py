@@ -30,12 +30,7 @@ def get_cookie_session(**kwargs):
     options = {'validate_key': 'test_key'}
     options.update(**kwargs)
     if COOKIE_REQUEST.get('set_cookie'):
-        cookie_out = COOKIE_REQUEST.get('cookie_out')
-        key = 'beaker.session.id'
-        cookie_out = cookie_out[cookie_out.index(key) + len(key) + 1:]
-        cookie_out = cookie_out[:cookie_out.index(';')]
-
-        COOKIE_REQUEST['cookie'] = {key: cookie_out}
+        COOKIE_REQUEST['cookie'] = COOKIE_REQUEST.get('cookie_out')
     return CookieSession(COOKIE_REQUEST, **options)
 
 
