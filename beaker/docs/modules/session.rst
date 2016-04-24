@@ -1,4 +1,4 @@
-:mod:`beaker.session` -- Session classes 
+:mod:`beaker.session` -- Session classes
 ========================================
 
 .. automodule:: beaker.session
@@ -13,3 +13,4 @@ Module Contents
 .. autoclass:: SessionObject
    :members: persist, get_by_id, accessed
 .. autoclass:: SignedCookie
+.. autodata:: InvalidSignature

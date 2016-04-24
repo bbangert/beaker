@@ -9,7 +9,19 @@ from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
 from beaker.cookie import SimpleCookie
 
-__all__ = ['SignedCookie', 'Session']
+__all__ = ['SignedCookie', 'Session', 'InvalidSignature']
+
+
+class _InvalidSignatureType(object):
+    """Returned from SignedCookie when the value's signature was invalid."""
+    def __nonzero__(self):
+        return False
+
+    def __bool__(self):
+        return False
+
+
+InvalidSignature = _InvalidSignatureType()
 
 
 try:
@@ -42,11 +54,10 @@ except ImportError:
             return raw_id.replace('+', '-').replace('/', '_').rstrip('=')
 
 
-class SignedCookie(SimpleCookie):
+class _SignedCookie(SimpleCookie):
     """Extends python cookie to give digital signature support"""
-    def __init__(self, secret, input=None, invalidate_corrupt=True):
+    def __init__(self, secret, input=None):
         self.secret = secret.encode('UTF-8')
-        self.invalidate_corrupt = invalidate_corrupt
         http_cookies.BaseCookie.__init__(self, input)
 
     def value_decode(self, val):
@@ -60,19 +71,13 @@ class SignedCookie(SimpleCookie):
         invalid_bits = 0
         input_sig = val[:40]
         if len(sig) != len(input_sig):
-            if self.invalidate_corrupt:
-                return None, val
-            else:
-                raise BeakerException("Invalid signature")
+            return InvalidSignature, val
 
         for a, b in zip(sig, input_sig):
             invalid_bits += a != b
 
         if invalid_bits:
-            if self.invalidate_corrupt:
-                return None, val
-            else:
-                raise BeakerException("Invalid signature")
+            return InvalidSignature, val
         else:
             return val[40:], val
 
@@ -162,22 +167,24 @@ class Session(dict):
             cookieheader = request.get('cookie', '')
             if secret:
                 try:
-                    self.cookie = SignedCookie(
+                    self.cookie = _SignedCookie(
                         secret,
                         input=cookieheader,
-                        invalidate_corrupt=self.invalidate_corrupt,
                     )
                 except http_cookies.CookieError:
-                    self.cookie = SignedCookie(
+                    self.cookie = _SignedCookie(
                         secret,
                         input=None,
-                        invalidate_corrupt=self.invalidate_corrupt,
                     )
             else:
                 self.cookie = SimpleCookie(input=cookieheader)
 
             if not self.id and self.key in self.cookie:
-                self.id = self.cookie[self.key].value
+                cookie_data = self.cookie[self.key].value
+                # Should we check invalidate_corrupt here?
+                if cookie_data is InvalidSignature:
+                    cookie_data = None
+                self.id = cookie_data
 
         self.is_new = self.id is None
         if self.is_new:
@@ -544,16 +551,14 @@ class CookieSession(Session):
                                   "Session.")
 
         try:
-            self.cookie = SignedCookie(
+            self.cookie = _SignedCookie(
                 validate_key,
                 input=cookieheader,
-                invalidate_corrupt=self.invalidate_corrupt,
             )
         except http_cookies.CookieError:
-            self.cookie = SignedCookie(
+            self.cookie = _SignedCookie(
                 validate_key,
                 input=None,
-                invalidate_corrupt=self.invalidate_corrupt,
             )
 
         self['_id'] = _session_id()
@@ -564,6 +569,8 @@ class CookieSession(Session):
             self.is_new = False
             try:
                 cookie_data = self.cookie[self.key].value
+                if cookie_data is InvalidSignature:
+                    raise BeakerException("Invalid signature")
                 self.update(self._decrypt_data(cookie_data))
                 self._path = self.get('_path', '/')
             except Exception as e:

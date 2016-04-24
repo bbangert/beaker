@@ -380,6 +380,18 @@ def test_invalidate_empty_cookie():
 
 
 @with_setup(setup_cookie_request)
+def test_unrelated_cookie():
+    kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
+    session = get_cookie_session(**kwargs)
+    session['foo'] = 'bar'
+    session.save()
+
+    COOKIE_REQUEST['cookie_out'] = COOKIE_REQUEST['cookie_out'] + '; some.other=cookie'
+    session = get_cookie_session(id=session.id, invalidate_corrupt=False, **kwargs)
+    assert "foo" in dict(session)
+
+
+@with_setup(setup_cookie_request)
 def test_invalidate_invalid_signed_cookie():
     kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
     session = get_cookie_session(**kwargs)
