@@ -54,7 +54,7 @@ except ImportError:
             return raw_id.replace('+', '-').replace('/', '_').rstrip('=')
 
 
-class _SignedCookie(SimpleCookie):
+class SignedCookie(SimpleCookie):
     """Extends python cookie to give digital signature support"""
     def __init__(self, secret, input=None):
         self.secret = secret.encode('UTF-8')
@@ -167,12 +167,12 @@ class Session(dict):
             cookieheader = request.get('cookie', '')
             if secret:
                 try:
-                    self.cookie = _SignedCookie(
+                    self.cookie = SignedCookie(
                         secret,
                         input=cookieheader,
                     )
                 except http_cookies.CookieError:
-                    self.cookie = _SignedCookie(
+                    self.cookie = SignedCookie(
                         secret,
                         input=None,
                     )
@@ -551,12 +551,12 @@ class CookieSession(Session):
                                   "Session.")
 
         try:
-            self.cookie = _SignedCookie(
+            self.cookie = SignedCookie(
                 validate_key,
                 input=cookieheader,
             )
         except http_cookies.CookieError:
-            self.cookie = _SignedCookie(
+            self.cookie = SignedCookie(
                 validate_key,
                 input=None,
             )
