@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from beaker._compat import u_, pickle
 
+import binascii
 import sys
 import time
 import warnings
@@ -8,7 +9,7 @@ import warnings
 from nose import SkipTest, with_setup
 
 from beaker.crypto import has_aes
-from beaker.session import CookieSession, Session, SignedCookie
+from beaker.session import CookieSession, Session
 from beaker import util
 
 
@@ -358,7 +359,7 @@ def test_invalidate_corrupt():
     f.close()
 
     util.assert_raises(
-        (pickle.UnpicklingError, EOFError, TypeError),
+        (pickle.UnpicklingError, EOFError, TypeError, binascii.Error),
         get_session,
         use_cookies=False, type='file',
                 data_dir='./cache', id=session.id
@@ -379,7 +380,7 @@ def test_invalidate_corrupt_cookie():
     COOKIE_REQUEST['cookie_out'] = ' beaker.session.id=fakecookie; Path=/'
 
     util.assert_raises(
-        (pickle.UnpicklingError, EOFError, TypeError),
+        (pickle.UnpicklingError, EOFError, TypeError, binascii.Error),
         get_cookie_session,
         id=session.id
     )
