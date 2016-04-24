@@ -43,7 +43,6 @@ def test_session():
     for test_case in (
         check_save_load,
         check_save_load_encryption,
-        check_save_load_encryption_cookie,
         check_decryption_failure,
         check_delete,
         check_revert,
@@ -74,28 +73,6 @@ def check_save_load(session_getter):
 
 
 def check_save_load_encryption(session_getter):
-    """Test if the data is actually persistent across requests"""
-    if not has_aes:
-        raise SkipTest()
-    session = session_getter(encrypt_key='666a19cf7f61c64c',
-                          validate_key='hoobermas')
-    session[u_('Suomi')] = u_('Kimi Räikkönen')
-    session[u_('Great Britain')] = u_('Jenson Button')
-    session[u_('Deutchland')] = u_('Sebastian Vettel')
-    session.save()
-
-    session = session_getter(id=session.id, encrypt_key='666a19cf7f61c64c',
-                          validate_key='hoobermas')
-    assert u_('Suomi') in session
-    assert u_('Great Britain') in session
-    assert u_('Deutchland') in session
-
-    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
-    assert session[u_('Great Britain')] == u_('Jenson Button')
-    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
-
-
-def check_save_load_encryption_cookie(session_getter):
     """Test if the data is actually persistent across requests"""
     if not has_aes:
         raise SkipTest()
