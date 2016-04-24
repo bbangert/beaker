@@ -46,7 +46,7 @@ def test_session():
         check_invalidate,
         check_timeout,
     ):
-      for session_getter in (get_session,):
+      for session_getter in (get_session, get_cookie_session,):
             setup_cookie_request()
             yield test_case, session_getter
 
