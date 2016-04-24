@@ -51,6 +51,9 @@ class SignedCookie(SimpleCookie):
 
     def value_decode(self, val):
         val = val.strip('"')
+        if not val:
+            return None, val
+
         sig = HMAC.new(self.secret, val[40:].encode('utf-8'), SHA1).hexdigest()
 
         # Avoid timing attacks

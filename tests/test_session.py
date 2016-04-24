@@ -368,6 +368,18 @@ def test_invalidate_corrupt():
 
 
 @with_setup(setup_cookie_request)
+def test_invalidate_empty_cookie():
+    kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
+    session = get_cookie_session(**kwargs)
+    session['foo'] = 'bar'
+    session.save()
+
+    COOKIE_REQUEST['cookie_out'] = ' beaker.session.id='
+    session = get_cookie_session(id=session.id, invalidate_corrupt=False, **kwargs)
+    assert "foo" not in dict(session)
+
+
+@with_setup(setup_cookie_request)
 def test_invalidate_invalid_signed_cookie():
     kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
     session = get_cookie_session(**kwargs)
