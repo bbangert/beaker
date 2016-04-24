@@ -44,8 +44,9 @@ except ImportError:
 
 class SignedCookie(SimpleCookie):
     """Extends python cookie to give digital signature support"""
-    def __init__(self, secret, input=None):
+    def __init__(self, secret, input=None, invalidate_corrupt=True):
         self.secret = secret.encode('UTF-8')
+        self.invalidate_corrupt = invalidate_corrupt
         http_cookies.BaseCookie.__init__(self, input)
 
     def value_decode(self, val):
@@ -56,13 +57,19 @@ class SignedCookie(SimpleCookie):
         invalid_bits = 0
         input_sig = val[:40]
         if len(sig) != len(input_sig):
-            return None, val
+            if self.invalidate_corrupt:
+                return None, val
+            else:
+                raise BeakerException("Invalid signature")
 
         for a, b in zip(sig, input_sig):
             invalid_bits += a != b
 
         if invalid_bits:
-            return None, val
+            if self.invalidate_corrupt:
+                return None, val
+            else:
+                raise BeakerException("Invalid signature")
         else:
             return val[40:], val
 
@@ -152,9 +159,17 @@ class Session(dict):
             cookieheader = request.get('cookie', '')
             if secret:
                 try:
-                    self.cookie = SignedCookie(secret, input=cookieheader)
+                    self.cookie = SignedCookie(
+                        secret,
+                        input=cookieheader,
+                        invalidate_corrupt=self.invalidate_corrupt,
+                    )
                 except http_cookies.CookieError:
-                    self.cookie = SignedCookie(secret, input=None)
+                    self.cookie = SignedCookie(
+                        secret,
+                        input=None,
+                        invalidate_corrupt=self.invalidate_corrupt,
+                    )
             else:
                 self.cookie = SimpleCookie(input=cookieheader)
 
@@ -526,9 +541,17 @@ class CookieSession(Session):
                                   "Session.")
 
         try:
-            self.cookie = SignedCookie(validate_key, input=cookieheader)
+            self.cookie = SignedCookie(
+                validate_key,
+                input=cookieheader,
+                invalidate_corrupt=self.invalidate_corrupt,
+            )
         except http_cookies.CookieError:
-            self.cookie = SignedCookie(validate_key, input=None)
+            self.cookie = SignedCookie(
+                validate_key,
+                input=None,
+                invalidate_corrupt=self.invalidate_corrupt,
+            )
 
         self['_id'] = _session_id()
         self.is_new = True
