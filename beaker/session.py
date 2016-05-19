@@ -88,8 +88,11 @@ class Session(dict):
     :param key: The name the cookie should be set to.
     :param timeout: How long session data is considered valid. This is used
                     regardless of the cookie being present or not to determine
-                    whether session data is still valid.
-    :type timeout: int
+                    whether session data is still valid. Can be set to None to
+                    disable session time out.
+    :type timeout: int or None
+    :param save_accessed_time: Whether beaker should save the session's access
+                               time. Defaults to true.
     :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
@@ -108,8 +111,9 @@ class Session(dict):
     """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
-                 key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, cookie_path='/', data_serializer='pickle', secret=None,
+                 key='beaker.session.id', timeout=None, save_accessed_time=True,
+                 cookie_expires=True, cookie_domain=None, cookie_path='/',
+                 data_serializer='pickle', secret=None,
                  secure=False, namespace_class=None, httponly=False,
                  encrypt_key=None, validate_key=None, encrypt_nonce_bits=DEFAULT_NONCE_BITS,
                  **namespace_args):
@@ -129,7 +133,10 @@ class Session(dict):
         self.data_dir = data_dir
         self.key = key
 
+        if timeout and not save_accessed_time:
+            raise BeakerException("timeout requires save_accessed_time")
         self.timeout = timeout
+        self.save_atime = save_accessed_time
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
         self.data_serializer = data_serializer
@@ -164,7 +171,9 @@ class Session(dict):
         self.is_new = self.id is None
         if self.is_new:
             self._create_id()
-            self['_accessed_time'] = self['_creation_time'] = time.time()
+            self['_creation_time'] = time.time()
+            if self.save_atime:
+                self['_accessed_time'] = self['_creation_time']
         else:
             try:
                 self.load()
@@ -350,37 +359,41 @@ class Session(dict):
                 # present
                 if session_data is None:
                     session_data = {
-                        '_creation_time': now,
-                        '_accessed_time': now
+                        '_creation_time': now
                     }
+                    if self.save_atime:
+                        session_data['_accessed_time'] = now
                     self.is_new = True
             except (KeyError, TypeError):
                 session_data = {
-                    '_creation_time': now,
-                    '_accessed_time': now
+                    '_creation_time': now
                 }
+                if self.save_atime:
+                    session_data['_accessed_time'] = now
                 self.is_new = True
 
             if session_data is None or len(session_data) == 0:
                 session_data = {
-                    '_creation_time': now,
-                    '_accessed_time': now
+                    '_creation_time': now
                 }
+                if self.save_atime:
+                    session_data['_accessed_time'] = now
                 self.is_new = True
 
             if self.timeout is not None and \
                now - session_data['_accessed_time'] > self.timeout:
                 timed_out = True
             else:
-                # Properly set the last_accessed time, which is different
-                # than the *currently* _accessed_time
-                if self.is_new or '_accessed_time' not in session_data:
-                    self.last_accessed = None
-                else:
-                    self.last_accessed = session_data['_accessed_time']
+                if self.save_atime:
+                    # Properly set the last_accessed time, which is different
+                    # than the *currently* _accessed_time
+                    if self.is_new or '_accessed_time' not in session_data:
+                        self.last_accessed = None
+                    else:
+                        self.last_accessed = session_data['_accessed_time']
 
-                # Update the current _accessed_time
-                session_data['_accessed_time'] = now
+                    # Update the current _accessed_time
+                    session_data['_accessed_time'] = now
 
                 # Set the path if applicable
                 if '_path' in session_data:
@@ -501,8 +514,8 @@ class CookieSession(Session):
 
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
-                 cookie_expires=True, cookie_domain=None, cookie_path='/',
-                 encrypt_key=None, validate_key=None, secure=False,
+                 save_accessed_time=True, cookie_expires=True, cookie_domain=None,
+                 cookie_path='/', encrypt_key=None, validate_key=None, secure=False,
                  httponly=False, data_serializer='pickle',
                  encrypt_nonce_bits=DEFAULT_NONCE_BITS, **kwargs):
 
@@ -513,6 +526,7 @@ class CookieSession(Session):
         self.request = request
         self.key = key
         self.timeout = timeout
+        self.save_atime = save_accessed_time
         self.cookie_expires = cookie_expires
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
@@ -532,6 +546,8 @@ class CookieSession(Session):
         if validate_key is None:
             raise BeakerException("No validate_key specified for Cookie only "
                                   "Session.")
+        if timeout and not save_accessed_time:
+            raise BeakerException("timeout requires save_accessed_time")
 
         try:
             self.cookie = SignedCookie(validate_key, input=cookieheader)
@@ -604,7 +620,8 @@ class CookieSession(Session):
             self['_creation_time'] = time.time()
         if '_id' not in self:
             self['_id'] = _session_id()
-        self['_accessed_time'] = time.time()
+        if self.save_atime:
+            self['_accessed_time'] = time.time()
 
         val = self._encrypt_data()
         if len(val) > 4064:
@@ -722,21 +739,27 @@ class SessionObject(object):
     def persist(self):
         """Persist the session to the storage
 
-        If its set to autosave, then the entire session will be saved
-        regardless of if save() has been called. Otherwise, just the
-        accessed time will be updated if save() was not called, or
-        the session will be saved if save() was called.
+        Always saves the whole session if save() or delete() have been called.
+        If they haven't:
+        - If autosave is set to true, saves the the entire session regardless.
+        - If save_accessed_time is set to true or unset, only saves the updated
+          access time.
+        - If save_accessed_time is set to false, doesn't save anything.
 
         """
         if self.__dict__['_params'].get('auto'):
             self._session().save()
-        else:
-            if self.__dict__.get('_dirty'):
+        elif self.__dict__['_params'].get('save_accessed_time', True):
+            if self.dirty():
                 self._session().save()
             else:
                 self._session().save(accessed_only=True)
+        else:  # save_accessed_time is false
+            if self.dirty():
+                self._session().save()
 
     def dirty(self):
+        """Returns True if save() or delete() have been called"""
         return self.__dict__.get('_dirty', False)
 
     def accessed(self):

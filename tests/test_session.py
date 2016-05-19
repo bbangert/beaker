@@ -3,13 +3,16 @@ from beaker._compat import u_, pickle
 
 import sys
 import time
+import unittest
 import warnings
 
 from nose import SkipTest
 
+from beaker.container import MemoryNamespaceManager
 from beaker.crypto import has_aes
-from beaker.session import Session
-from beaker import util
+from beaker.exceptions import BeakerException
+from beaker.session import Session, SessionObject
+from beaker.util import assert_raises
 
 
 def get_session(**kwargs):
@@ -189,6 +192,17 @@ def test_timeout():
     assert u_('Deutchland') not in session
 
 
+def test_timeout_requires_accessed_time():
+    """Test that it doesn't allow setting save_accessed_time to True with
+    timeout enabled
+    """
+    get_session(timeout=None, save_accessed_time=True)  # is ok
+    assert_raises(BeakerException,
+                  get_session,
+                  timeout=2,
+                  save_accessed_time=False)
+
+
 def test_cookies_enabled():
     """
     Test if cookies are sent out properly when ``use_cookies``
@@ -315,7 +329,7 @@ def test_invalidate_corrupt():
     f.write("crap")
     f.close()
 
-    util.assert_raises(
+    assert_raises(
         pickle.UnpicklingError,
         get_session,
         use_cookies=False, type='file',
@@ -326,3 +340,102 @@ def test_invalidate_corrupt():
                             invalidate_corrupt=True,
                             data_dir='./cache', id=session.id)
     assert "foo" not in dict(session)
+
+
+def test_saves_accessed_time():
+    session = get_session(save_accessed_time=True)
+    session.save()
+    atime1 = session['_accessed_time']
+
+    session2 = get_session(id=session.id, save_accessed_time=True)
+    session2.save()
+    assert session2['_accessed_time'] > atime1
+    assert session2.last_accessed == atime1
+
+
+def test_doesnt_save_accessed_time():
+    session = get_session(save_accessed_time=False)
+    session.save()
+    assert '_accessed_time' not in session
+    session2 = get_session(id=session.id, save_accessed_time=False)
+    session2.save()
+    assert '_accessed_time' not in session2
+    assert not hasattr(session2, 'last_accessed')
+
+
+def test_saves_creation_time_even_witout_accessed_time():
+    session = get_session(save_accessed_time=False)
+    session.save()
+    assert '_creation_time' in session
+
+
+class TestSessionObject(unittest.TestCase):
+    def setUp(self):
+        # San check that we are in fact using the memory backend...
+        assert get_session().namespace_class == MemoryNamespaceManager
+        # so we can be sure we're clearing the right state.
+        MemoryNamespaceManager.namespaces.clear()
+
+    def test_no_autosave_saves_atime_without_save(self):
+        so = SessionObject({}, auto=False)
+        so['foo'] = 'bar'
+        so.persist()
+        session = get_session(id=so.id)
+        assert '_accessed_time' in session
+        assert 'foo' not in session  # because we didn't save()
+
+    def test_no_autosave_saves_with_save(self):
+        so = SessionObject({}, auto=False)
+        so['foo'] = 'bar'
+        so.save()
+        so.persist()
+        session = get_session(id=so.id)
+        assert '_accessed_time' in session
+        assert 'foo' in session
+
+    def test_no_autosave_saves_with_delete(self):
+        req = {'cookie': {'beaker.session.id': 123}}
+
+        so = SessionObject(req, auto=False)
+        so['foo'] = 'bar'
+        so.save()
+        so.persist()
+        session = get_session(id=so.id)
+        assert 'foo' in session
+
+        so2 = SessionObject(req, auto=False)
+        so2.delete()
+        so2.persist()
+        session = get_session(id=so2.id)
+        assert 'foo' not in session
+
+    def test_auto_save_saves_without_save(self):
+        so = SessionObject({}, auto=True)
+        so['foo'] = 'bar'
+        # look ma, no save()!
+        so.persist()
+        session = get_session(id=so.id)
+        assert 'foo' in session
+
+    def test_accessed_time_off_doesnt_save_atime_when_saving(self):
+        so = SessionObject({}, save_accessed_time=False)
+        so['foo'] = 'bar'
+        so.save()
+        so.persist()
+        session = get_session(id=so.id, save_accessed_time=False)
+        assert 'foo' in session
+        assert '_accessed_time' not in session
+
+    def test_accessed_time_off_doesnt_save_without_save(self):
+        req = {'cookie': {'beaker.session.id': 123}}
+        so = SessionObject(req, save_accessed_time=False)
+        so.persist()  # so we can do a set on a non-new session
+
+        so2 = SessionObject(req, save_accessed_time=False)
+        so2['foo'] = 'bar'
+        # no save()
+        so2.persist()
+
+        session = get_session(id=so.id, save_accessed_time=False)
+        assert '_accessed_time' not in session
+        assert 'foo' not in session
