@@ -206,11 +206,13 @@ class Session(dict):
                                      % repr(self.cookie_expires))
             else:
                 expires = None
+        if not self.cookie or self.key not in self.cookie:
+            self.cookie[self.key] = self.id
         if expires is not None:
-            if not self.cookie or self.key not in self.cookie:
-                self.cookie[self.key] = self.id
             self.cookie[self.key]['expires'] = \
                 expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
+        else:
+            self.cookie[self.key]['expires'] = ''
         return expires
 
     def _update_cookie_out(self, set_cookie=True):
