@@ -667,10 +667,16 @@ class SessionObject(object):
             environ = self.__dict__['_environ']
             self.__dict__['_headers'] = req = {'cookie_out': None}
             req['cookie'] = environ.get('HTTP_COOKIE')
-            if params.get('type') == 'cookie':
-                self.__dict__['_sess'] = CookieSession(req, **params)
+            session_cls = params.get('session_class', None)
+            if session_cls is None:
+                if params.get('type') == 'cookie':
+                    session_cls = CookieSession
+                else:
+                    session_cls = Session
             else:
-                self.__dict__['_sess'] = Session(req, **params)
+                assert issubclass(session_cls, Session),\
+                    "Not a Session: " + session_cls
+            self.__dict__['_sess'] = session_cls(req, **params)
         return self.__dict__['_sess']
 
     def __getattr__(self, attr):
