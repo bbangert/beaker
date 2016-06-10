@@ -34,16 +34,34 @@ def test_cookie_expires():
         assert_equal(val, expected[pos])
 
 
+def cookie_expiration(session):
+    cookie = session.cookie.output()
+    expiry_m = re.match('Set-Cookie: beaker.session.id=[0-9a-f]{32}(; expires=[^;]+)?; Path=/', cookie)
+    assert expiry_m
+    expiry = expiry_m.group(1)
+    if expiry is None:
+        return True
+    if re.match('; expires=(Mon|Tue), 1[89]-Jan-2038 [0-9:]{8} GMT', expiry):
+        return False
+    else:
+        return expiry[10:]
+
+
 def test_cookie_exprires_2():
     """Exhibit Set-Cookie: values."""
-    expires = Session(
-            {}, cookie_expires=True
-            ).cookie.output()
+    expires = cookie_expiration(Session({}, cookie_expires=True))
 
-    assert re.match('Set-Cookie: beaker.session.id=[0-9a-f]{32}; Path=/', expires), expires
-    no_expires = Session(
-            {}, cookie_expires=False
-            ).cookie.output()
+    assert expires is True, expires
+    no_expires = cookie_expiration(Session({}, cookie_expires=False))
 
-    assert re.match('Set-Cookie: beaker.session.id=[0-9a-f]{32}; expires=(Mon|Tue), 1[89]-Jan-2038 [0-9:]{8} GMT; Path=/', no_expires), no_expires
+    assert no_expires is False, no_expires
 
+
+def test_set_cookie_expires():
+    """Exhibit Set-Cookie: values."""
+    session = Session({}, cookie_expires=True)
+    assert cookie_expiration(session) is True
+    session._set_cookie_expires(False)
+    assert cookie_expiration(session) is False
+    session._set_cookie_expires(True)
+    assert cookie_expiration(session) is True
