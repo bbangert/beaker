@@ -84,11 +84,13 @@ application.
 
 * id - Unique 40 char SHA-generated session ID
 * last_accessed - The last time the session was accessed before the current
-  access, will be None if the session was just made
+  access, if save_accessed_time is true; the last time it was modified if false;
+  will be None if the session was just made
 
 There's several special session keys populated as well:
 
-* _accessed_time - Current accessed time of the session, when it was loaded
+* _accessed_time - When the session was loaded if save_accessed_time is true;
+  when it was last written if false
 * _creation_time - When the session was created
 
 

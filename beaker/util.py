@@ -304,6 +304,8 @@ def coerce_session_params(params):
         ('secure', (bool, NoneType), "Session secure must be a boolean."),
         ('httponly', (bool, NoneType), "Session httponly must be a boolean."),
         ('timeout', (int, NoneType), "Session timeout must be an integer."),
+        ('save_accessed_time', (bool, NoneType),
+         "Session save_accessed_time must be a boolean (defaults to true)."),
         ('auto', (bool, NoneType), "Session is created if accessed."),
         ('webtest_varname', (str, NoneType), "Session varname must be a string."),
         ('data_serializer', (str,), "data_serializer must be a string.")
@@ -313,6 +315,8 @@ def coerce_session_params(params):
     if cookie_expires and isinstance(cookie_expires, int) and \
        not isinstance(cookie_expires, bool):
         opts['cookie_expires'] = timedelta(seconds=cookie_expires)
+    if opts['timeout'] is not None and not opts['save_accessed_time']:
+        raise Exception("save_accessed_time must be true to use timeout")
     return opts
 
 

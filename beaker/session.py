@@ -88,8 +88,12 @@ class Session(dict):
     :param key: The name the cookie should be set to.
     :param timeout: How long session data is considered valid. This is used
                     regardless of the cookie being present or not to determine
-                    whether session data is still valid.
-    :type timeout: int
+                    whether session data is still valid. Can be set to None to
+                    disable session time out.
+    :type timeout: int or None
+    :param save_accessed_time: Whether beaker should save the session's access
+                               time (True) or only modification time (False).
+                               Defaults to True.
     :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
@@ -108,8 +112,9 @@ class Session(dict):
     """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
-                 key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, cookie_path='/', data_serializer='pickle', secret=None,
+                 key='beaker.session.id', timeout=None, save_accessed_time=True,
+                 cookie_expires=True, cookie_domain=None, cookie_path='/',
+                 data_serializer='pickle', secret=None,
                  secure=False, namespace_class=None, httponly=False,
                  encrypt_key=None, validate_key=None, encrypt_nonce_bits=DEFAULT_NONCE_BITS,
                  **namespace_args):
@@ -129,7 +134,10 @@ class Session(dict):
         self.data_dir = data_dir
         self.key = key
 
+        if timeout and not save_accessed_time:
+            raise BeakerException("timeout requires save_accessed_time")
         self.timeout = timeout
+        self.save_atime = save_accessed_time
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
         self.data_serializer = data_serializer
@@ -402,7 +410,7 @@ class Session(dict):
         """
         # Look to see if its a new session that was only accessed
         # Don't save it under that case
-        if accessed_only and self.is_new:
+        if accessed_only and (self.is_new or not self.save_atime):
             return None
 
         # this session might not have a namespace yet or the session id
@@ -487,6 +495,9 @@ class CookieSession(Session):
                     regardless of the cookie being present or not to determine
                     whether session data is still valid.
     :type timeout: int
+    :param save_accessed_time: Whether beaker should save the session's access
+                               time (True) or only modification time (False).
+                               Defaults to True.
     :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
@@ -501,8 +512,8 @@ class CookieSession(Session):
 
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
-                 cookie_expires=True, cookie_domain=None, cookie_path='/',
-                 encrypt_key=None, validate_key=None, secure=False,
+                 save_accessed_time=True, cookie_expires=True, cookie_domain=None,
+                 cookie_path='/', encrypt_key=None, validate_key=None, secure=False,
                  httponly=False, data_serializer='pickle',
                  encrypt_nonce_bits=DEFAULT_NONCE_BITS, **kwargs):
 
@@ -513,6 +524,7 @@ class CookieSession(Session):
         self.request = request
         self.key = key
         self.timeout = timeout
+        self.save_atime = save_accessed_time
         self.cookie_expires = cookie_expires
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
@@ -532,6 +544,8 @@ class CookieSession(Session):
         if validate_key is None:
             raise BeakerException("No validate_key specified for Cookie only "
                                   "Session.")
+        if timeout and not save_accessed_time:
+            raise BeakerException("timeout requires save_accessed_time")
 
         try:
             self.cookie = SignedCookie(validate_key, input=cookieheader)
@@ -587,7 +601,7 @@ class CookieSession(Session):
 
     def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage"""
-        if accessed_only and self.is_new:
+        if accessed_only and (self.is_new or not self.save_atime):
             return
         if accessed_only:
             self.clear()
@@ -728,21 +742,27 @@ class SessionObject(object):
     def persist(self):
         """Persist the session to the storage
 
-        If its set to autosave, then the entire session will be saved
-        regardless of if save() has been called. Otherwise, just the
-        accessed time will be updated if save() was not called, or
-        the session will be saved if save() was called.
+        Always saves the whole session if save() or delete() have been called.
+        If they haven't:
+        - If autosave is set to true, saves the the entire session regardless.
+        - If save_accessed_time is set to true or unset, only saves the updated
+          access time.
+        - If save_accessed_time is set to false, doesn't save anything.
 
         """
         if self.__dict__['_params'].get('auto'):
             self._session().save()
-        else:
-            if self.__dict__.get('_dirty'):
+        elif self.__dict__['_params'].get('save_accessed_time', True):
+            if self.dirty():
                 self._session().save()
             else:
                 self._session().save(accessed_only=True)
+        else:  # save_accessed_time is false
+            if self.dirty():
+                self._session().save()
 
     def dirty(self):
+        """Returns True if save() or delete() have been called"""
         return self.__dict__.get('_dirty', False)
 
     def accessed(self):
