@@ -367,7 +367,10 @@ class TestSaveAccessedTime(unittest.TestCase):
         session = get_session(data_dir='./cache', save_accessed_time=False,
                               id=session.id)
         # If the second save saved, we'll have a new last_accessed time.
-        self.assertGreater(session.last_accessed, last_accessed)
+        # Python 2.6 doesn't have assertGreater :-(
+        assert session.last_accessed > last_accessed, (
+            '%r is not greater than %r' %
+            (session.last_accessed, last_accessed))
 
 
     def test_saves_if_session_not_written_and_accessed_time_true(self):
@@ -382,7 +385,10 @@ class TestSaveAccessedTime(unittest.TestCase):
         session = get_session(data_dir='./cache', save_accessed_time=True,
                               id=session.id)
         # If the second save saved, we'll have a new last_accessed time.
-        self.assertGreater(session.last_accessed, last_accessed)
+        # Python 2.6 doesn't have assertGreater :-(
+        assert session.last_accessed > last_accessed, (
+            '%r is not greater than %r' %
+            (session.last_accessed, last_accessed))
 
 
     def test_doesnt_save_if_session_not_written_and_accessed_time_false(self):
