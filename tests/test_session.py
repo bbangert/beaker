@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from beaker._compat import u_, pickle
 
+import shutil
 import sys
 import time
 import unittest
@@ -342,31 +343,59 @@ def test_invalidate_corrupt():
     assert "foo" not in dict(session)
 
 
-def test_saves_accessed_time():
-    session = get_session(save_accessed_time=True)
-    session.save()
-    atime1 = session['_accessed_time']
+class TestSaveAccessedTime(unittest.TestCase):
+    # These tests can't use the memory session type since it seems that loading
+    # winds up with references to the underlying storage and makes changes to
+    # sessions even though they aren't save()ed.
+    def setUp(self):
+        # Ignore errors because in most cases the dir won't exist.
+        shutil.rmtree('./cache', ignore_errors=True)
 
-    session2 = get_session(id=session.id, save_accessed_time=True)
-    session2.save()
-    assert session2['_accessed_time'] > atime1
-    assert session2.last_accessed == atime1
+    def tearDown(self):
+        shutil.rmtree('./cache')
+
+    def test_saves_if_session_written_and_accessed_time_false(self):
+        session = get_session(data_dir='./cache', save_accessed_time=False)
+        # New sessions are treated a little differently so save the session
+        # before getting into the meat of the test.
+        session.save()
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        last_accessed = session.last_accessed
+        session.save(accessed_only=False)
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        # If the second save saved, we'll have a new last_accessed time.
+        self.assertGreater(session.last_accessed, last_accessed)
 
 
-def test_doesnt_save_accessed_time():
-    session = get_session(save_accessed_time=False)
-    session.save()
-    assert '_accessed_time' not in session
-    session2 = get_session(id=session.id, save_accessed_time=False)
-    session2.save()
-    assert '_accessed_time' not in session2
-    assert not hasattr(session2, 'last_accessed')
+    def test_saves_if_session_not_written_and_accessed_time_true(self):
+        session = get_session(data_dir='./cache', save_accessed_time=True)
+        # New sessions are treated a little differently so save the session
+        # before getting into the meat of the test.
+        session.save()
+        session = get_session(data_dir='./cache', save_accessed_time=True,
+                              id=session.id)
+        last_accessed = session.last_accessed
+        session.save(accessed_only=True)  # this is the save we're really testing
+        session = get_session(data_dir='./cache', save_accessed_time=True,
+                              id=session.id)
+        # If the second save saved, we'll have a new last_accessed time.
+        self.assertGreater(session.last_accessed, last_accessed)
 
 
-def test_saves_creation_time_even_witout_accessed_time():
-    session = get_session(save_accessed_time=False)
-    session.save()
-    assert '_creation_time' in session
+    def test_doesnt_save_if_session_not_written_and_accessed_time_false(self):
+        session = get_session(data_dir='./cache', save_accessed_time=False)
+        # New sessions are treated a little differently so save the session
+        # before getting into the meat of the test.
+        session.save()
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        last_accessed = session.last_accessed
+        session.save(accessed_only=True)  # this shouldn't actually save
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        self.assertEqual(session.last_accessed, last_accessed)
 
 
 class TestSessionObject(unittest.TestCase):
@@ -417,14 +446,16 @@ class TestSessionObject(unittest.TestCase):
         session = get_session(id=so.id)
         assert 'foo' in session
 
-    def test_accessed_time_off_doesnt_save_atime_when_saving(self):
+    def test_accessed_time_off_saves_atime_when_saving(self):
         so = SessionObject({}, save_accessed_time=False)
+        atime = so['_accessed_time']
         so['foo'] = 'bar'
         so.save()
         so.persist()
         session = get_session(id=so.id, save_accessed_time=False)
         assert 'foo' in session
-        assert '_accessed_time' not in session
+        assert '_accessed_time' in session
+        self.assertEqual(session.last_accessed, atime)
 
     def test_accessed_time_off_doesnt_save_without_save(self):
         req = {'cookie': {'beaker.session.id': 123}}
@@ -437,5 +468,4 @@ class TestSessionObject(unittest.TestCase):
         so2.persist()
 
         session = get_session(id=so.id, save_accessed_time=False)
-        assert '_accessed_time' not in session
         assert 'foo' not in session

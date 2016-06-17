@@ -2,9 +2,10 @@ Release $next
 =============
 
 * Sessions have a new option save_accessed_time which defaults to true for
-  backwards compatibility. Set to false to tell beaker not to add _accessed_time
-  to the session and the last_accessed attribute. This lets you avoid session
-  writes for requests that don't otherwise update the session.
+  backwards compatibility. Set to false to tell beaker not to update
+  _accessed_time if the session hasn't been changed, for non-cookie sessions
+  stores. This lets you avoid needless datastore writes. _accessed_time will
+  always be updated when the session is intentionally saved.
 
 Release 1.8.0 (2016-01-26)
 ==========================
