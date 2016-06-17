@@ -194,10 +194,11 @@ def test_timeout():
 
 
 def test_timeout_requires_accessed_time():
-    """Test that it doesn't allow setting save_accessed_time to True with
+    """Test that it doesn't allow setting save_accessed_time to False with
     timeout enabled
     """
     get_session(timeout=None, save_accessed_time=True)  # is ok
+    get_session(timeout=None, save_accessed_time=False)  # is ok
     assert_raises(BeakerException,
                   get_session,
                   timeout=2,
