@@ -1,4 +1,4 @@
-Release $next
+Release 1.8.1 (2016-06-17)
 =============
 
 * Sessions have a new option save_accessed_time which defaults to true for
