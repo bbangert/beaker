@@ -446,15 +446,33 @@ def func_namespace(func):
         return '%s|%s' % (inspect.getsourcefile(func), func.__name__)
 
 
-def serialize(data, method):
-    if method == 'json':
-        return zlib.compress(json.dumps(data).encode('utf-8'))
-    else:
+class PickleSerializer(object):
+    def loads(self, data_string):
+        return pickle.loads(data_string)
+
+    def dumps(self, data):
         return pickle.dumps(data, 2)
+
+
+class JsonSerializer(object):
+    def loads(self, data_string):
+        return json.loads(zlib.decompress(data_string).decode('utf-8'))
+
+    def dumps(self, data):
+        return zlib.compress(json.dumps(data).encode('utf-8'))
+
+
+def serialize(data, serializer):
+    if method == 'json':
+        serializer = JsonSerializer()
+    else:
+        serializer = PickleSerializer()
+    return serializer.dumps(data)
 
 
 def deserialize(data_string, method):
     if method == 'json':
-        return json.loads(zlib.decompress(data_string).decode('utf-8'))
+        serializer = JsonSerializer()
     else:
-        return pickle.loads(data_string)
+        serializer = PickleSerializer()
+    return serializer.loads(data_string)
