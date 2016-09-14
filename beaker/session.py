@@ -202,24 +202,25 @@ class Session(dict):
 
     def _set_cookie_expires(self, expires):
         if expires is None:
-            if self.cookie_expires is not True:
-                if self.cookie_expires is False:
-                    expires = datetime.fromtimestamp(0x7FFFFFFF)
-                elif isinstance(self.cookie_expires, timedelta):
-                    expires = datetime.utcnow() + self.cookie_expires
-                elif isinstance(self.cookie_expires, datetime):
-                    expires = self.cookie_expires
-                else:
-                    raise ValueError("Invalid argument for cookie_expires: %s"
-                                     % repr(self.cookie_expires))
-            else:
-                expires = None
-        if expires is not None:
-            if not self.cookie or self.key not in self.cookie:
-                self.cookie[self.key] = self.id
-            self.cookie[self.key]['expires'] = \
-                expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
-        return expires
+            expires = self.cookie_expires
+        if expires is False:
+            expires_date = datetime.fromtimestamp(0x7FFFFFFF)
+        elif isinstance(expires, timedelta):
+            expires_date = datetime.utcnow() + expires
+        elif isinstance(expires, datetime):
+            expires_date = expires
+        elif expires is not True:
+            raise ValueError("Invalid argument for cookie_expires: %s"
+                             % repr(self.cookie_expires))
+        self.cookie_expires = expires
+        if not self.cookie or self.key not in self.cookie:
+            self.cookie[self.key] = self.id
+        if expires is True:
+            self.cookie[self.key]['expires'] = ''
+            return True
+        self.cookie[self.key]['expires'] = \
+            expires_date.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
+        return expires_date
 
     def _update_cookie_out(self, set_cookie=True):
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
