@@ -304,6 +304,8 @@ def coerce_session_params(params):
         ('secure', (bool, NoneType), "Session secure must be a boolean."),
         ('httponly', (bool, NoneType), "Session httponly must be a boolean."),
         ('timeout', (int, NoneType), "Session timeout must be an integer."),
+        ('save_accessed_time', (bool, NoneType),
+         "Session save_accessed_time must be a boolean (defaults to true)."),
         ('auto', (bool, NoneType), "Session is created if accessed."),
         ('webtest_varname', (str, NoneType), "Session varname must be a string."),
         ('data_serializer', (str,), "data_serializer must be a string.")
@@ -313,6 +315,8 @@ def coerce_session_params(params):
     if cookie_expires and isinstance(cookie_expires, int) and \
        not isinstance(cookie_expires, bool):
         opts['cookie_expires'] = timedelta(seconds=cookie_expires)
+    if opts['timeout'] is not None and not opts['save_accessed_time']:
+        raise Exception("save_accessed_time must be true to use timeout")
     return opts
 
 
@@ -442,15 +446,33 @@ def func_namespace(func):
         return '%s|%s' % (inspect.getsourcefile(func), func.__name__)
 
 
-def serialize(data, method):
-    if method == 'json':
-        return zlib.compress(json.dumps(data).encode('utf-8'))
-    else:
+class PickleSerializer(object):
+    def loads(self, data_string):
+        return pickle.loads(data_string)
+
+    def dumps(self, data):
         return pickle.dumps(data, 2)
+
+
+class JsonSerializer(object):
+    def loads(self, data_string):
+        return json.loads(zlib.decompress(data_string).decode('utf-8'))
+
+    def dumps(self, data):
+        return zlib.compress(json.dumps(data).encode('utf-8'))
+
+
+def serialize(data, serializer):
+    if method == 'json':
+        serializer = JsonSerializer()
+    else:
+        serializer = PickleSerializer()
+    return serializer.dumps(data)
 
 
 def deserialize(data_string, method):
     if method == 'json':
-        return json.loads(zlib.decompress(data_string).decode('utf-8'))
+        serializer = JsonSerializer()
     else:
-        return pickle.loads(data_string)
+        serializer = PickleSerializer()
+    return serializer.loads(data_string)

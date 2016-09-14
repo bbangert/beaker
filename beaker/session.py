@@ -1,4 +1,4 @@
-from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64decode
+from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64decode, string_type
 
 import os
 import time
@@ -103,13 +103,19 @@ class Session(dict):
     :param key: The name the cookie should be set to.
     :param timeout: How long session data is considered valid. This is used
                     regardless of the cookie being present or not to determine
-                    whether session data is still valid.
-    :type timeout: int
+                    whether session data is still valid. Can be set to None to
+                    disable session time out.
+    :type timeout: int or None
+    :param save_accessed_time: Whether beaker should save the session's access
+                               time (True) or only modification time (False).
+                               Defaults to True.
     :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
     :param data_serializer: If ``"json"`` or ``"pickle"`` should be used
-                              to serialize data. By default ``pickle`` is used.
+                              to serialize data. Can also be an object with
+                              ``loads` and ``dumps`` methods. By default
+                              ``"pickle"`` is used.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
@@ -123,8 +129,9 @@ class Session(dict):
     """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
-                 key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, cookie_path='/', data_serializer='pickle', secret=None,
+                 key='beaker.session.id', timeout=None, save_accessed_time=True,
+                 cookie_expires=True, cookie_domain=None, cookie_path='/',
+                 data_serializer='pickle', secret=None,
                  secure=False, namespace_class=None, httponly=False,
                  encrypt_key=None, validate_key=None, encrypt_nonce_bits=DEFAULT_NONCE_BITS,
                  **namespace_args):
@@ -144,10 +151,14 @@ class Session(dict):
         self.data_dir = data_dir
         self.key = key
 
+        if timeout and not save_accessed_time:
+            raise BeakerException("timeout requires save_accessed_time")
         self.timeout = timeout
+        self.save_atime = save_accessed_time
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
-        self.data_serializer = data_serializer
+
+        self._set_serializer(data_serializer)
 
         # Default cookie domain/path
         self._domain = cookie_domain
@@ -203,6 +214,17 @@ class Session(dict):
                 else:
                     raise
 
+    def _set_serializer(self, data_serializer):
+        self.data_serializer = data_serializer
+        if self.data_serializer == 'json':
+            self.serializer = util.JsonSerializer()
+        elif self.data_serializer == 'pickle':
+            self.serializer = util.PickleSerializer()
+        elif isinstance(self.data_serializer, string_type):
+            raise BeakerException('Invalid value for data_serializer: %s' % data_serializer)
+        else:
+            self.serializer = data_serializer
+
     def has_key(self, name):
         return name in self
 
@@ -219,24 +241,25 @@ class Session(dict):
 
     def _set_cookie_expires(self, expires):
         if expires is None:
-            if self.cookie_expires is not True:
-                if self.cookie_expires is False:
-                    expires = datetime.fromtimestamp(0x7FFFFFFF)
-                elif isinstance(self.cookie_expires, timedelta):
-                    expires = datetime.utcnow() + self.cookie_expires
-                elif isinstance(self.cookie_expires, datetime):
-                    expires = self.cookie_expires
-                else:
-                    raise ValueError("Invalid argument for cookie_expires: %s"
-                                     % repr(self.cookie_expires))
-            else:
-                expires = None
-        if expires is not None:
-            if not self.cookie or self.key not in self.cookie:
-                self.cookie[self.key] = self.id
-            self.cookie[self.key]['expires'] = \
-                expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
-        return expires
+            expires = self.cookie_expires
+        if expires is False:
+            expires_date = datetime.fromtimestamp(0x7FFFFFFF)
+        elif isinstance(expires, timedelta):
+            expires_date = datetime.utcnow() + expires
+        elif isinstance(expires, datetime):
+            expires_date = expires
+        elif expires is not True:
+            raise ValueError("Invalid argument for cookie_expires: %s"
+                             % repr(self.cookie_expires))
+        self.cookie_expires = expires
+        if not self.cookie or self.key not in self.cookie:
+            self.cookie[self.key] = self.id
+        if expires is True:
+            self.cookie[self.key]['expires'] = ''
+            return True
+        self.cookie[self.key]['expires'] = \
+            expires_date.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
+        return expires_date
 
     def _update_cookie_out(self, set_cookie=True):
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
@@ -294,10 +317,10 @@ class Session(dict):
             nonce = b64encode(os.urandom(nonce_len))[:nonce_b64len]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
                                                     self.validate_key + nonce, 1)
-            data = util.serialize(session_data, self.data_serializer)
+            data = self.serializer.dumps(session_data)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = util.serialize(session_data, self.data_serializer)
+            data = self.serializer.dumps(session_data)
             return b64encode(data)
 
     def _decrypt_data(self, session_data):
@@ -313,7 +336,7 @@ class Session(dict):
         else:
             data = b64decode(session_data)
 
-        return util.deserialize(data, self.data_serializer)
+        return self.serializer.loads(data)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -412,7 +435,7 @@ class Session(dict):
         """
         # Look to see if its a new session that was only accessed
         # Don't save it under that case
-        if accessed_only and self.is_new:
+        if accessed_only and (self.is_new or not self.save_atime):
             return None
 
         # this session might not have a namespace yet or the session id
@@ -497,11 +520,16 @@ class CookieSession(Session):
                     regardless of the cookie being present or not to determine
                     whether session data is still valid.
     :type timeout: int
+    :param save_accessed_time: Whether beaker should save the session's access
+                               time (True) or only modification time (False).
+                               Defaults to True.
     :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
     :param data_serializer: If ``"json"`` or ``"pickle"`` should be used
-                              to serialize data. By default ``pickle`` is used.
+                              to serialize data. Can also be an object with
+                              ``loads` and ``dumps`` methods. By default
+                              ``"pickle"`` is used.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
@@ -513,11 +541,10 @@ class CookieSession(Session):
                                invalidated and a new session created,
                                otherwise invalid data will cause an exception.
     :type invalidate_corrupt: bool
-
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
-                 cookie_expires=True, cookie_domain=None, cookie_path='/',
-                 encrypt_key=None, validate_key=None, secure=False,
+                 save_accessed_time=True, cookie_expires=True, cookie_domain=None,
+                 cookie_path='/', encrypt_key=None, validate_key=None, secure=False,
                  httponly=False, data_serializer='pickle',
                  encrypt_nonce_bits=DEFAULT_NONCE_BITS, invalidate_corrupt=False,
                  **kwargs):
@@ -529,6 +556,7 @@ class CookieSession(Session):
         self.request = request
         self.key = key
         self.timeout = timeout
+        self.save_atime = save_accessed_time
         self.cookie_expires = cookie_expires
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
@@ -538,8 +566,8 @@ class CookieSession(Session):
         self.httponly = httponly
         self._domain = cookie_domain
         self._path = cookie_path
-        self.data_serializer = data_serializer
         self.invalidate_corrupt = invalidate_corrupt
+        self._set_serializer(data_serializer)
 
         try:
             cookieheader = request['cookie']
@@ -549,6 +577,8 @@ class CookieSession(Session):
         if validate_key is None:
             raise BeakerException("No validate_key specified for Cookie only "
                                   "Session.")
+        if timeout and not save_accessed_time:
+            raise BeakerException("timeout requires save_accessed_time")
 
         try:
             self.cookie = SignedCookie(
@@ -619,7 +649,7 @@ class CookieSession(Session):
 
     def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage"""
-        if accessed_only and self.is_new:
+        if accessed_only and (self.is_new or not self.save_atime):
             return
         if accessed_only:
             self.clear()
@@ -699,10 +729,16 @@ class SessionObject(object):
             environ = self.__dict__['_environ']
             self.__dict__['_headers'] = req = {'cookie_out': None}
             req['cookie'] = environ.get('HTTP_COOKIE')
-            if params.get('type') == 'cookie':
-                self.__dict__['_sess'] = CookieSession(req, **params)
+            session_cls = params.get('session_class', None)
+            if session_cls is None:
+                if params.get('type') == 'cookie':
+                    session_cls = CookieSession
+                else:
+                    session_cls = Session
             else:
-                self.__dict__['_sess'] = Session(req, **params)
+                assert issubclass(session_cls, Session),\
+                    "Not a Session: " + session_cls
+            self.__dict__['_sess'] = session_cls(req, **params)
         return self.__dict__['_sess']
 
     def __getattr__(self, attr):
@@ -754,21 +790,27 @@ class SessionObject(object):
     def persist(self):
         """Persist the session to the storage
 
-        If its set to autosave, then the entire session will be saved
-        regardless of if save() has been called. Otherwise, just the
-        accessed time will be updated if save() was not called, or
-        the session will be saved if save() was called.
+        Always saves the whole session if save() or delete() have been called.
+        If they haven't:
+        - If autosave is set to true, saves the the entire session regardless.
+        - If save_accessed_time is set to true or unset, only saves the updated
+          access time.
+        - If save_accessed_time is set to false, doesn't save anything.
 
         """
         if self.__dict__['_params'].get('auto'):
             self._session().save()
-        else:
-            if self.__dict__.get('_dirty'):
+        elif self.__dict__['_params'].get('save_accessed_time', True):
+            if self.dirty():
                 self._session().save()
             else:
                 self._session().save(accessed_only=True)
+        else:  # save_accessed_time is false
+            if self.dirty():
+                self._session().save()
 
     def dirty(self):
+        """Returns True if save() or delete() have been called"""
         return self.__dict__.get('_dirty', False)
 
     def accessed(self):

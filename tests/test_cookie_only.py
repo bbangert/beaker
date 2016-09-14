@@ -1,6 +1,7 @@
 import datetime, time
 import re
 import os
+import json
 
 import beaker.session
 import beaker.util
@@ -104,6 +105,36 @@ def test_pickle_serializer():
 
     res = app.get('/')
     assert 'current value is: 3' in res
+
+def test_custom_serializer():
+    was_used = [False, False]
+    class CustomSerializer(object):
+        def loads(self, data_string):
+            was_used[0] = True
+            return json.loads(data_string.decode('utf-8'))
+
+        def dumps(self, data):
+            was_used[1] = True
+            return json.dumps(data).encode('utf-8')
+
+    serializer = CustomSerializer()
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': serializer}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    res = app.get('/')
+    cookie = SignedCookie('hoobermas')
+    session_data = cookie.value_decode(app.cookies['beaker.session.id'])[0]
+    session_data = b64decode(session_data)
+    data = serializer.loads(session_data)
+    assert data['value'] == 2
+
+    res = app.get('/')
+    assert 'current value is: 3' in res
+
+    assert all(was_used)
 
 def test_expires():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie',

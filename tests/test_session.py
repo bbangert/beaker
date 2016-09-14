@@ -2,16 +2,19 @@
 from beaker._compat import u_, pickle
 
 import binascii
+import shutil
 import sys
 import time
+import unittest
 import warnings
 
 from nose import SkipTest, with_setup
 
+from beaker.container import MemoryNamespaceManager
 from beaker.crypto import has_aes
 from beaker.exceptions import BeakerException
-from beaker.session import CookieSession, Session
-from beaker import util
+from beaker.session import CookieSession, Session, SesssionObject
+from beaker.util import assert_raises
 
 
 def get_session(**kwargs):
@@ -226,6 +229,19 @@ def check_timeout(session_getter):
 
 
 @with_setup(setup_cookie_request)
+def test_timeout_requires_accessed_time():
+    """Test that it doesn't allow setting save_accessed_time to False with
+    timeout enabled
+    """
+    get_session(timeout=None, save_accessed_time=True)  # is ok
+    get_session(timeout=None, save_accessed_time=False)  # is ok
+    assert_raises(BeakerException,
+                  get_session,
+                  timeout=2,
+                  save_accessed_time=False)
+
+
+@with_setup(setup_cookie_request)
 def test_cookies_enabled():
     """
     Test if cookies are sent out properly when ``use_cookies``
@@ -354,7 +370,7 @@ def test_invalidate_corrupt():
     f.write("crap")
     f.close()
 
-    util.assert_raises(
+    assert_raises(
         (pickle.UnpicklingError, EOFError, TypeError, binascii.Error),
         get_session,
         use_cookies=False, type='file',
@@ -404,7 +420,7 @@ def test_invalidate_invalid_signed_cookie():
         COOKIE_REQUEST['cookie_out'][25:]
     )
 
-    util.assert_raises(
+    assert_raises(
         BeakerException,
         get_cookie_session,
         id=session.id,
@@ -427,3 +443,136 @@ def test_invalidate_invalid_signed_cookie_invalidate_corrupt():
 
     session = get_cookie_session(id=session.id, invalidate_corrupt=True, **kwargs)
     assert "foo" not in dict(session)
+
+class TestSaveAccessedTime(unittest.TestCase):
+    # These tests can't use the memory session type since it seems that loading
+    # winds up with references to the underlying storage and makes changes to
+    # sessions even though they aren't save()ed.
+    def setUp(self):
+        # Ignore errors because in most cases the dir won't exist.
+        shutil.rmtree('./cache', ignore_errors=True)
+
+    def tearDown(self):
+        shutil.rmtree('./cache')
+
+    def test_saves_if_session_written_and_accessed_time_false(self):
+        session = get_session(data_dir='./cache', save_accessed_time=False)
+        # New sessions are treated a little differently so save the session
+        # before getting into the meat of the test.
+        session.save()
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        last_accessed = session.last_accessed
+        session.save(accessed_only=False)
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        # If the second save saved, we'll have a new last_accessed time.
+        # Python 2.6 doesn't have assertGreater :-(
+        assert session.last_accessed > last_accessed, (
+            '%r is not greater than %r' %
+            (session.last_accessed, last_accessed))
+
+
+    def test_saves_if_session_not_written_and_accessed_time_true(self):
+        session = get_session(data_dir='./cache', save_accessed_time=True)
+        # New sessions are treated a little differently so save the session
+        # before getting into the meat of the test.
+        session.save()
+        session = get_session(data_dir='./cache', save_accessed_time=True,
+                              id=session.id)
+        last_accessed = session.last_accessed
+        session.save(accessed_only=True)  # this is the save we're really testing
+        session = get_session(data_dir='./cache', save_accessed_time=True,
+                              id=session.id)
+        # If the second save saved, we'll have a new last_accessed time.
+        # Python 2.6 doesn't have assertGreater :-(
+        assert session.last_accessed > last_accessed, (
+            '%r is not greater than %r' %
+            (session.last_accessed, last_accessed))
+
+
+    def test_doesnt_save_if_session_not_written_and_accessed_time_false(self):
+        session = get_session(data_dir='./cache', save_accessed_time=False)
+        # New sessions are treated a little differently so save the session
+        # before getting into the meat of the test.
+        session.save()
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        last_accessed = session.last_accessed
+        session.save(accessed_only=True)  # this shouldn't actually save
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        self.assertEqual(session.last_accessed, last_accessed)
+
+
+class TestSessionObject(unittest.TestCase):
+    def setUp(self):
+        # San check that we are in fact using the memory backend...
+        assert get_session().namespace_class == MemoryNamespaceManager
+        # so we can be sure we're clearing the right state.
+        MemoryNamespaceManager.namespaces.clear()
+
+    def test_no_autosave_saves_atime_without_save(self):
+        so = SessionObject({}, auto=False)
+        so['foo'] = 'bar'
+        so.persist()
+        session = get_session(id=so.id)
+        assert '_accessed_time' in session
+        assert 'foo' not in session  # because we didn't save()
+
+    def test_no_autosave_saves_with_save(self):
+        so = SessionObject({}, auto=False)
+        so['foo'] = 'bar'
+        so.save()
+        so.persist()
+        session = get_session(id=so.id)
+        assert '_accessed_time' in session
+        assert 'foo' in session
+
+    def test_no_autosave_saves_with_delete(self):
+        req = {'cookie': {'beaker.session.id': 123}}
+
+        so = SessionObject(req, auto=False)
+        so['foo'] = 'bar'
+        so.save()
+        so.persist()
+        session = get_session(id=so.id)
+        assert 'foo' in session
+
+        so2 = SessionObject(req, auto=False)
+        so2.delete()
+        so2.persist()
+        session = get_session(id=so2.id)
+        assert 'foo' not in session
+
+    def test_auto_save_saves_without_save(self):
+        so = SessionObject({}, auto=True)
+        so['foo'] = 'bar'
+        # look ma, no save()!
+        so.persist()
+        session = get_session(id=so.id)
+        assert 'foo' in session
+
+    def test_accessed_time_off_saves_atime_when_saving(self):
+        so = SessionObject({}, save_accessed_time=False)
+        atime = so['_accessed_time']
+        so['foo'] = 'bar'
+        so.save()
+        so.persist()
+        session = get_session(id=so.id, save_accessed_time=False)
+        assert 'foo' in session
+        assert '_accessed_time' in session
+        self.assertEqual(session.last_accessed, atime)
+
+    def test_accessed_time_off_doesnt_save_without_save(self):
+        req = {'cookie': {'beaker.session.id': 123}}
+        so = SessionObject(req, save_accessed_time=False)
+        so.persist()  # so we can do a set on a non-new session
+
+        so2 = SessionObject(req, save_accessed_time=False)
+        so2['foo'] = 'bar'
+        # no save()
+        so2.persist()
+
+        session = get_session(id=so.id, save_accessed_time=False)
+        assert 'foo' not in session
