@@ -276,7 +276,7 @@ def test_cookies_enabled():
         assert 'httponly' in cookie, cookie
     warnings.showwarning = orig_sw
 
-def tes_cookies_disabled():
+def test_cookies_disabled():
     """
     Test that no cookies are sent when ``use_cookies`` is set to ``False``
     """
