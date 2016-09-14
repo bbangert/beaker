@@ -99,9 +99,9 @@ class _backends(object):
                     if not isinstance(sys.exc_info()[1], DistributionNotFound):
                         import traceback
                         try:
-                            from io import StringIO
+                            from StringIO import StringIO  # Python2
                         except ImportError:
-                            from StringIO import StringIO
+                            from io import StringIO        # Python3
 
                         tb = StringIO()
                         traceback.print_exc(file=tb)
