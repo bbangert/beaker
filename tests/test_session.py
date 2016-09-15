@@ -13,7 +13,7 @@ from nose import SkipTest, with_setup
 from beaker.container import MemoryNamespaceManager
 from beaker.crypto import has_aes
 from beaker.exceptions import BeakerException
-from beaker.session import CookieSession, Session, SesssionObject
+from beaker.session import CookieSession, Session, SessionObject
 from beaker.util import assert_raises
 
 
