@@ -9,7 +9,19 @@ from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
 from beaker.cookie import SimpleCookie
 
-__all__ = ['SignedCookie', 'Session']
+__all__ = ['SignedCookie', 'Session', 'InvalidSignature']
+
+
+class _InvalidSignatureType(object):
+    """Returned from SignedCookie when the value's signature was invalid."""
+    def __nonzero__(self):
+        return False
+
+    def __bool__(self):
+        return False
+
+
+InvalidSignature = _InvalidSignatureType()
 
 
 try:
@@ -50,19 +62,22 @@ class SignedCookie(SimpleCookie):
 
     def value_decode(self, val):
         val = val.strip('"')
+        if not val:
+            return None, val
+
         sig = HMAC.new(self.secret, val[40:].encode('utf-8'), SHA1).hexdigest()
 
         # Avoid timing attacks
         invalid_bits = 0
         input_sig = val[:40]
         if len(sig) != len(input_sig):
-            return None, val
+            return InvalidSignature, val
 
         for a, b in zip(sig, input_sig):
             invalid_bits += a != b
 
         if invalid_bits:
-            return None, val
+            return InvalidSignature, val
         else:
             return val[40:], val
 
@@ -163,14 +178,24 @@ class Session(dict):
             cookieheader = request.get('cookie', '')
             if secret:
                 try:
-                    self.cookie = SignedCookie(secret, input=cookieheader)
+                    self.cookie = SignedCookie(
+                        secret,
+                        input=cookieheader,
+                    )
                 except http_cookies.CookieError:
-                    self.cookie = SignedCookie(secret, input=None)
+                    self.cookie = SignedCookie(
+                        secret,
+                        input=None,
+                    )
             else:
                 self.cookie = SimpleCookie(input=cookieheader)
 
             if not self.id and self.key in self.cookie:
-                self.id = self.cookie[self.key].value
+                cookie_data = self.cookie[self.key].value
+                # Should we check invalidate_corrupt here?
+                if cookie_data is InvalidSignature:
+                    cookie_data = None
+                self.id = cookie_data
 
         self.is_new = self.id is None
         if self.is_new:
@@ -180,7 +205,7 @@ class Session(dict):
             try:
                 self.load()
             except Exception as e:
-                if invalidate_corrupt:
+                if self.invalidate_corrupt:
                     util.warn(
                         "Invalidating corrupt session %s; "
                         "error was: %s.  Set invalidate_corrupt=False "
@@ -302,31 +327,16 @@ class Session(dict):
         """Bas64, decipher, then un-serialize the data for the session
         dict"""
         if self.encrypt_key:
-            try:
-                __, nonce_b64len = self.encrypt_nonce_size
-                nonce = session_data[:nonce_b64len]
-                encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                                        self.validate_key + nonce, 1)
-                payload = b64decode(session_data[nonce_b64len:])
-                data = crypto.aesDecrypt(payload, encrypt_key)
-            except:
-                # As much as I hate a bare except, we get some insane errors
-                # here that get tossed when crypto fails, so we raise the
-                # 'right' exception
-                if self.invalidate_corrupt:
-                    return None
-                else:
-                    raise
+            __, nonce_b64len = self.encrypt_nonce_size
+            nonce = session_data[:nonce_b64len]
+            encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
+                                                    self.validate_key + nonce, 1)
+            payload = b64decode(session_data[nonce_b64len:])
+            data = crypto.aesDecrypt(payload, encrypt_key)
         else:
             data = b64decode(session_data)
 
-        try:
-            return self.serializer.loads(data)
-        except:
-            if self.invalidate_corrupt:
-                return None
-            else:
-                raise
+        return self.serializer.loads(data)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -526,12 +536,18 @@ class CookieSession(Session):
     :param encrypt_key: The key to use for the local session encryption, if not
                         provided the session will not be encrypted.
     :param validate_key: The key used to sign the local encrypted session
+    :param invalidate_corrupt: How to handle corrupt data when loading. When
+                               set to True, then corrupt data will be silently
+                               invalidated and a new session created,
+                               otherwise invalid data will cause an exception.
+    :type invalidate_corrupt: bool
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  save_accessed_time=True, cookie_expires=True, cookie_domain=None,
                  cookie_path='/', encrypt_key=None, validate_key=None, secure=False,
                  httponly=False, data_serializer='pickle',
-                 encrypt_nonce_bits=DEFAULT_NONCE_BITS, **kwargs):
+                 encrypt_nonce_bits=DEFAULT_NONCE_BITS, invalidate_corrupt=False,
+                 **kwargs):
 
         if not crypto.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
@@ -550,7 +566,7 @@ class CookieSession(Session):
         self.httponly = httponly
         self._domain = cookie_domain
         self._path = cookie_path
-
+        self.invalidate_corrupt = invalidate_corrupt
         self._set_serializer(data_serializer)
 
         try:
@@ -565,9 +581,15 @@ class CookieSession(Session):
             raise BeakerException("timeout requires save_accessed_time")
 
         try:
-            self.cookie = SignedCookie(validate_key, input=cookieheader)
+            self.cookie = SignedCookie(
+                validate_key,
+                input=cookieheader,
+            )
         except http_cookies.CookieError:
-            self.cookie = SignedCookie(validate_key, input=None)
+            self.cookie = SignedCookie(
+                validate_key,
+                input=None,
+            )
 
         self['_id'] = _session_id()
         self.is_new = True
@@ -577,10 +599,19 @@ class CookieSession(Session):
             self.is_new = False
             try:
                 cookie_data = self.cookie[self.key].value
+                if cookie_data is InvalidSignature:
+                    raise BeakerException("Invalid signature")
                 self.update(self._decrypt_data(cookie_data))
                 self._path = self.get('_path', '/')
-            except:
-                pass
+            except Exception as e:
+                if self.invalidate_corrupt:
+                    util.warn(
+                        "Invalidating corrupt session %s; "
+                        "error was: %s.  Set invalidate_corrupt=False "
+                        "to propagate this exception." % (self.id, e))
+                    self.invalidate()
+                else:
+                    raise
 
             if self.timeout is not None:
                 now = time.time()
