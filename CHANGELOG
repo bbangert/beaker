@@ -6,6 +6,11 @@ Release $next
   _accessed_time if the session hasn't been changed, for non-cookie sessions
   stores. This lets you avoid needless datastore writes. _accessed_time will
   always be updated when the session is intentionally saved.
+* data_serializer parameter in Session accepts a custom object with `dumps` and `loads` methods.
+* Fixed a TypeError in exception reporting when failing to load a NamespaceManager
+* Allow to change Cookie Expiration from a value back to None, previously it had no effect.
+* Allow SessionMiddleware to setup a custom Session class through the `session_class` argument.
+* Added `invalidate_corrupt` option to CookieSessions too for valid cookies containing invalid data.
 
 Release 1.8.0 (2016-01-26)
 ==========================
