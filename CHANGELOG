@@ -1,6 +1,10 @@
 Release $next
 =============
 
+
+Release 1.8.1 (2016-10-24)
+==========================
+
 * Sessions have a new option save_accessed_time which defaults to true for
   backwards compatibility. Set to false to tell beaker not to update
   _accessed_time if the session hasn't been changed, for non-cookie sessions
