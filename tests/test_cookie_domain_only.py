@@ -47,6 +47,22 @@ def test_increment():
     assert 'current value is: 2' in res
 
 
+def test_cookie_attributes_are_preserved():
+    options = {'session.type': 'memory',
+               'session.httponly': True,
+               'session.secure': True,
+               'session.cookie_path': '/app',
+               'session.cookie_domain': 'localhost'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    res = app.get('/app', extra_environ=dict(
+        HTTP_COOKIE='beaker.session.id=oldsessid', domain='.hoop.com'))
+    cookie = res.headers['Set-Cookie']
+    assert 'Domain=.hoop.com' in cookie
+    assert 'Path=/app' in cookie
+    assert 'secure' in cookie
+    assert 'httponly' in cookie
+
+
 if __name__ == '__main__':
     from paste import httpserver
     wsgi_app = SessionMiddleware(simple_app, {})
