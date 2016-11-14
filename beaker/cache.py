@@ -580,11 +580,12 @@ def _cache_decorate(deco_args, manager, options, region):
                 cache_key_args = args[1:]
 
             cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args, cache_key_kwargs)))
-            key_expr = options.get('key')
-            if key_expr:
-                binding = signature.bind(*args, **kwargs)
-                args_key = key_expr.format(**binding.arguments)
-                cache_key = u_(" ").join(map(u_, chain(deco_args, [args_key], cache_key_kwargs)))
+            if options:
+                key_expr = options.get('key')
+                if key_expr:
+                    binding = signature.bind(*args, **kwargs)
+                    args_key = key_expr.format(**binding.arguments)
+                    cache_key = u_(" ").join(map(u_, chain(deco_args, [args_key], cache_key_kwargs)))
 
             if region:
                 cachereg = cache_regions[region]
