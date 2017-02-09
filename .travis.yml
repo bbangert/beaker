@@ -3,9 +3,10 @@ python:
   - "2.6"
   - "2.7"
   - "3.2"
+  - "3.3"
+  - "3.4"
+  - "3.5"
 install:
-    - python setup.py install
+    - pip install -e .[testsuite]
 script:
-    - mkdir tests_py3
-    - 2to3 -w -n -o tests_py3 tests/*.py
-    - nosetests --where=tests --py3where=tests_py3 -d --with-coverage --cover-package=beaker
+    - nosetests -v -d --with-coverage --cover-package=beaker

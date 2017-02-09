@@ -4,6 +4,7 @@ from datetime import datetime
 import beaker.cache as cache
 from beaker.cache import CacheManager, cache_region, region_invalidate
 from beaker import util
+from nose import SkipTest
 
 defaults = {'cache.data_dir':'./cache', 'cache.type':'dbm', 'cache.expire': 2}
 
@@ -23,6 +24,21 @@ def george(x):
 def albert(x):
     """A doc string"""
     return time.time()
+
+@cache_region('short_term')
+def alfred(x, xx, y=None):
+    return str(time.time()) + str(x) + str(xx) + str(y)
+
+class AlfredCacher(object):
+    @cache_region('short_term')
+    def alfred_self(self, xx, y=None):
+        return str(time.time()) + str(self) + str(xx) + str(y)
+
+try:
+    from .annotated_functions import AnnotatedAlfredCacher
+except (ImportError, SyntaxError):
+    AnnotatedAlfredCacher = None
+
 
 def make_cache_obj(**kwargs):
     opts = defaults.copy()
@@ -75,13 +91,13 @@ def test_check_region_decorator():
     result4 = func('George')
     assert result3 == result4
 
-    time.sleep(2)
+    time.sleep(2)  # Now it should have expired as cache is 2secs
     result2 = func('Fred')
     assert result != result2
 
 def test_different_default_names():
     result = fred(1)
-    time.sleep(1)
+    time.sleep(0.1)
     result2 = george(1)
     assert result != result2
 
@@ -127,7 +143,7 @@ def test_check_invalidate_region_2():
 def test_invalidate_cache():
     cache, func = make_cached_func()
     val = func('foo')
-    time.sleep(.1)
+    time.sleep(0.1)
     val2 = func('foo')
     assert val == val2
 
@@ -214,7 +230,7 @@ def test_class_key_region_invalidate():
             region_invalidate(self.go, None, "method", x, y)
 
     x = Foo().go(1, 2)
-    time.sleep(1)
+    time.sleep(0.1)
     y = Foo().go(1, 2)
     Foo().invalidate(1, 2)
     z = Foo().go(1, 2)
@@ -224,9 +240,75 @@ def test_class_key_region_invalidate():
 
 def test_check_region_decorator_keeps_docstring_and_name():
     result = albert(1)
-    time.sleep(1)
+    time.sleep(0.1)
     result2 = albert(1)
     assert result == result2
 
     assert albert.__doc__ == "A doc string"
     assert albert.__name__ == "albert"
+
+
+def test_check_region_decorator_with_kwargs():
+    result = alfred(1, xx=5, y=3)
+    time.sleep(0.1)
+
+    result2 = alfred(1, y=3, xx=5)
+    assert result == result2
+
+    result3 = alfred(1, 5, y=5)
+    assert result != result3
+
+    result4 = alfred(1, 5, 3)
+    assert result == result4
+
+    result5 = alfred(1, 5, y=3)
+    assert result == result5
+
+
+def test_check_region_decorator_with_kwargs_and_self():
+    a1 = AlfredCacher()
+    a2 = AlfredCacher()
+
+    result = a1.alfred_self(xx=5, y='blah')
+    time.sleep(0.1)
+
+    result2 = a2.alfred_self(y='blah', xx=5)
+    assert result == result2
+
+    result3 = a2.alfred_self(5, y=5)
+    assert result != result3
+
+    result4 = a2.alfred_self(5, 'blah')
+    assert result == result4
+
+    result5 = a2.alfred_self(5, y='blah')
+    assert result == result5
+
+    result6 = a2.alfred_self(6, 'blah')
+    assert result != result6
+
+
+def test_check_region_decorator_with_kwargs_self_and_annotations():
+    if AnnotatedAlfredCacher is None:
+        raise SkipTest('Python version not supporting annotations')
+
+    a1 = AnnotatedAlfredCacher()
+    a2 = AnnotatedAlfredCacher()
+
+    result = a1.alfred_self(xx=5, y='blah')
+    time.sleep(0.1)
+
+    result2 = a2.alfred_self(y='blah', xx=5)
+    assert result == result2
+
+    result3 = a2.alfred_self(5, y=5)
+    assert result != result3
+
+    result4 = a2.alfred_self(5, 'blah')
+    assert result == result4
+
+    result5 = a2.alfred_self(5, y='blah')
+    assert result == result5
+
+    result6 = a2.alfred_self(6, 'blah')
+    assert result != result6

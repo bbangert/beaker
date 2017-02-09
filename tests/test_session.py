@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
+from beaker._compat import u_, pickle
+
+import binascii
+import shutil
 import sys
 import time
+import unittest
 import warnings
 
-from nose import SkipTest
+from nose import SkipTest, with_setup
 
+from beaker.container import MemoryNamespaceManager
 from beaker.crypto import has_aes
-from beaker.session import Session
-from beaker import util
+from beaker.exceptions import BeakerException
+from beaker.session import CookieSession, Session, SessionObject
+from beaker.util import assert_raises
 
 
 def get_session(**kwargs):
@@ -17,126 +24,159 @@ def get_session(**kwargs):
     return Session({}, **options)
 
 
-def test_save_load():
+COOKIE_REQUEST = {}
+def setup_cookie_request():
+    COOKIE_REQUEST.clear()
+
+
+def get_cookie_session(**kwargs):
+    """A shortcut for creating :class:`CookieSession` instance"""
+    options = {'validate_key': 'test_key'}
+    options.update(**kwargs)
+    if COOKIE_REQUEST.get('set_cookie'):
+        COOKIE_REQUEST['cookie'] = COOKIE_REQUEST.get('cookie_out')
+    return CookieSession(COOKIE_REQUEST, **options)
+
+
+@with_setup(setup_cookie_request)
+def test_session():
+    for test_case in (
+        check_save_load,
+        check_save_load_encryption,
+        check_decryption_failure,
+        check_delete,
+        check_revert,
+        check_invalidate,
+        check_timeout,
+    ):
+      for session_getter in (get_session, get_cookie_session,):
+            setup_cookie_request()
+            yield test_case, session_getter
+
+
+def check_save_load(session_getter):
     """Test if the data is actually persistent across requests"""
-    session = get_session()
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session = session_getter()
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
-    session = get_session(id=session.id)
-    assert u'Suomi' in session
-    assert u'Great Britain' in session
-    assert u'Deutchland' in session
+    session = session_getter(id=session.id)
+    assert u_('Suomi') in session
+    assert u_('Great Britain') in session
+    assert u_('Deutchland') in session
 
-    assert session[u'Suomi'] == u'Kimi Räikkönen'
-    assert session[u'Great Britain'] == u'Jenson Button'
-    assert session[u'Deutchland'] == u'Sebastian Vettel'
+    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
+    assert session[u_('Great Britain')] == u_('Jenson Button')
+    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
 
-def test_save_load_encryption():
+def check_save_load_encryption(session_getter):
     """Test if the data is actually persistent across requests"""
     if not has_aes:
         raise SkipTest()
-    session = get_session(encrypt_key='666a19cf7f61c64c',
+    session = session_getter(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
-    session = get_session(id=session.id, encrypt_key='666a19cf7f61c64c',
+    session = session_getter(id=session.id, encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
-    assert u'Suomi' in session
-    assert u'Great Britain' in session
-    assert u'Deutchland' in session
+    assert u_('Suomi') in session
+    assert u_('Great Britain') in session
+    assert u_('Deutchland') in session
 
-    assert session[u'Suomi'] == u'Kimi Räikkönen'
-    assert session[u'Great Britain'] == u'Jenson Button'
-    assert session[u'Deutchland'] == u'Sebastian Vettel'
+    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
+    assert session[u_('Great Britain')] == u_('Jenson Button')
+    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
 
-def test_decryption_failure():
+def check_decryption_failure(session_getter):
     """Test if the data fails without the right keys"""
     if not has_aes:
         raise SkipTest()
-    session = get_session(encrypt_key='666a19cf7f61c64c',
+    session = session_getter(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
-    session = get_session(id=session.id, encrypt_key='asfdasdfadsfsadf',
+    session = session_getter(id=session.id, encrypt_key='asfdasdfadsfsadf',
                           validate_key='hoobermas', invalidate_corrupt=True)
-    assert u'Suomi' not in session
-    assert u'Great Britain' not in session
+    assert u_('Suomi') not in session
+    assert u_('Great Britain') not in session
 
 
-def test_delete():
+def check_delete(session_getter):
     """Test :meth:`Session.delete`"""
-    session = get_session()
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session = session_getter()
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.delete()
 
-    assert u'Suomi' not in session
-    assert u'Great Britain' not in session
-    assert u'Deutchland' not in session
+    assert u_('Suomi') not in session
+    assert u_('Great Britain') not in session
+    assert u_('Deutchland') not in session
 
 
-def test_revert():
+def check_revert(session_getter):
     """Test :meth:`Session.revert`"""
-    session = get_session()
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session = session_getter()
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
-    session = get_session(id=session.id)
-    del session[u'Suomi']
-    session[u'Great Britain'] = u'Lewis Hamilton'
-    session[u'Deutchland'] = u'Michael Schumacher'
-    session[u'España'] = u'Fernando Alonso'
+    session = session_getter(id=session.id)
+    del session[u_('Suomi')]
+    session[u_('Great Britain')] = u_('Lewis Hamilton')
+    session[u_('Deutchland')] = u_('Michael Schumacher')
+    session[u_('España')] = u_('Fernando Alonso')
     session.revert()
 
-    assert session[u'Suomi'] == u'Kimi Räikkönen'
-    assert session[u'Great Britain'] == u'Jenson Button'
-    assert session[u'Deutchland'] == u'Sebastian Vettel'
-    assert u'España' not in session
+    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
+    assert session[u_('Great Britain')] == u_('Jenson Button')
+    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
+    assert u_('España') not in session
 
 
-def test_invalidate():
+def check_invalidate(session_getter):
     """Test :meth:`Session.invalidate`"""
-    session = get_session()
+    session = session_getter()
+    session.save()
     id = session.id
     created = session.created
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.invalidate()
+    session.save()
 
     assert session.id != id
     assert session.created != created
-    assert u'Suomi' not in session
-    assert u'Great Britain' not in session
-    assert u'Deutchland' not in session
+    assert u_('Suomi') not in session
+    assert u_('Great Britain') not in session
+    assert u_('Deutchland') not in session
 
 
+@with_setup(setup_cookie_request)
 def test_regenerate_id():
     """Test :meth:`Session.regenerate_id`"""
     # new session & save
     session = get_session()
     orig_id = session.id
-    session[u'foo'] = u'bar'
+    session[u_('foo')] = u_('bar')
     session.save()
 
     # load session
     session = get_session(id=session.id)
     # data should still be there
-    assert session[u'foo'] == u'bar'
+    assert session[u_('foo')] == u_('bar')
 
     # regenerate the id
     session.regenerate_id()
@@ -144,49 +184,64 @@ def test_regenerate_id():
     assert session.id != orig_id
 
     # data is still there
-    assert session[u'foo'] == u'bar'
+    assert session[u_('foo')] == u_('bar')
 
     # should be the new id
     assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
 
     # get a new session before calling save
     bunk_sess = get_session(id=session.id)
-    assert u'foo' not in bunk_sess
+    assert u_('foo') not in bunk_sess
 
     # save it
     session.save()
 
     # make sure we get the data back
     session = get_session(id=session.id)
-    assert session[u'foo'] == u'bar'
+    assert session[u_('foo')] == u_('bar')
 
 
-def test_timeout():
+def check_timeout(session_getter):
     """Test if the session times out properly"""
-    session = get_session(timeout=2)
+    session = session_getter(timeout=2)
+    session.save()
     id = session.id
     created = session.created
-    session[u'Suomi'] = u'Kimi Räikkönen'
-    session[u'Great Britain'] = u'Jenson Button'
-    session[u'Deutchland'] = u'Sebastian Vettel'
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
     session.save()
 
-    session = get_session(id=session.id, timeout=2)
+    session = session_getter(id=session.id, timeout=2)
     assert session.id == id
     assert session.created == created
-    assert session[u'Suomi'] == u'Kimi Räikkönen'
-    assert session[u'Great Britain'] == u'Jenson Button'
-    assert session[u'Deutchland'] == u'Sebastian Vettel'
+    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
+    assert session[u_('Great Britain')] == u_('Jenson Button')
+    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
     time.sleep(2)
-    session = get_session(id=session.id, timeout=2)
+    session = session_getter(id=session.id, timeout=2)
     assert session.id != id
     assert session.created != created
-    assert u'Suomi' not in session
-    assert u'Great Britain' not in session
-    assert u'Deutchland' not in session
+    assert u_('Suomi') not in session
+    assert u_('Great Britain') not in session
+    assert u_('Deutchland') not in session
 
 
+@with_setup(setup_cookie_request)
+def test_timeout_requires_accessed_time():
+    """Test that it doesn't allow setting save_accessed_time to False with
+    timeout enabled
+    """
+    get_session(timeout=None, save_accessed_time=True)  # is ok
+    get_session(timeout=None, save_accessed_time=False)  # is ok
+    assert_raises(BeakerException,
+                  get_session,
+                  timeout=2,
+                  save_accessed_time=False)
+
+
+@with_setup(setup_cookie_request)
 def test_cookies_enabled():
     """
     Test if cookies are sent out properly when ``use_cookies``
@@ -216,7 +271,8 @@ def test_cookies_enabled():
 
     # test for secure
     session = get_session(use_cookies=True, secure=True)
-    assert 'secure' in session.request['cookie_out']
+    cookie = session.request['cookie_out'].lower()  # Python3.4.3 outputs "Secure", while previous output "secure"
+    assert 'secure' in cookie, cookie
 
     # test for httponly
     class ShowWarning(object):
@@ -231,7 +287,9 @@ def test_cookies_enabled():
     if sys.version_info < (2, 6):
         assert sw.msg == 'Python 2.6+ is required to use httponly'
     else:
-        assert 'httponly' in session.request['cookie_out']
+        # Python3.4.3 outputs "HttpOnly", while previous output "httponly"
+        cookie = session.request['cookie_out'].lower()
+        assert 'httponly' in cookie, cookie
     warnings.showwarning = orig_sw
 
 def test_cookies_disabled():
@@ -255,6 +313,7 @@ def test_cookies_disabled():
     assert 'cookie_out' not in session.request
 
 
+@with_setup(setup_cookie_request)
 def test_file_based_replace_optimization():
     """Test the file-based backend with session,
     which includes the 'replace' optimization.
@@ -300,6 +359,7 @@ def test_file_based_replace_optimization():
     session.namespace.do_close()
 
 
+@with_setup(setup_cookie_request)
 def test_invalidate_corrupt():
     session = get_session(use_cookies=False, type='file',
                             data_dir='./cache')
@@ -310,8 +370,8 @@ def test_invalidate_corrupt():
     f.write("crap")
     f.close()
 
-    util.assert_raises(
-        util.pickle.UnpicklingError,
+    assert_raises(
+        (pickle.UnpicklingError, EOFError, TypeError, binascii.Error),
         get_session,
         use_cookies=False, type='file',
                 data_dir='./cache', id=session.id
@@ -321,3 +381,198 @@ def test_invalidate_corrupt():
                             invalidate_corrupt=True,
                             data_dir='./cache', id=session.id)
     assert "foo" not in dict(session)
+
+
+@with_setup(setup_cookie_request)
+def test_invalidate_empty_cookie():
+    kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
+    session = get_cookie_session(**kwargs)
+    session['foo'] = 'bar'
+    session.save()
+
+    COOKIE_REQUEST['cookie_out'] = ' beaker.session.id='
+    session = get_cookie_session(id=session.id, invalidate_corrupt=False, **kwargs)
+    assert "foo" not in dict(session)
+
+
+@with_setup(setup_cookie_request)
+def test_unrelated_cookie():
+    kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
+    session = get_cookie_session(**kwargs)
+    session['foo'] = 'bar'
+    session.save()
+
+    COOKIE_REQUEST['cookie_out'] = COOKIE_REQUEST['cookie_out'] + '; some.other=cookie'
+    session = get_cookie_session(id=session.id, invalidate_corrupt=False, **kwargs)
+    assert "foo" in dict(session)
+
+
+@with_setup(setup_cookie_request)
+def test_invalidate_invalid_signed_cookie():
+    kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
+    session = get_cookie_session(**kwargs)
+    session['foo'] = 'bar'
+    session.save()
+
+    COOKIE_REQUEST['cookie_out'] = (
+        COOKIE_REQUEST['cookie_out'][:20] +
+        'aaaaa' +
+        COOKIE_REQUEST['cookie_out'][25:]
+    )
+
+    assert_raises(
+        BeakerException,
+        get_cookie_session,
+        id=session.id,
+        invalidate_corrupt=False,
+    )
+
+
+@with_setup(setup_cookie_request)
+def test_invalidate_invalid_signed_cookie_invalidate_corrupt():
+    kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
+    session = get_cookie_session(**kwargs)
+    session['foo'] = 'bar'
+    session.save()
+
+    COOKIE_REQUEST['cookie_out'] = (
+        COOKIE_REQUEST['cookie_out'][:20] +
+        'aaaaa' +
+        COOKIE_REQUEST['cookie_out'][25:]
+    )
+
+    session = get_cookie_session(id=session.id, invalidate_corrupt=True, **kwargs)
+    assert "foo" not in dict(session)
+
+class TestSaveAccessedTime(unittest.TestCase):
+    # These tests can't use the memory session type since it seems that loading
+    # winds up with references to the underlying storage and makes changes to
+    # sessions even though they aren't save()ed.
+    def setUp(self):
+        # Ignore errors because in most cases the dir won't exist.
+        shutil.rmtree('./cache', ignore_errors=True)
+
+    def tearDown(self):
+        shutil.rmtree('./cache')
+
+    def test_saves_if_session_written_and_accessed_time_false(self):
+        session = get_session(data_dir='./cache', save_accessed_time=False)
+        # New sessions are treated a little differently so save the session
+        # before getting into the meat of the test.
+        session.save()
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        last_accessed = session.last_accessed
+        session.save(accessed_only=False)
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        # If the second save saved, we'll have a new last_accessed time.
+        # Python 2.6 doesn't have assertGreater :-(
+        assert session.last_accessed > last_accessed, (
+            '%r is not greater than %r' %
+            (session.last_accessed, last_accessed))
+
+
+    def test_saves_if_session_not_written_and_accessed_time_true(self):
+        session = get_session(data_dir='./cache', save_accessed_time=True)
+        # New sessions are treated a little differently so save the session
+        # before getting into the meat of the test.
+        session.save()
+        session = get_session(data_dir='./cache', save_accessed_time=True,
+                              id=session.id)
+        last_accessed = session.last_accessed
+        session.save(accessed_only=True)  # this is the save we're really testing
+        session = get_session(data_dir='./cache', save_accessed_time=True,
+                              id=session.id)
+        # If the second save saved, we'll have a new last_accessed time.
+        # Python 2.6 doesn't have assertGreater :-(
+        assert session.last_accessed > last_accessed, (
+            '%r is not greater than %r' %
+            (session.last_accessed, last_accessed))
+
+
+    def test_doesnt_save_if_session_not_written_and_accessed_time_false(self):
+        session = get_session(data_dir='./cache', save_accessed_time=False)
+        # New sessions are treated a little differently so save the session
+        # before getting into the meat of the test.
+        session.save()
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        last_accessed = session.last_accessed
+        session.save(accessed_only=True)  # this shouldn't actually save
+        session = get_session(data_dir='./cache', save_accessed_time=False,
+                              id=session.id)
+        self.assertEqual(session.last_accessed, last_accessed)
+
+
+class TestSessionObject(unittest.TestCase):
+    def setUp(self):
+        # San check that we are in fact using the memory backend...
+        assert get_session().namespace_class == MemoryNamespaceManager
+        # so we can be sure we're clearing the right state.
+        MemoryNamespaceManager.namespaces.clear()
+
+    def test_no_autosave_saves_atime_without_save(self):
+        so = SessionObject({}, auto=False)
+        so['foo'] = 'bar'
+        so.persist()
+        session = get_session(id=so.id)
+        assert '_accessed_time' in session
+        assert 'foo' not in session  # because we didn't save()
+
+    def test_no_autosave_saves_with_save(self):
+        so = SessionObject({}, auto=False)
+        so['foo'] = 'bar'
+        so.save()
+        so.persist()
+        session = get_session(id=so.id)
+        assert '_accessed_time' in session
+        assert 'foo' in session
+
+    def test_no_autosave_saves_with_delete(self):
+        req = {'cookie': {'beaker.session.id': 123}}
+
+        so = SessionObject(req, auto=False)
+        so['foo'] = 'bar'
+        so.save()
+        so.persist()
+        session = get_session(id=so.id)
+        assert 'foo' in session
+
+        so2 = SessionObject(req, auto=False)
+        so2.delete()
+        so2.persist()
+        session = get_session(id=so2.id)
+        assert 'foo' not in session
+
+    def test_auto_save_saves_without_save(self):
+        so = SessionObject({}, auto=True)
+        so['foo'] = 'bar'
+        # look ma, no save()!
+        so.persist()
+        session = get_session(id=so.id)
+        assert 'foo' in session
+
+    def test_accessed_time_off_saves_atime_when_saving(self):
+        so = SessionObject({}, save_accessed_time=False)
+        atime = so['_accessed_time']
+        so['foo'] = 'bar'
+        so.save()
+        so.persist()
+        session = get_session(id=so.id, save_accessed_time=False)
+        assert 'foo' in session
+        assert '_accessed_time' in session
+        self.assertEqual(session.last_accessed, atime)
+
+    def test_accessed_time_off_doesnt_save_without_save(self):
+        req = {'cookie': {'beaker.session.id': 123}}
+        so = SessionObject(req, save_accessed_time=False)
+        so.persist()  # so we can do a set on a non-new session
+
+        so2 = SessionObject(req, save_accessed_time=False)
+        so2['foo'] = 'bar'
+        # no save()
+        so2.persist()
+
+        session = get_session(id=so.id, save_accessed_time=False)
+        assert 'foo' not in session

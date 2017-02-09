@@ -26,19 +26,25 @@ def simple_app(environ, start_response):
     if not environ['PATH_INFO'].startswith('/nosave'):
         session.save()
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %d and cookie is %s' % (session['value'], session)]
+    msg = 'The current value is: %d and cookie is %s' % (session['value'], session)
+    return [msg.encode('utf-8')]
+
 
 def test_increment():
-    options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
+    options = {'session.validate_key':'hoobermas',
+               'session.type':'cookie'}
     app = TestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
-    res = app.get('/', extra_environ=dict(domain='.hoop.com'))
+
+    res = app.get('/', extra_environ=dict(domain='.hoop.com',
+                                          HTTP_HOST='www.hoop.com'))
+    assert 'current value is: 1' in res
+    assert 'Domain=.hoop.com' in res.headers['Set-Cookie']
+
+    res = app.get('/', extra_environ=dict(HTTP_HOST='www.hoop.com'))
+    assert 'Domain=.hoop.com' in res.headers['Set-Cookie']
     assert 'current value is: 2' in res
-    assert 'Domain=.hoop.com' in res.headers['Set-Cookie']
-    res = app.get('/')
-    assert 'Domain=.hoop.com' in res.headers['Set-Cookie']
-    assert 'current value is: 3' in res
 
 
 if __name__ == '__main__':

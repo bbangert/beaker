@@ -196,7 +196,7 @@ Cache Regions
 
 Rather than having to specify the expiration, or toggle the type used for
 caching different functions, commonly used cache parameters can be defined
-as :term:`Cache Regions`. These user-defined regions than may be used
+as :term:`Cache Regions`. These user-defined regions may be used
 with the :meth:`~beaker.cache.CacheManager.region` decorator rather than
 passing the configuration.
 

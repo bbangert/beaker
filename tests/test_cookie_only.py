@@ -1,8 +1,12 @@
 import datetime, time
 import re
 import os
+import json
 
 import beaker.session
+import beaker.util
+from beaker.session import SignedCookie
+from beaker._compat import b64decode
 from beaker.middleware import SessionMiddleware
 from nose import SkipTest
 try:
@@ -23,7 +27,8 @@ def simple_app(environ, start_response):
     if not environ['PATH_INFO'].startswith('/nosave'):
         session.save()
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %d and cookie is %s' % (session['value'], session)]
+    msg = 'The current value is: %d and cookie is %s' % (session['value'], session)
+    return [msg.encode('UTF-8')]
 
 def test_increment():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
@@ -34,6 +39,102 @@ def test_increment():
     assert 'current value is: 2' in res
     res = app.get('/')
     assert 'current value is: 3' in res
+
+def test_invalid_cookie():
+    # This is not actually a cookie only session, but we still test the cookie part.
+    options = {'session.validate_key':'hoobermas'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    # Set an invalid cookie.
+    app.set_cookie('cb_/zabbix/actionconf.php_parts', 'HI')
+    res = app.get('/')
+    assert 'current value is: 2' in res, res
+
+    res = app.get('/')
+    assert 'current value is: 3' in res, res
+
+def test_invalid_cookie_cookietype():
+    # This is not actually a cookie only session, but we still test the cookie part.
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    # Set an invalid cookie.
+    app.set_cookie('cb_/zabbix/actionconf.php_parts', 'HI')
+    res = app.get('/')
+    assert 'current value is: 2' in res, res
+
+    res = app.get('/')
+    assert 'current value is: 3' in res, res
+
+def test_json_serializer():
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': 'json'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    res = app.get('/')
+    cookie = SignedCookie('hoobermas')
+    session_data = cookie.value_decode(app.cookies['beaker.session.id'])[0]
+    session_data = b64decode(session_data)
+    data = beaker.util.deserialize(session_data, 'json')
+    assert data['value'] == 2
+
+    res = app.get('/')
+    assert 'current value is: 3' in res
+
+def test_pickle_serializer():
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': 'pickle'}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    res = app.get('/')
+    cookie = SignedCookie('hoobermas')
+    session_data = cookie.value_decode(app.cookies['beaker.session.id'])[0]
+    session_data = b64decode(session_data)
+    data = beaker.util.deserialize(session_data, 'pickle')
+    assert data['value'] == 2
+
+    res = app.get('/')
+    assert 'current value is: 3' in res
+
+def test_custom_serializer():
+    was_used = [False, False]
+    class CustomSerializer(object):
+        def loads(self, data_string):
+            was_used[0] = True
+            return json.loads(data_string.decode('utf-8'))
+
+        def dumps(self, data):
+            was_used[1] = True
+            return json.dumps(data).encode('utf-8')
+
+    serializer = CustomSerializer()
+    options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': serializer}
+    app = TestApp(SessionMiddleware(simple_app, **options))
+
+    res = app.get('/')
+    assert 'current value is: 1' in res
+
+    res = app.get('/')
+    cookie = SignedCookie('hoobermas')
+    session_data = cookie.value_decode(app.cookies['beaker.session.id'])[0]
+    session_data = b64decode(session_data)
+    data = serializer.loads(session_data)
+    assert data['value'] == 2
+
+    res = app.get('/')
+    assert 'current value is: 3' in res
+
+    assert all(was_used)
 
 def test_expires():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie',
@@ -120,11 +221,12 @@ def test_cookie_id():
     options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
                'session.type':'cookie'}
     app = TestApp(SessionMiddleware(simple_app, **options))
+
     res = app.get('/')
     assert "_id':" in res
-    sess_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body)
+    sess_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body.decode('utf-8'))
     res = app.get('/')
-    new_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body)
+    new_id = re.sub(r".*'_id': '(.*?)'.*", r'\1', res.body.decode('utf-8'))
     assert new_id == sess_id
 
 def test_invalidate_with_save_does_not_delete_session():
@@ -133,7 +235,7 @@ def test_invalidate_with_save_does_not_delete_session():
         session.invalidate()
         session.save()
         start_response('200 OK', [('Content-type', 'text/plain')])
-        return ['Cookie is %s' % session]
+        return [('Cookie is %s' % session).encode('UTF-8')]
 
     options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
                'session.type':'cookie'}

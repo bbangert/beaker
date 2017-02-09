@@ -66,6 +66,9 @@ Complete example using a basic WSGI app with sessions::
     }
     wsgi_app = SessionMiddleware(simple_app, session_opts)
 
+Now ``wsgi_app`` is a replacement of original application ``simple_app``.
+You should specify it as a request handler in your WSGI configuration file.
+
 .. note::
     This example does **not** actually save the session for the next request.
     Adding the :meth:`~beaker.session.Session.save` call explained below is
@@ -81,11 +84,13 @@ application.
 
 * id - Unique 40 char SHA-generated session ID
 * last_accessed - The last time the session was accessed before the current
-  access, will be None if the session was just made
+  access, if save_accessed_time is true; the last time it was modified if false;
+  will be None if the session was just made
 
 There's several special session keys populated as well:
 
-* _accessed_time - Current accessed time of the session, when it was loaded
+* _accessed_time - When the session was loaded if save_accessed_time is true;
+  when it was last written if false
 * _creation_time - When the session was created
 
 
@@ -101,10 +106,17 @@ on the session object::
 
     Beaker relies on Python's pickle module to pickle data objects for storage
     in the session. Objects that cannot be pickled should **not** be stored in
-    the session.
+    the session. It's suggested to switch to **json** ``data_serializer`` to avoid
+    possible security issues with pickle.
 
 This flags a session to be saved, and it will be stored on the chosen back-end
 at the end of the request.
+
+.. warning::
+
+    When using the ``memory`` backend, session will only be valid for the process
+    that created it and will be lost when process is restarted. It is usually
+    suggested to only use the ``memory`` backend for development and not for production.
 
 If it's necessary to immediately save the session to the back-end, the
 :meth:`~beaker.session.SessionObject.persist` method should be used::

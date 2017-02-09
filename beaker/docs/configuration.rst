@@ -170,6 +170,12 @@ cookie_domain (**optional**, string)
 key (**required**, string)
     Name of the cookie key used to save the session under.
 
+save_accessed_time (**optional**, bool)
+    Whether beaker should save the session's access time (true) or only
+    modification time (false).
+
+    Defaults to true.
+
 secret (**required**, string)
     Used with the HMAC to ensure session integrity. This value should
     ideally be a randomly generated string.
@@ -188,6 +194,8 @@ timeout (**optional**, integer)
     the session was last accessed, not from when the session was created.
 
     Defaults to never expiring.
+
+    Requires that save_accessed_time be true.
 
 
 Encryption Options
@@ -264,6 +272,6 @@ regions (**optional**, list, tuple)
 
 
 .. _Pylons: http://pylonshq.com/
-.. _TurboGears2: http://turbogears.org/2.0/
+.. _TurboGears2: http://turbogears.org/
 .. _SQLAlchemy: http://www.sqlalchemy.org/
 .. _pycryptopp: http://pypi.python.org/pypi/pycryptopp

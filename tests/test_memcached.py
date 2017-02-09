@@ -1,4 +1,6 @@
 # coding: utf-8
+from beaker._compat import u_
+
 import mock
 import os
 
@@ -184,16 +186,16 @@ def test_has_key_multicache():
 def test_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
-    cache.set_value(u'hiŏ', o)
-    assert u'hiŏ' in cache
-    assert u'hŏa' not in cache
-    cache.remove_value(u'hiŏ')
-    assert u'hiŏ' not in cache
+    cache.set_value(u_('hiŏ'), o)
+    assert u_('hiŏ') in cache
+    assert u_('hŏa') not in cache
+    cache.remove_value(u_('hiŏ'))
+    assert u_('hiŏ') not in cache
 
 def test_long_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
-    long_str = u'Очень длинная строка, которая не влезает в сто двадцать восемь байт и поэтому не проходит ограничение в check_key, что очень прискорбно, не правда ли, друзья? Давайте же скорее исправим это досадное недоразумение!'
+    long_str = u_('Очень длинная строка, которая не влезает в сто двадцать восемь байт и поэтому не проходит ограничение в check_key, что очень прискорбно, не правда ли, друзья? Давайте же скорее исправим это досадное недоразумение!')
     cache.set_value(long_str, o)
     assert long_str in cache
     cache.remove_value(long_str)
@@ -202,11 +204,11 @@ def test_long_unicode_keys():
 def test_spaces_in_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
-    cache.set_value(u'hi ŏ', o)
-    assert u'hi ŏ' in cache
-    assert u'hŏa' not in cache
-    cache.remove_value(u'hi ŏ')
-    assert u'hi ŏ' not in cache
+    cache.set_value(u_('hi ŏ'), o)
+    assert u_('hi ŏ') in cache
+    assert u_('hŏa') not in cache
+    cache.remove_value(u_('hi ŏ'))
+    assert u_('hi ŏ') not in cache
 
 def test_spaces_in_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
@@ -330,4 +332,19 @@ class TestPylibmcInit(unittest.TestCase):
             assert mc.behaviors["tcp_nodelay"] == 1
             assert "auto_eject" in mc.behaviors
             assert mc.behaviors["auto_eject"] == 0
-            
+
+    def test_pylibmc_pool_sharing(self):
+        from beaker.ext import memcached
+        cache_1a = Cache('test_1a', data_dir='./cache',
+                            memcache_module='pylibmc',
+                            url=mc_url, type="ext:memcached")
+        cache_1b = Cache('test_1b', data_dir='./cache',
+                            memcache_module='pylibmc',
+                            url=mc_url, type="ext:memcached")
+        cache_2 = Cache('test_2', data_dir='./cache',
+                            memcache_module='pylibmc',
+                            url='127.0.0.1:11212', type="ext:memcached")
+
+        assert (cache_1a.namespace.pool is cache_1b.namespace.pool)
+        assert (cache_1a.namespace.pool is not cache_2.namespace.pool)
+

@@ -1,9 +1,10 @@
-from __future__ import with_statement
+from .._compat import PY2
+
 from beaker.container import NamespaceManager, Container
 from beaker.crypto.util import sha1
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer
-from beaker.util import verify_directory, SyncDict, parse_memcached_behaviors, py3k
+from beaker.util import verify_directory, SyncDict, parse_memcached_behaviors
 import warnings
 
 MAX_KEY_LENGTH = 250
@@ -119,7 +120,7 @@ class MemcachedNamespaceManager(NamespaceManager):
             key = key.decode('ascii')
         formated_key = (self.namespace + '_' + key).replace(' ', '\302\267')
         if len(formated_key) > MAX_KEY_LENGTH:
-            if py3k:
+            if not PY2:
                 formated_key = formated_key.encode('utf-8')
             formated_key = sha1(formated_key).hexdigest()
         return formated_key
@@ -158,6 +159,8 @@ class MemcachedNamespaceManager(NamespaceManager):
 class PyLibMCNamespaceManager(MemcachedNamespaceManager):
     """Provide thread-local support for pylibmc."""
 
+    pools = SyncDict()
+
     def __init__(self, *arg, **kw):
         super(PyLibMCNamespaceManager, self).__init__(*arg, **kw)
 
@@ -175,7 +178,9 @@ class PyLibMCNamespaceManager(MemcachedNamespaceManager):
                         servers=url.split(';'), behaviors=behaviors,
                         binary=(protocol == 'binary'), username=username,
                         password=password)
-        self.pool = pylibmc.ThreadMappedPool(self.mc)
+        self.pool = PyLibMCNamespaceManager.pools.get(
+                        (memcache_module, url),
+                        pylibmc.ThreadMappedPool, self.mc)
 
     def __getitem__(self, key):
         with self.pool.reserve() as mc:

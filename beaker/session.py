@@ -1,15 +1,27 @@
-import Cookie
+from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64decode, string_type
+
 import os
-from datetime import datetime, timedelta
 import time
-from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1
+from datetime import datetime, timedelta
+from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1, get_nonce_size, DEFAULT_NONCE_BITS
 from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
-from base64 import b64encode, b64decode
+from beaker.cookie import SimpleCookie
+
+__all__ = ['SignedCookie', 'Session', 'InvalidSignature']
 
 
-__all__ = ['SignedCookie', 'Session']
+class _InvalidSignatureType(object):
+    """Returned from SignedCookie when the value's signature was invalid."""
+    def __nonzero__(self):
+        return False
+
+    def __bool__(self):
+        return False
+
+
+InvalidSignature = _InvalidSignatureType()
 
 
 try:
@@ -34,7 +46,7 @@ except ImportError:
                 )
         # NB: nothing against second parameter to b64encode, but it seems
         #     to be slower than simple chained replacement
-        if util.py3k:
+        if not PY2:
             raw_id = b64encode(sha1(id_str.encode('ascii')).digest())
             return str(raw_id.replace(b'+', b'-').replace(b'/', b'_').rstrip(b'='))
         else:
@@ -42,32 +54,35 @@ except ImportError:
             return raw_id.replace('+', '-').replace('/', '_').rstrip('=')
 
 
-class SignedCookie(Cookie.BaseCookie):
+class SignedCookie(SimpleCookie):
     """Extends python cookie to give digital signature support"""
     def __init__(self, secret, input=None):
         self.secret = secret.encode('UTF-8')
-        Cookie.BaseCookie.__init__(self, input)
+        http_cookies.BaseCookie.__init__(self, input)
 
     def value_decode(self, val):
         val = val.strip('"')
-        sig = HMAC.new(self.secret, val[40:].encode('UTF-8'), SHA1).hexdigest()
+        if not val:
+            return None, val
+
+        sig = HMAC.new(self.secret, val[40:].encode('utf-8'), SHA1).hexdigest()
 
         # Avoid timing attacks
         invalid_bits = 0
         input_sig = val[:40]
         if len(sig) != len(input_sig):
-            return None, val
+            return InvalidSignature, val
 
         for a, b in zip(sig, input_sig):
             invalid_bits += a != b
 
         if invalid_bits:
-            return None, val
+            return InvalidSignature, val
         else:
             return val[40:], val
 
     def value_encode(self, val):
-        sig = HMAC.new(self.secret, val.encode('UTF-8'), SHA1).hexdigest()
+        sig = HMAC.new(self.secret, val.encode('utf-8'), SHA1).hexdigest()
         return str(val), ("%s%s" % (sig, val))
 
 
@@ -88,25 +103,38 @@ class Session(dict):
     :param key: The name the cookie should be set to.
     :param timeout: How long session data is considered valid. This is used
                     regardless of the cookie being present or not to determine
-                    whether session data is still valid.
-    :type timeout: int
+                    whether session data is still valid. Can be set to None to
+                    disable session time out.
+    :type timeout: int or None
+    :param save_accessed_time: Whether beaker should save the session's access
+                               time (True) or only modification time (False).
+                               Defaults to True.
     :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
+    :param data_serializer: If ``"json"`` or ``"pickle"`` should be used
+                              to serialize data. Can also be an object with
+                              ``loads` and ``dumps`` methods. By default
+                              ``"pickle"`` is used.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
     :param encrypt_key: The key to use for the local session encryption, if not
                         provided the session will not be encrypted.
     :param validate_key: The key used to sign the local encrypted session
-
+    :param encrypt_nonce_bits: Number of bits used to generate nonce for encryption key salt.
+                               For security reason this is 128bits be default. If you want
+                               to keep backward compatibility with sessions generated before 1.8.0
+                               set this to 48.
     """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
-                 key='beaker.session.id', timeout=None, cookie_expires=True,
-                 cookie_domain=None, cookie_path='/', secret=None,
+                 key='beaker.session.id', timeout=None, save_accessed_time=True,
+                 cookie_expires=True, cookie_domain=None, cookie_path='/',
+                 data_serializer='pickle', secret=None,
                  secure=False, namespace_class=None, httponly=False,
-                 encrypt_key=None, validate_key=None, **namespace_args):
+                 encrypt_key=None, validate_key=None, encrypt_nonce_bits=DEFAULT_NONCE_BITS,
+                 **namespace_args):
         if not type:
             if data_dir:
                 self.type = 'file'
@@ -123,9 +151,14 @@ class Session(dict):
         self.data_dir = data_dir
         self.key = key
 
+        if timeout and not save_accessed_time:
+            raise BeakerException("timeout requires save_accessed_time")
         self.timeout = timeout
+        self.save_atime = save_accessed_time
         self.use_cookies = use_cookies
         self.cookie_expires = cookie_expires
+
+        self._set_serializer(data_serializer)
 
         # Default cookie domain/path
         self._domain = cookie_domain
@@ -136,6 +169,7 @@ class Session(dict):
         self.httponly = httponly
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
+        self.encrypt_nonce_size = get_nonce_size(encrypt_nonce_bits)
         self.id = id
         self.accessed_dict = {}
         self.invalidate_corrupt = invalidate_corrupt
@@ -144,14 +178,24 @@ class Session(dict):
             cookieheader = request.get('cookie', '')
             if secret:
                 try:
-                    self.cookie = SignedCookie(secret, input=cookieheader)
-                except Cookie.CookieError:
-                    self.cookie = SignedCookie(secret, input=None)
+                    self.cookie = SignedCookie(
+                        secret,
+                        input=cookieheader,
+                    )
+                except http_cookies.CookieError:
+                    self.cookie = SignedCookie(
+                        secret,
+                        input=None,
+                    )
             else:
-                self.cookie = Cookie.SimpleCookie(input=cookieheader)
+                self.cookie = SimpleCookie(input=cookieheader)
 
             if not self.id and self.key in self.cookie:
-                self.id = self.cookie[self.key].value
+                cookie_data = self.cookie[self.key].value
+                # Should we check invalidate_corrupt here?
+                if cookie_data is InvalidSignature:
+                    cookie_data = None
+                self.id = cookie_data
 
         self.is_new = self.id is None
         if self.is_new:
@@ -160,8 +204,8 @@ class Session(dict):
         else:
             try:
                 self.load()
-            except Exception, e:
-                if invalidate_corrupt:
+            except Exception as e:
+                if self.invalidate_corrupt:
                     util.warn(
                         "Invalidating corrupt session %s; "
                         "error was: %s.  Set invalidate_corrupt=False "
@@ -169,6 +213,17 @@ class Session(dict):
                     self.invalidate()
                 else:
                     raise
+
+    def _set_serializer(self, data_serializer):
+        self.data_serializer = data_serializer
+        if self.data_serializer == 'json':
+            self.serializer = util.JsonSerializer()
+        elif self.data_serializer == 'pickle':
+            self.serializer = util.PickleSerializer()
+        elif isinstance(self.data_serializer, string_type):
+            raise BeakerException('Invalid value for data_serializer: %s' % data_serializer)
+        else:
+            self.serializer = data_serializer
 
     def has_key(self, name):
         return name in self
@@ -186,24 +241,25 @@ class Session(dict):
 
     def _set_cookie_expires(self, expires):
         if expires is None:
-            if self.cookie_expires is not True:
-                if self.cookie_expires is False:
-                    expires = datetime.fromtimestamp(0x7FFFFFFF)
-                elif isinstance(self.cookie_expires, timedelta):
-                    expires = datetime.utcnow() + self.cookie_expires
-                elif isinstance(self.cookie_expires, datetime):
-                    expires = self.cookie_expires
-                else:
-                    raise ValueError("Invalid argument for cookie_expires: %s"
-                                     % repr(self.cookie_expires))
-            else:
-                expires = None
-        if expires is not None:
-            if not self.cookie or self.key not in self.cookie:
-                self.cookie[self.key] = self.id
-            self.cookie[self.key]['expires'] = \
-                expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
-        return expires
+            expires = self.cookie_expires
+        if expires is False:
+            expires_date = datetime.fromtimestamp(0x7FFFFFFF)
+        elif isinstance(expires, timedelta):
+            expires_date = datetime.utcnow() + expires
+        elif isinstance(expires, datetime):
+            expires_date = expires
+        elif expires is not True:
+            raise ValueError("Invalid argument for cookie_expires: %s"
+                             % repr(self.cookie_expires))
+        self.cookie_expires = expires
+        if not self.cookie or self.key not in self.cookie:
+            self.cookie[self.key] = self.id
+        if expires is True:
+            self.cookie[self.key]['expires'] = ''
+            return True
+        self.cookie[self.key]['expires'] = \
+            expires_date.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
+        return expires_date
 
     def _update_cookie_out(self, set_cookie=True):
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
@@ -213,7 +269,7 @@ class Session(dict):
         try:
             if self.httponly:
                 self.cookie[self.key]['httponly'] = True
-        except Cookie.CookieError, e:
+        except http_cookies.CookieError as e:
             if 'Invalid Attribute httponly' not in str(e):
                 raise
             util.warn('Python 2.6+ is required to use httponly')
@@ -226,7 +282,7 @@ class Session(dict):
             self.last_accessed = None
         if self.use_cookies:
             self._set_cookie_values()
-            sc = set_new == False
+            sc = set_new is False
             self._update_cookie_out(set_cookie=sc)
 
     @property
@@ -257,43 +313,30 @@ class Session(dict):
         """Serialize, encipher, and base64 the session dict"""
         session_data = session_data or self.copy()
         if self.encrypt_key:
-            nonce = b64encode(os.urandom(6))[:8]
+            nonce_len, nonce_b64len = self.encrypt_nonce_size
+            nonce = b64encode(os.urandom(nonce_len))[:nonce_b64len]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                             self.validate_key + nonce, 1)
-            data = util.pickle.dumps(session_data, 2)
+                                                    self.validate_key + nonce, 1)
+            data = self.serializer.dumps(session_data)
             return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
         else:
-            data = util.pickle.dumps(session_data, 2)
+            data = self.serializer.dumps(session_data)
             return b64encode(data)
 
     def _decrypt_data(self, session_data):
         """Bas64, decipher, then un-serialize the data for the session
         dict"""
         if self.encrypt_key:
-            try:
-                nonce = session_data[:8]
-                encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                                 self.validate_key + nonce, 1)
-                payload = b64decode(session_data[8:])
-                data = crypto.aesDecrypt(payload, encrypt_key)
-            except:
-                # As much as I hate a bare except, we get some insane errors
-                # here that get tossed when crypto fails, so we raise the
-                # 'right' exception
-                if self.invalidate_corrupt:
-                    return None
-                else:
-                    raise
-            try:
-                return util.pickle.loads(data)
-            except:
-                if self.invalidate_corrupt:
-                    return None
-                else:
-                    raise
+            __, nonce_b64len = self.encrypt_nonce_size
+            nonce = session_data[:nonce_b64len]
+            encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
+                                                    self.validate_key + nonce, 1)
+            payload = b64decode(session_data[nonce_b64len:])
+            data = crypto.aesDecrypt(payload, encrypt_key)
         else:
             data = b64decode(session_data)
-            return util.pickle.loads(data)
+
+        return self.serializer.loads(data)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -392,7 +435,7 @@ class Session(dict):
         """
         # Look to see if its a new session that was only accessed
         # Don't save it under that case
-        if accessed_only and self.is_new:
+        if accessed_only and (self.is_new or not self.save_atime):
             return None
 
         # this session might not have a namespace yet or the session id
@@ -477,37 +520,54 @@ class CookieSession(Session):
                     regardless of the cookie being present or not to determine
                     whether session data is still valid.
     :type timeout: int
+    :param save_accessed_time: Whether beaker should save the session's access
+                               time (True) or only modification time (False).
+                               Defaults to True.
     :param cookie_expires: Expiration date for cookie
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
+    :param data_serializer: If ``"json"`` or ``"pickle"`` should be used
+                              to serialize data. Can also be an object with
+                              ``loads` and ``dumps`` methods. By default
+                              ``"pickle"`` is used.
     :param secure: Whether or not the cookie should only be sent over SSL.
     :param httponly: Whether or not the cookie should only be accessible by
                      the browser not by JavaScript.
     :param encrypt_key: The key to use for the local session encryption, if not
                         provided the session will not be encrypted.
     :param validate_key: The key used to sign the local encrypted session
-
+    :param invalidate_corrupt: How to handle corrupt data when loading. When
+                               set to True, then corrupt data will be silently
+                               invalidated and a new session created,
+                               otherwise invalid data will cause an exception.
+    :type invalidate_corrupt: bool
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
-                 cookie_expires=True, cookie_domain=None, cookie_path='/',
-                 encrypt_key=None, validate_key=None, secure=False,
-                 httponly=False, **kwargs):
+                 save_accessed_time=True, cookie_expires=True, cookie_domain=None,
+                 cookie_path='/', encrypt_key=None, validate_key=None, secure=False,
+                 httponly=False, data_serializer='pickle',
+                 encrypt_nonce_bits=DEFAULT_NONCE_BITS, invalidate_corrupt=False,
+                 **kwargs):
 
         if not crypto.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
-                                  "encrypted cookie-only Session.")
+                                            "encrypted cookie-only Session.")
 
         self.request = request
         self.key = key
         self.timeout = timeout
+        self.save_atime = save_accessed_time
         self.cookie_expires = cookie_expires
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
+        self.encrypt_nonce_size = get_nonce_size(encrypt_nonce_bits)
         self.request['set_cookie'] = False
         self.secure = secure
         self.httponly = httponly
         self._domain = cookie_domain
         self._path = cookie_path
+        self.invalidate_corrupt = invalidate_corrupt
+        self._set_serializer(data_serializer)
 
         try:
             cookieheader = request['cookie']
@@ -517,11 +577,19 @@ class CookieSession(Session):
         if validate_key is None:
             raise BeakerException("No validate_key specified for Cookie only "
                                   "Session.")
+        if timeout and not save_accessed_time:
+            raise BeakerException("timeout requires save_accessed_time")
 
         try:
-            self.cookie = SignedCookie(validate_key, input=cookieheader)
-        except Cookie.CookieError:
-            self.cookie = SignedCookie(validate_key, input=None)
+            self.cookie = SignedCookie(
+                validate_key,
+                input=cookieheader,
+            )
+        except http_cookies.CookieError:
+            self.cookie = SignedCookie(
+                validate_key,
+                input=None,
+            )
 
         self['_id'] = _session_id()
         self.is_new = True
@@ -531,10 +599,19 @@ class CookieSession(Session):
             self.is_new = False
             try:
                 cookie_data = self.cookie[self.key].value
+                if cookie_data is InvalidSignature:
+                    raise BeakerException("Invalid signature")
                 self.update(self._decrypt_data(cookie_data))
                 self._path = self.get('_path', '/')
-            except:
-                pass
+            except Exception as e:
+                if self.invalidate_corrupt:
+                    util.warn(
+                        "Invalidating corrupt session %s; "
+                        "error was: %s.  Set invalidate_corrupt=False "
+                        "to propagate this exception." % (self.id, e))
+                    self.invalidate()
+                else:
+                    raise
 
             if self.timeout is not None:
                 now = time.time()
@@ -572,7 +649,7 @@ class CookieSession(Session):
 
     def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage"""
-        if accessed_only and self.is_new:
+        if accessed_only and (self.is_new or not self.save_atime):
             return
         if accessed_only:
             self.clear()
@@ -652,11 +729,16 @@ class SessionObject(object):
             environ = self.__dict__['_environ']
             self.__dict__['_headers'] = req = {'cookie_out': None}
             req['cookie'] = environ.get('HTTP_COOKIE')
-            if params.get('type') == 'cookie':
-                self.__dict__['_sess'] = CookieSession(req, **params)
+            session_cls = params.get('session_class', None)
+            if session_cls is None:
+                if params.get('type') == 'cookie':
+                    session_cls = CookieSession
+                else:
+                    session_cls = Session
             else:
-                self.__dict__['_sess'] = Session(req, use_cookies=True,
-                                                 **params)
+                assert issubclass(session_cls, Session),\
+                    "Not a Session: " + session_cls
+            self.__dict__['_sess'] = session_cls(req, **params)
         return self.__dict__['_sess']
 
     def __getattr__(self, attr):
@@ -708,21 +790,27 @@ class SessionObject(object):
     def persist(self):
         """Persist the session to the storage
 
-        If its set to autosave, then the entire session will be saved
-        regardless of if save() has been called. Otherwise, just the
-        accessed time will be updated if save() was not called, or
-        the session will be saved if save() was called.
+        Always saves the whole session if save() or delete() have been called.
+        If they haven't:
+        - If autosave is set to true, saves the the entire session regardless.
+        - If save_accessed_time is set to true or unset, only saves the updated
+          access time.
+        - If save_accessed_time is set to false, doesn't save anything.
 
         """
         if self.__dict__['_params'].get('auto'):
             self._session().save()
-        else:
-            if self.__dict__.get('_dirty'):
+        elif self.__dict__['_params'].get('save_accessed_time', True):
+            if self.dirty():
                 self._session().save()
             else:
                 self._session().save(accessed_only=True)
+        else:  # save_accessed_time is false
+            if self.dirty():
+                self._session().save()
 
     def dirty(self):
+        """Returns True if save() or delete() have been called"""
         return self.__dict__.get('_dirty', False)
 
     def accessed(self):
