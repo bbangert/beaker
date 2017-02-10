@@ -21,10 +21,6 @@ def aesEncrypt(data, key):
         backend=default_backend()
     ).encryptor()
 
-    # associated_data will be authenticated but not encrypted,
-    # it must also be passed in on decryption.
-    encryptor.authenticate_additional_data("")
-
     # Encrypt the plaintext and get the associated ciphertext.
     # GCM does not require padding.
     ciphertext = encryptor.update(data) + encryptor.finalize()
@@ -44,10 +40,6 @@ def aesDecrypt(data, key):
         modes.GCM(iv, tag),
         backend=default_backend()
     ).decryptor()
-
-    # We put associated_data back in or the tag will fail to verify
-    # when we finalize the decryptor.
-    decryptor.authenticate_additional_data("")
 
     # Decryption gets us the authenticated plaintext.
     # If the tag does not match an InvalidTag exception will be raised.
