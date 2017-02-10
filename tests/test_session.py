@@ -11,7 +11,7 @@ import warnings
 from nose import SkipTest, with_setup
 
 from beaker.container import MemoryNamespaceManager
-from beaker.crypto import has_aes
+from beaker.crypto import get_crypto_module
 from beaker.exceptions import BeakerException
 from beaker.session import CookieSession, Session, SessionObject
 from beaker.util import assert_raises
@@ -43,6 +43,7 @@ def test_session():
     for test_case in (
         check_save_load,
         check_save_load_encryption,
+        check_save_load_encryption_cryptography,
         check_decryption_failure,
         check_delete,
         check_revert,
@@ -74,7 +75,7 @@ def check_save_load(session_getter):
 
 def check_save_load_encryption(session_getter):
     """Test if the data is actually persistent across requests"""
-    if not has_aes:
+    if not get_crypto_module('default').has_aes:
         raise SkipTest()
     session = session_getter(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
@@ -94,9 +95,37 @@ def check_save_load_encryption(session_getter):
     assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
 
+def check_save_load_encryption_cryptography(session_getter):
+    """Test if the data is actually persistent across requests"""
+    try:
+        get_crypto_module('cryptography').has_aes
+    except BeakerException:
+        raise SkipTest()
+    session = session_getter(
+        encrypt_key='666a19cf7f61c64c',
+        validate_key='hoobermas',
+        crypto_type='cryptography')
+    session[u_('Suomi')] = u_('Kimi Räikkönen')
+    session[u_('Great Britain')] = u_('Jenson Button')
+    session[u_('Deutchland')] = u_('Sebastian Vettel')
+    session.save()
+
+    session = session_getter(
+        id=session.id, encrypt_key='666a19cf7f61c64c',
+        validate_key='hoobermas',
+        crypto_type='cryptography')
+    assert u_('Suomi') in session
+    assert u_('Great Britain') in session
+    assert u_('Deutchland') in session
+
+    assert session[u_('Suomi')] == u_('Kimi Räikkönen')
+    assert session[u_('Great Britain')] == u_('Jenson Button')
+    assert session[u_('Deutchland')] == u_('Sebastian Vettel')
+
+
 def check_decryption_failure(session_getter):
     """Test if the data fails without the right keys"""
-    if not has_aes:
+    if not get_crypto_module('default').has_aes:
         raise SkipTest()
     session = session_getter(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')

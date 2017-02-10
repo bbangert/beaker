@@ -11,7 +11,7 @@ except ImportError:
     raise SkipTest("webtest not installed")
 
 from beaker import crypto
-if not crypto.has_aes:
+if not crypto.get_crypto_module('default').has_aes:
     raise SkipTest("No AES library is installed, can't test cookie-only "
                    "Sessions")
 
