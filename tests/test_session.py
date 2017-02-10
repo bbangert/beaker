@@ -97,6 +97,9 @@ def check_save_load_encryption(session_getter):
 
 def check_save_load_encryption_cryptography(session_getter):
     """Test if the data is actually persistent across requests"""
+    # cryptography only works for py3.3+, so skip for python 3.2
+    if sys.version_info[0] == 3 and sys.version_info[1] < 3:
+        raise SkipTest("Cryptography not supported on Python 3 lower than 3.3")
     try:
         get_crypto_module('cryptography').has_aes
     except BeakerException:
