@@ -23,7 +23,7 @@ if not hasattr(inspect, 'signature'):
     INSTALL_REQUIRES.append('funcsigs')
 
 
-TESTS_REQUIRE = ['nose', 'webtest', 'Mock', 'pycrypto']
+TESTS_REQUIRE = ['nose', 'webtest', 'Mock', 'pycrypto', 'cryptography']
 
 if py_version == (3, 2):
     TESTS_REQUIRE.append('coverage < 4.0')
@@ -69,6 +69,7 @@ setup(name='Beaker',
       extras_require={
           'crypto': ['pycryptopp>=0.5.12'],
           'pycrypto': ['pycrypto'],
+          'cryptography': ['cryptography'],
           'testsuite': [TESTS_REQUIRE]
       },
       test_suite='nose.collector',
