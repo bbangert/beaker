@@ -23,7 +23,12 @@ if not hasattr(inspect, 'signature'):
     INSTALL_REQUIRES.append('funcsigs')
 
 
-TESTS_REQUIRE = ['nose', 'webtest', 'Mock', 'pycrypto', 'cryptography']
+TESTS_REQUIRE = ['nose', 'Mock', 'pycrypto', 'cryptography']
+
+if py_version == (2, 6):
+    TESTS_REQUIRE.append('WebTest<2.0.24')
+else:
+    TESTS_REQUIRE.append('webtest')
 
 if py_version == (3, 2):
     TESTS_REQUIRE.append('coverage < 4.0')
