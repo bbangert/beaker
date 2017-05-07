@@ -24,15 +24,15 @@ class CacheManagerBaseTests(unittest.TestCase):
                     session = session.get_by_id(sess_id)
                 if not session:
                     start_response('200 OK', [('Content-type', 'text/plain')])
-                    return ["No session id of %s found." % sess_id]
+                    return [("No session id of %s found." % sess_id).encode('utf-8')]
                 if not session.has_key('value'):
                     session['value'] = 0
                 session['value'] += 1
                 if not environ['PATH_INFO'].startswith('/nosave'):
                     session.save()
             start_response('200 OK', [('Content-type', 'text/plain')])
-            return ['The current value is: %d, session id is %s' % (session['value'],
-                                                                    session.id)]
+            return [('The current value is: %d, session id is %s' % (session['value'],
+                                                                     session.id)).encode('utf-8')]
 
         def simple_app(environ, start_response):
             extra_args = cls.CACHE_ARGS
@@ -48,7 +48,7 @@ class CacheManagerBaseTests(unittest.TestCase):
                 value = 0
             cache.set_value('value', value + 1)
             start_response('200 OK', [('Content-type', 'text/plain')])
-            return ['The current value is: %s' % cache.get_value('value')]
+            return [('The current value is: %s' % cache.get_value('value')).encode('utf-8')]
 
         def using_none_app(environ, start_response):
             extra_args = cls.CACHE_ARGS
@@ -64,23 +64,24 @@ class CacheManagerBaseTests(unittest.TestCase):
                 value = 10
             cache.set_value('value', None)
             start_response('200 OK', [('Content-type', 'text/plain')])
-            return ['The current value is: %s' % value]
+            return [('The current value is: %s' % value).encode('utf-8')]
 
         def cache_manager_app(environ, start_response):
             cm = environ['beaker.cache']
             cm.get_cache('test')['test_key'] = 'test value'
 
             start_response('200 OK', [('Content-type', 'text/plain')])
-            yield "test_key is: %s\n" % cm.get_cache('test')['test_key']
+            yield ("test_key is: %s\n" % cm.get_cache('test')['test_key']).encode('utf-8')
             cm.get_cache('test').clear()
 
             try:
                 test_value = cm.get_cache('test')['test_key']
             except KeyError:
-                yield "test_key cleared"
+                yield "test_key cleared".encode('utf-8')
             else:
-                yield "test_key wasn't cleared, is: %s\n" % \
-                      cm.get_cache('test')['test_key']
+                yield (
+                    "test_key wasn't cleared, is: %s\n" % cm.get_cache('test')['test_key']
+                ).encode('utf-8')
 
         cls.simple_session_app = staticmethod(simple_session_app)
         cls.simple_app = staticmethod(simple_app)
