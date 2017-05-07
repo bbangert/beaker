@@ -197,13 +197,13 @@ class SynchronizerImpl(object):
     def do_release_read_lock(self):
         raise NotImplementedError()
 
-    def do_acquire_read_lock(self):
+    def do_acquire_read_lock(self, wait):
         raise NotImplementedError()
 
     def do_release_write_lock(self):
         raise NotImplementedError()
 
-    def do_acquire_write_lock(self):
+    def do_acquire_write_lock(self, wait):
         raise NotImplementedError()
 
 

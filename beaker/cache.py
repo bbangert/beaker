@@ -20,6 +20,7 @@ import beaker.ext.memcached as memcached
 import beaker.ext.database as database
 import beaker.ext.sqla as sqla
 import beaker.ext.google as google
+import beaker.ext.mongodb as mongodb
 from functools import wraps
 
 # Initialize the cache region dict
@@ -116,14 +117,15 @@ class _backends(object):
 
 # Initialize the basic available backends
 clsmap = _backends({
-          'memory': container.MemoryNamespaceManager,
-          'dbm': container.DBMNamespaceManager,
-          'file': container.FileNamespaceManager,
-          'ext:memcached': memcached.MemcachedNamespaceManager,
-          'ext:database': database.DatabaseNamespaceManager,
-          'ext:sqla': sqla.SqlaNamespaceManager,
-          'ext:google': google.GoogleNamespaceManager,
-          })
+    'memory': container.MemoryNamespaceManager,
+    'dbm': container.DBMNamespaceManager,
+    'file': container.FileNamespaceManager,
+    'ext:memcached': memcached.MemcachedNamespaceManager,
+    'ext:database': database.DatabaseNamespaceManager,
+    'ext:sqla': sqla.SqlaNamespaceManager,
+    'ext:google': google.GoogleNamespaceManager,
+    'ext:mongodb': mongodb.MongoNamespaceManager
+})
 
 
 def cache_region(region, *args):
