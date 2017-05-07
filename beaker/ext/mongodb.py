@@ -19,8 +19,9 @@ MONGO_CLIENTS = {}
 
 
 class MongoNamespaceManager(NamespaceManager):
-    """Provides the :class:`.NamespaceManager` API over a memcache client library."""
+    """Provides the :class:`.NamespaceManager` API over MongoDB."""
 
+    # TODO: Cache the mongodb client instance.
     clients = SyncDict()
 
     def __init__(self, namespace, url, **kw):
