@@ -82,7 +82,7 @@ Session Attributes / Keys
 Sessions have several special attributes that can be used as needed by an
 application.
 
-* id - Unique 40 char SHA-generated session ID
+* id - Unique 40 char SHA-generated session ID (by default this is uuid4).
 * last_accessed - The last time the session was accessed before the current
   access, if save_accessed_time is true; the last time it was modified if false;
   will be None if the session was just made
