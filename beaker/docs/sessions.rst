@@ -217,6 +217,22 @@ Example::
     session.domain = '.domain.com'
     session.path = '/admin'
 
+Cookie Security
+======================
+
+Beaker uses the defaults of setting cookie attributes `httponly` and `secure`
+to False. You may want to set those to True in production, and the reasons for
+using these cookie attributes are explained in these Owasp guides - `HttpOnly`_
+, `SecureFlag`_.
+
+Example::
+
+    # Best practice cookie flags for security
+    session.httponly = True
+    session.secure = True
+
+.. _SecureFlag: https://www.owasp.org/index.php/SecureFlag
+.. _HttpOnly: https://www.owasp.org/index.php/HttpOnly#Mitigating_the_Most_Common_XSS_attack_using_HttpOnly
 
 Cookie-Based
 ============
