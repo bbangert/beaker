@@ -7,20 +7,19 @@ as well as the function decorators :func:`.region_decorate`,
 
 """
 import warnings
+from functools import wraps
 from itertools import chain
 
-from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
 import beaker.container as container
+import beaker.ext.database as database
+import beaker.ext.google as google
+import beaker.ext.memcached as memcached
+import beaker.ext.sqla as sqla
 import beaker.util as util
+from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
 from beaker.crypto.util import sha1
 from beaker.exceptions import BeakerException, InvalidCacheBackendError
 from beaker.synchronization import _threading
-
-import beaker.ext.memcached as memcached
-import beaker.ext.database as database
-import beaker.ext.sqla as sqla
-import beaker.ext.google as google
-from functools import wraps
 
 # Initialize the cache region dict
 cache_regions = {}
@@ -47,7 +46,6 @@ of configuration arguments.  Example::
         }
     })
 """
-
 
 cache_managers = {}
 
@@ -101,29 +99,30 @@ class _backends(object):
                         try:
                             from StringIO import StringIO  # Python2
                         except ImportError:
-                            from io import StringIO        # Python3
+                            from io import StringIO  # Python3
 
                         tb = StringIO()
                         traceback.print_exc(file=tb)
                         warnings.warn(
                             "Unable to load NamespaceManager "
                             "entry point: '%s': %s" % (
-                                        entry_point,
-                                        tb.getvalue()),
-                                        RuntimeWarning, 2)
+                                entry_point,
+                                tb.getvalue()),
+                            RuntimeWarning, 2)
         except ImportError:
             pass
 
+
 # Initialize the basic available backends
 clsmap = _backends({
-          'memory': container.MemoryNamespaceManager,
-          'dbm': container.DBMNamespaceManager,
-          'file': container.FileNamespaceManager,
-          'ext:memcached': memcached.MemcachedNamespaceManager,
-          'ext:database': database.DatabaseNamespaceManager,
-          'ext:sqla': sqla.SqlaNamespaceManager,
-          'ext:google': google.GoogleNamespaceManager,
-          })
+    'memory': container.MemoryNamespaceManager,
+    'dbm': container.DBMNamespaceManager,
+    'file': container.FileNamespaceManager,
+    'ext:memcached': memcached.MemcachedNamespaceManager,
+    'ext:database': database.DatabaseNamespaceManager,
+    'ext:sqla': sqla.SqlaNamespaceManager,
+    'ext:google': google.GoogleNamespaceManager,
+})
 
 
 def cache_region(region, *args):
@@ -258,7 +257,7 @@ def region_invalidate(namespace, region, *args):
 
     if not region:
         raise BeakerException("Region or callable function "
-                                    "namespace is required")
+                              "namespace is required")
     else:
         region = cache_regions[region]
 
@@ -282,6 +281,7 @@ class Cache(object):
     :param starttime: time when cache was cache was
 
     """
+
     def __init__(self, namespace, type='memory', expiretime=None,
                  starttime=None, expire=None, **nsargs):
         try:
@@ -311,16 +311,19 @@ class Cache(object):
 
     def put(self, key, value, **kw):
         self._get_value(key, **kw).set_value(value)
+
     set_value = put
 
     def get(self, key, **kw):
         """Retrieve a cached value from the container"""
         return self._get_value(key, **kw).get_value()
+
     get_value = get
 
     def remove_value(self, key, **kw):
         mycontainer = self._get_value(key, **kw)
         mycontainer.clear_value()
+
     remove = remove_value
 
     def _get_value(self, key, **kw):
@@ -336,9 +339,9 @@ class Cache(object):
         return container.Value(key, self.namespace, **kw)
 
     @util.deprecated("Specifying a "
-            "'type' and other namespace configuration with cache.get()/put()/etc. "
-            "is deprecated. Specify 'type' and other namespace configuration to "
-            "cache_manager.get_cache() and/or the Cache constructor instead.")
+                     "'type' and other namespace configuration with cache.get()/put()/etc. "
+                     "is deprecated. Specify 'type' and other namespace configuration to "
+                     "cache_manager.get_cache() and/or the Cache constructor instead.")
     def _legacy_get_value(self, key, type, **kw):
         expiretime = kw.pop('expiretime', self.expiretime)
         starttime = kw.pop('starttime', None)
@@ -577,6 +580,12 @@ def _cache_decorate(deco_args, manager, options, region):
                 cache_key_args = args[1:]
 
             cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args, cache_key_kwargs)))
+            if options:
+                key_expr = options.get('key')
+                if key_expr:
+                    binding = signature.bind(*args, **kwargs)
+                    args_key = key_expr.format(**binding.arguments)
+                    cache_key = u_(" ").join(map(u_, chain(deco_args, [args_key], cache_key_kwargs)))
 
             if region:
                 cachereg = cache_regions[region]
@@ -593,10 +602,12 @@ def _cache_decorate(deco_args, manager, options, region):
                 return func(*args, **kwargs)
 
             return cache[0].get_value(cache_key, createfunc=go)
+
         cached._arg_namespace = namespace
         if region is not None:
             cached._arg_region = region
         return cached
+
     return decorate
 
 
