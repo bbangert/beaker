@@ -30,6 +30,9 @@ with a few additional object methods. Once the SessionMiddleware is in place,
 a session object will be made available as ``beaker.session`` in the WSGI
 environ.
 
+When a session is created on the backend, a cookie is placed in the response to
+the client.
+
 Getting data out of the session::
 
     myvar = session['somekey']
