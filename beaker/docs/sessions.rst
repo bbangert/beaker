@@ -202,7 +202,7 @@ haven't been touched in a long time, for example (in the session's data dir):
 
 .. code-block:: bash
 
-    find . -mtime +3 -exec rm {} \;
+    find . -type f -mtime +3 -print -exec rm {} \;
 
 
 Cookie Domain and Path
