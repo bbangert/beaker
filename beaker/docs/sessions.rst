@@ -30,6 +30,9 @@ with a few additional object methods. Once the SessionMiddleware is in place,
 a session object will be made available as ``beaker.session`` in the WSGI
 environ.
 
+When a session is created on the backend, a cookie is placed in the response to
+the client.
+
 Getting data out of the session::
 
     myvar = session['somekey']
@@ -82,7 +85,7 @@ Session Attributes / Keys
 Sessions have several special attributes that can be used as needed by an
 application.
 
-* id - Unique 40 char SHA-generated session ID
+* id - Unique 40 char SHA-generated session ID (by default this is uuid4).
 * last_accessed - The last time the session was accessed before the current
   access, if save_accessed_time is true; the last time it was modified if false;
   will be None if the session was just made
@@ -199,7 +202,7 @@ haven't been touched in a long time, for example (in the session's data dir):
 
 .. code-block:: bash
 
-    find . -mtime +3 -exec rm {} \;
+    find . -type f -mtime +3 -print -exec rm {} \;
 
 
 Cookie Domain and Path
@@ -217,6 +220,22 @@ Example::
     session.domain = '.domain.com'
     session.path = '/admin'
 
+Cookie Security
+======================
+
+Beaker uses the defaults of setting cookie attributes `httponly` and `secure`
+to False. You may want to set those to True in production, and the reasons for
+using these cookie attributes are explained in these Owasp guides - `HttpOnly`_
+, `SecureFlag`_.
+
+Example::
+
+    # Best practice cookie flags for security
+    session.httponly = True
+    session.secure = True
+
+.. _SecureFlag: https://www.owasp.org/index.php/SecureFlag
+.. _HttpOnly: https://www.owasp.org/index.php/HttpOnly#Mitigating_the_Most_Common_XSS_attack_using_HttpOnly
 
 Cookie-Based
 ============
