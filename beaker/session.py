@@ -205,6 +205,7 @@ class Session(dict):
             self._create_id()
             self['_accessed_time'] = self['_creation_time'] = time.time()
         else:
+            self._set_cookie_values()
             try:
                 self.load()
             except Exception as e:
