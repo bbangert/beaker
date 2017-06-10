@@ -1,5 +1,10 @@
 # coding: utf-8
+import threading
 import unittest
+
+import time
+
+import datetime
 
 from beaker._compat import u_
 from beaker.cache import Cache
@@ -204,3 +209,37 @@ class CacheManagerBaseTests(unittest.TestCase):
         res = app.get('/')
         assert 'current value is: None' in res
 
+    def test_createfunc(self):
+        cache = Cache('test', **self.CACHE_ARGS)
+
+        def createfunc():
+            createfunc.count += 1
+            return createfunc.count
+        createfunc.count = 0
+
+        def keepitlocked():
+            lock = cache.namespace.get_creation_lock('test')
+            lock.acquire()
+            time.sleep(1.0)
+            lock.release()
+
+        v0 = cache.get_value('test', createfunc=createfunc)
+        self.assertEqual(v0, 1)
+
+        v0 = cache.get_value('test', createfunc=createfunc)
+        self.assertEqual(v0, 1)
+
+        cache.remove_value('test')
+
+        begin = datetime.datetime.utcnow()
+        t = threading.Thread(target=keepitlocked)
+        t.start()
+
+        v0 = cache.get_value('test', createfunc=createfunc)
+        self.assertEqual(v0, 2)
+
+        # Ensure that the `get_value` was blocked by the concurrent thread.
+        self.assertGreaterEqual(datetime.datetime.utcnow() - begin,
+                                datetime.timedelta(seconds=1))
+
+        t.join()

@@ -1,7 +1,8 @@
-from .base import CacheManagerBaseTests
+from . import base
 
 
-class TestMongoDB(CacheManagerBaseTests):
+class TestMongoDB(base.CacheManagerBaseTests):
     CACHE_ARGS = {
-        'url': 'localhost:27017/beaker_testdb'
+        'type': 'ext:mongodb',
+        'url': 'mongodb://localhost:27017/beaker_testdb'
     }

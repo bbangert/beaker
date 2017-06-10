@@ -3,6 +3,8 @@ import os
 import threading
 import time
 
+import pickle
+
 try:
     import pymongo
     import pymongo.errors
@@ -12,14 +14,15 @@ except ImportError:
 from beaker.container import NamespaceManager
 from beaker.synchronization import SynchronizerImpl
 from beaker.util import SyncDict
-from beaker._compat import string_type
-
+from beaker.crypto.util import sha1
+from beaker._compat import string_type, PY2
 
 MONGO_CLIENTS = {}
 
 
 class MongoNamespaceManager(NamespaceManager):
     """Provides the :class:`.NamespaceManager` API over MongoDB."""
+    MAX_KEY_LENGTH = 1024
 
     # TODO: Cache the mongodb client instance.
     clients = SyncDict()
@@ -35,6 +38,12 @@ class MongoNamespaceManager(NamespaceManager):
         self.db = self.client.get_default_database()
 
     def _format_key(self, key):
+        if not isinstance(key, str):
+            key = key.decode('ascii')
+        if len(key) > (self.MAX_KEY_LENGTH - len(self.namespace) - 1):
+            if not PY2:
+                key = key.encode('utf-8')
+            key = sha1(key).hexdigest()
         return '%s:%s' % (self.namespace, key)
 
     def get_creation_lock(self, key):
@@ -44,7 +53,7 @@ class MongoNamespaceManager(NamespaceManager):
         entry = self.db.backer_cache.find_one({'_id': self._format_key(key)})
         if entry is None:
             raise KeyError(key)
-        return entry['value']
+        return pickle.loads(entry['value'])
 
     def __contains__(self, key):
         entry = self.db.backer_cache.find_one({'_id': self._format_key(key)})
@@ -54,6 +63,7 @@ class MongoNamespaceManager(NamespaceManager):
         return key in self
 
     def __setitem__(self, key, value):
+        value = pickle.dumps(value)
         self.db.backer_cache.update_one({'_id': self._format_key(key)},
                                         {'$set': {'value': value}},
                                         upsert=True)
@@ -123,6 +133,7 @@ class MongoSynchronizer(SynchronizerImpl):
                                                 {'$set': {'owner': self._get_owner_id(),
                                                           'timestamp': now}},
                                                 upsert=True)
+                return True
             except pymongo.errors.DuplicateKeyError:
                 if not wait:
                     return False
