@@ -32,7 +32,7 @@ class MongoNamespaceManager(NamespaceManager):
         self.lock_dir = None  # MongoDB uses mongo itself for locking.
 
         if isinstance(url, string_type):
-            self.client = pymongo.MongoClient(url)
+            self.client = MongoNamespaceManager.clients.get(url, pymongo.MongoClient, url)
         else:
             self.client = url
         self.db = self.client.get_default_database()
@@ -89,7 +89,7 @@ class MongoSynchronizer(SynchronizerImpl):
         super(MongoSynchronizer, self).__init__()
         self.identifier = identifier
         if isinstance(url, string_type):
-            self.client = pymongo.MongoClient(url)
+            self.client = MongoNamespaceManager.clients.get(url, pymongo.MongoClient, url)
         else:
             self.client = url
         self.db = self.client.get_default_database()
