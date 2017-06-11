@@ -239,7 +239,6 @@ class CacheManagerBaseTests(unittest.TestCase):
         self.assertEqual(v0, 2)
 
         # Ensure that the `get_value` was blocked by the concurrent thread.
-        self.assertGreaterEqual(datetime.datetime.utcnow() - begin,
-                                datetime.timedelta(seconds=1))
+        assert datetime.datetime.utcnow() - begin > datetime.timedelta(seconds=1)
 
         t.join()

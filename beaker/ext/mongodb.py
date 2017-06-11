@@ -5,11 +5,14 @@ import time
 
 import pickle
 
+
 try:
     import pymongo
     import pymongo.errors
+    import bson
 except ImportError:
     pymongo = None
+    bson = None
 
 from beaker.container import NamespaceManager
 from beaker.synchronization import SynchronizerImpl
@@ -30,6 +33,9 @@ class MongoNamespaceManager(NamespaceManager):
     def __init__(self, namespace, url, **kw):
         super(MongoNamespaceManager, self).__init__(namespace)
         self.lock_dir = None  # MongoDB uses mongo itself for locking.
+
+        if pymongo is None:
+            raise RuntimeError('pymongo3 is not available')
 
         if isinstance(url, string_type):
             self.client = MongoNamespaceManager.clients.get(url, pymongo.MongoClient, url)
@@ -65,7 +71,7 @@ class MongoNamespaceManager(NamespaceManager):
     def __setitem__(self, key, value):
         value = pickle.dumps(value)
         self.db.backer_cache.update_one({'_id': self._format_key(key)},
-                                        {'$set': {'value': value}},
+                                        {'$set': {'value': bson.Binary(value)}},
                                         upsert=True)
 
     def __delitem__(self, key):
