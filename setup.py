@@ -42,6 +42,10 @@ if not sys.platform.startswith('java') and not sys.platform == 'cli':
     except ImportError:
         TESTS_REQUIRE.append('pysqlite')
 
+    if py_version[0] == 2:
+        TESTS_REQUIRE.extend(['pylibmc', 'python-memcached'])
+
+
 setup(name='Beaker',
       version=VERSION,
       description="A Session and Caching library with WSGI Middleware",
