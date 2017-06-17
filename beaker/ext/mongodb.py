@@ -2,9 +2,7 @@ import datetime
 import os
 import threading
 import time
-
 import pickle
-
 
 try:
     import pymongo
@@ -102,6 +100,7 @@ class MongoNamespaceManager(NamespaceManager):
         now = time.time()
         self.db.backer_cache.delete_many({'_id': {'$regex': '^%s' % self.namespace},
                                           'expiration': {'$ne': None, '$lte': now}})
+
 
 class MongoSynchronizer(SynchronizerImpl):
     # If a cache entry generation function can take a lot,
