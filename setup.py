@@ -36,7 +36,7 @@ else:
     TESTS_REQUIRE.append('coverage')
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
-    TESTS_REQUIRE.extend(['SQLALchemy', 'pymongo'])
+    TESTS_REQUIRE.extend(['SQLALchemy', 'pymongo', 'redis'])
     try:
         import sqlite3
     except ImportError:

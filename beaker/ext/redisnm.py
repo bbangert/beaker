@@ -29,7 +29,7 @@ class RedisNamespaceManager(NamespaceManager):
         self.lock_dir = None  # MongoDB uses mongo itself for locking.
 
         if redis is None:
-            raise RuntimeError('pymongo3 is not available')
+            raise RuntimeError('redis is not available')
 
         if isinstance(url, string_type):
             self.client = RedisNamespaceManager.clients.get(url, redis.StrictRedis.from_url, url)
