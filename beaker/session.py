@@ -265,6 +265,7 @@ class Session(dict):
         return expires_date
 
     def _update_cookie_out(self, set_cookie=True):
+        self._set_cookie_values()
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = set_cookie
 
@@ -284,7 +285,6 @@ class Session(dict):
             self.is_new = True
             self.last_accessed = None
         if self.use_cookies:
-            self._set_cookie_values()
             sc = set_new is False
             self._update_cookie_out(set_cookie=sc)
 
@@ -293,8 +293,7 @@ class Session(dict):
         return self['_creation_time']
 
     def _set_domain(self, domain):
-        self['_domain'] = domain
-        self.cookie[self.key]['domain'] = domain
+        self['_domain'] = self._domain = domain
         self._update_cookie_out()
 
     def _get_domain(self):
@@ -304,7 +303,6 @@ class Session(dict):
 
     def _set_path(self, path):
         self['_path'] = self._path = path
-        self.cookie[self.key]['path'] = path
         self._update_cookie_out()
 
     def _get_path(self):
