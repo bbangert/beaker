@@ -3,7 +3,7 @@ from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64deco
 import os
 import time
 from datetime import datetime, timedelta
-from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1, get_nonce_size, DEFAULT_NONCE_BITS
+from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1, get_nonce_size, DEFAULT_NONCE_BITS, get_crypto_module
 from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
@@ -126,6 +126,7 @@ class Session(dict):
                                For security reason this is 128bits be default. If you want
                                to keep backward compatibility with sessions generated before 1.8.0
                                set this to 48.
+    :param crypto_type: encryption module to use
     """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
@@ -134,6 +135,7 @@ class Session(dict):
                  data_serializer='pickle', secret=None,
                  secure=False, namespace_class=None, httponly=False,
                  encrypt_key=None, validate_key=None, encrypt_nonce_bits=DEFAULT_NONCE_BITS,
+                 crypto_type='default',
                  **namespace_args):
         if not type:
             if data_dir:
@@ -170,6 +172,7 @@ class Session(dict):
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
         self.encrypt_nonce_size = get_nonce_size(encrypt_nonce_bits)
+        self.crypto_module = get_crypto_module(crypto_type)
         self.id = id
         self.accessed_dict = {}
         self.invalidate_corrupt = invalidate_corrupt
@@ -262,6 +265,7 @@ class Session(dict):
         return expires_date
 
     def _update_cookie_out(self, set_cookie=True):
+        self._set_cookie_values()
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = set_cookie
 
@@ -281,7 +285,6 @@ class Session(dict):
             self.is_new = True
             self.last_accessed = None
         if self.use_cookies:
-            self._set_cookie_values()
             sc = set_new is False
             self._update_cookie_out(set_cookie=sc)
 
@@ -290,8 +293,7 @@ class Session(dict):
         return self['_creation_time']
 
     def _set_domain(self, domain):
-        self['_domain'] = domain
-        self.cookie[self.key]['domain'] = domain
+        self['_domain'] = self._domain = domain
         self._update_cookie_out()
 
     def _get_domain(self):
@@ -301,7 +303,6 @@ class Session(dict):
 
     def _set_path(self, path):
         self['_path'] = self._path = path
-        self.cookie[self.key]['path'] = path
         self._update_cookie_out()
 
     def _get_path(self):
@@ -316,23 +317,27 @@ class Session(dict):
             nonce_len, nonce_b64len = self.encrypt_nonce_size
             nonce = b64encode(os.urandom(nonce_len))[:nonce_b64len]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                                    self.validate_key + nonce, 1)
+                                                    self.validate_key + nonce,
+                                                    1,
+                                                    self.crypto_module.getKeyLength())
             data = self.serializer.dumps(session_data)
-            return nonce + b64encode(crypto.aesEncrypt(data, encrypt_key))
+            return nonce + b64encode(self.crypto_module.aesEncrypt(data, encrypt_key))
         else:
             data = self.serializer.dumps(session_data)
             return b64encode(data)
 
     def _decrypt_data(self, session_data):
-        """Bas64, decipher, then un-serialize the data for the session
+        """Base64, decipher, then un-serialize the data for the session
         dict"""
         if self.encrypt_key:
             __, nonce_b64len = self.encrypt_nonce_size
             nonce = session_data[:nonce_b64len]
             encrypt_key = crypto.generateCryptoKeys(self.encrypt_key,
-                                                    self.validate_key + nonce, 1)
+                                                    self.validate_key + nonce,
+                                                    1,
+                                                    self.crypto_module.getKeyLength())
             payload = b64decode(session_data[nonce_b64len:])
-            data = crypto.aesDecrypt(payload, encrypt_key)
+            data = self.crypto_module.aesDecrypt(payload, encrypt_key)
         else:
             data = b64decode(session_data)
 
@@ -478,7 +483,7 @@ class Session(dict):
             creates a new session id, retains all session data
 
             Its a good security practice to regnerate the id after a client
-            elevates priviliges.
+            elevates privileges.
 
         """
         self._create_id(set_new=False)
@@ -541,15 +546,19 @@ class CookieSession(Session):
                                invalidated and a new session created,
                                otherwise invalid data will cause an exception.
     :type invalidate_corrupt: bool
+    :param crypto_type: The crypto module to use.
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  save_accessed_time=True, cookie_expires=True, cookie_domain=None,
                  cookie_path='/', encrypt_key=None, validate_key=None, secure=False,
                  httponly=False, data_serializer='pickle',
                  encrypt_nonce_bits=DEFAULT_NONCE_BITS, invalidate_corrupt=False,
+                 crypto_type='default',
                  **kwargs):
 
-        if not crypto.has_aes and encrypt_key:
+        self.crypto_module = get_crypto_module(crypto_type)
+
+        if not self.crypto_module.has_aes and encrypt_key:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
                                             "encrypted cookie-only Session.")
 

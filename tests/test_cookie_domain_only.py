@@ -11,7 +11,7 @@ except ImportError:
     raise SkipTest("webtest not installed")
 
 from beaker import crypto
-if not crypto.has_aes:
+if not crypto.get_crypto_module('default').has_aes:
     raise SkipTest("No AES library is installed, can't test cookie-only "
                    "Sessions")
 
@@ -57,10 +57,10 @@ def test_cookie_attributes_are_preserved():
     res = app.get('/app', extra_environ=dict(
         HTTP_COOKIE='beaker.session.id=oldsessid', domain='.hoop.com'))
     cookie = res.headers['Set-Cookie']
-    assert 'Domain=.hoop.com' in cookie
-    assert 'Path=/app' in cookie
-    assert 'secure' in cookie
-    assert 'httponly' in cookie
+    assert 'domain=.hoop.com' in cookie.lower()
+    assert 'path=/app' in cookie.lower()
+    assert 'secure' in cookie.lower()
+    assert 'httponly' in cookie.lower()
 
 
 if __name__ == '__main__':

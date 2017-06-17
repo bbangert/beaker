@@ -25,7 +25,7 @@ For example, to configure the ``cookie_expires`` option for Beaker sessions
 below, an appropriate entry in a `Pylons`_ INI file would be::
 
     # Setting cookie_expires = true causes Beaker to omit the
-    # expires= field from the Set-Cookie: header, signaling the cookie 
+    # expires= field from the Set-Cookie: header, signaling the cookie
     # should be discarded when the browser closes.
     beaker.session.cookie_expires = true
 
@@ -107,7 +107,7 @@ type (**required**, string)
 
 webtest_varname (**optional**, string)
     The name of the attribute to use when stashing the session object into
-    the environ for use with WebTest. The name provided here is where the 
+    the environ for use with WebTest. The name provided here is where the
     session object will be attached to the WebTest TestApp return value.
 
 url (**optional**, string)
@@ -134,7 +134,7 @@ stores session id's in cookies, and when using the optional encryption.
 
 auto (**optional**, bool)
     When set to True, the session will save itself anytime it is accessed
-    during a request, negating the need to issue the 
+    during a request, negating the need to issue the
     :meth:`~beaker.session.Session.save` method.
 
     Defaults to False.
@@ -146,7 +146,7 @@ cookie_expires (**optional**, bool, datetime, timedelta, int)
 
     Setting to a datetime forces a hard ending time for the session (generally
     used for setting a session to a far off date).
-    
+
     Setting to an integer will result in the cookie being set to expire in
     that many seconds. I.e. a value of ``300`` will result in the cookie being
     set to expire in 300 seconds.
@@ -210,6 +210,12 @@ encrypt_key (**required**, string)
 
 validate_key (**required**, string)
     Validation key used to sign the AES encrypted data.
+
+crypto_type (**optional**, string)
+    Encryption backend to use. If ``default`` is used, one of the installed
+    backends is picked.
+
+    Other valid choices are ``cryptography``, ``nss``, ``pycrypto``.
 
 .. note::
 

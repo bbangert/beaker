@@ -331,7 +331,7 @@ def coerce_cache_params(params):
         ('expire', (int, NoneType),
          "expire must be an integer representing how many seconds the cache is valid for"),
         ('regions', (list, tuple, NoneType),
-         "Regions must be a comma seperated list of valid regions"),
+         "Regions must be a comma separated list of valid regions"),
         ('key_length', (int, NoneType),
          "key_length must be an integer which indicates the longest a key can be before hashing"),
     ]
