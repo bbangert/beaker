@@ -1,10 +1,7 @@
-import hashlib
 import os
-import socket
 import threading
 import time
 import pickle
-import binascii
 
 try:
     import redis
@@ -13,7 +10,7 @@ except ImportError:
 
 from beaker.container import NamespaceManager
 from beaker.synchronization import SynchronizerImpl
-from beaker.util import SyncDict
+from beaker.util import SyncDict, machine_identifier
 from beaker.crypto.util import sha1
 from beaker._compat import string_type, PY2, url_parse
 
@@ -84,15 +81,6 @@ class RedisNamespaceManager(NamespaceManager):
         return self.client.keys('beaker_cache:%s:*' % self.namespace)
 
 
-def _machine_bytes():
-    machine_hash = hashlib.md5()
-    if not PY2:
-        machine_hash.update(socket.gethostname().encode())
-    else:
-        machine_hash.update(socket.gethostname())
-    return machine_hash.digest()[0:3]
-
-
 class RedisSynchronizer(SynchronizerImpl):
     """Synchronizer based on redis.
 
@@ -101,7 +89,7 @@ class RedisSynchronizer(SynchronizerImpl):
     # If a cache entry generation function can take a lot,
     # but 15 minutes is more than a reasonable time.
     LOCK_EXPIRATION = 900
-    MACHINE_ID = binascii.hexlify(_machine_bytes()).decode('ascii')
+    MACHINE_ID = machine_identifier()
 
     def __init__(self, identifier, url):
         super(RedisSynchronizer, self).__init__()

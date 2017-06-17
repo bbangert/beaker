@@ -14,7 +14,7 @@ except ImportError:
 
 from beaker.container import NamespaceManager
 from beaker.synchronization import SynchronizerImpl
-from beaker.util import SyncDict
+from beaker.util import SyncDict, machine_identifier
 from beaker.crypto.util import sha1
 from beaker._compat import string_type, PY2
 
@@ -106,6 +106,7 @@ class MongoSynchronizer(SynchronizerImpl):
     # If a cache entry generation function can take a lot,
     # but 15 minutes is more than a reasonable time.
     LOCK_EXPIRATION = 900
+    MACHINE_ID = machine_identifier()
 
     def __init__(self, identifier, url):
         super(MongoSynchronizer, self).__init__()
@@ -123,7 +124,7 @@ class MongoSynchronizer(SynchronizerImpl):
         return now
 
     def _get_owner_id(self):
-        return '%s-%s' % (os.getpid(), threading.current_thread().ident)
+        return '%s-%s-%s' % (self.MACHINE_ID, os.getpid(), threading.current_thread().ident)
 
     def do_release_read_lock(self):
         self.db.beaker_locks.update_one({'_id': self.identifier, 'readers': self._get_owner_id()},

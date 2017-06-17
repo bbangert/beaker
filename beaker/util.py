@@ -1,4 +1,9 @@
 """Beaker utilities"""
+import hashlib
+import socket
+
+import binascii
+
 from ._compat import PY2, string_type, unicode_text, NoneType, dictkeyslist, im_class, im_func, pickle, func_signature, \
     default_im_func
 
@@ -478,3 +483,12 @@ def deserialize(data_string, method):
     else:
         serializer = PickleSerializer()
     return serializer.loads(data_string)
+
+
+def machine_identifier():
+    machine_hash = hashlib.md5()
+    if not PY2:
+        machine_hash.update(socket.gethostname().encode())
+    else:
+        machine_hash.update(socket.gethostname())
+    return binascii.hexlify(machine_hash.digest()[0:3]).decode('ascii')
