@@ -409,7 +409,8 @@ class Value(object):
             if storedtime is None:
                 storedtime = time.time()
             debug("set_value stored time %r expire time %r", storedtime, self.expire_argument)
-            self.namespace.set_value(self.key, (storedtime, self.expire_argument, value))
+            self.namespace.set_value(self.key, (storedtime, self.expire_argument, value),
+                                     expiretime=self.expire_argument)
         finally:
             self.namespace.release_write_lock()
 

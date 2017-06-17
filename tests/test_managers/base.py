@@ -13,6 +13,7 @@ from webtest import TestApp
 
 
 class CacheManagerBaseTests(unittest.TestCase):
+    SUPPORTS_EXPIRATION = True
     CACHE_ARGS = {}
 
     @classmethod
@@ -208,6 +209,23 @@ class CacheManagerBaseTests(unittest.TestCase):
         assert 'current value is: 10' in res
         res = app.get('/')
         assert 'current value is: None' in res
+
+    def test_expiretime(self):
+        cache = Cache('test', **self.CACHE_ARGS)
+        cache.set_value("has space", 24, expiretime=1)
+        assert cache.has_key("has space")
+        time.sleep(1.1)
+        assert not cache.has_key("has space")
+
+    def test_expiretime_automatic(self):
+        if not self.SUPPORTS_EXPIRATION:
+            self.skipTest('NamespaceManager does not support automatic expiration')
+
+        cache = Cache('test', **self.CACHE_ARGS)
+        cache.set_value("has space", 24, expiretime=1)
+        assert cache.namespace.has_key("has space")
+        time.sleep(1.1)
+        assert not cache.namespace.has_key("has space")
 
     def test_createfunc(self):
         cache = Cache('test', **self.CACHE_ARGS)

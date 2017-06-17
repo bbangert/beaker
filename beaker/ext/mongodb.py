@@ -56,25 +56,38 @@ class MongoNamespaceManager(NamespaceManager):
         return MongoSynchronizer(self._format_key(key), self.client)
 
     def __getitem__(self, key):
+        self._clear_expired()
         entry = self.db.backer_cache.find_one({'_id': self._format_key(key)})
         if entry is None:
             raise KeyError(key)
         return pickle.loads(entry['value'])
 
     def __contains__(self, key):
+        self._clear_expired()
         entry = self.db.backer_cache.find_one({'_id': self._format_key(key)})
         return entry is not None
 
     def has_key(self, key):
         return key in self
 
-    def __setitem__(self, key, value):
+    def set_value(self, key, value, expiretime=None):
+        self._clear_expired()
+
+        expiration = None
+        if expiretime is not None:
+            expiration = time.time() + expiretime
+
         value = pickle.dumps(value)
         self.db.backer_cache.update_one({'_id': self._format_key(key)},
-                                        {'$set': {'value': bson.Binary(value)}},
+                                        {'$set': {'value': bson.Binary(value),
+                                                  'expiration': expiration}},
                                         upsert=True)
 
+    def __setitem__(self, key, value):
+        self.set_value(key, value)
+
     def __delitem__(self, key):
+        self._clear_expired()
         self.db.backer_cache.delete_many({'_id': self._format_key(key)})
 
     def do_remove(self):
@@ -85,6 +98,10 @@ class MongoNamespaceManager(NamespaceManager):
             {'_id': {'$regex': '^%s' % self.namespace}}
         )]
 
+    def _clear_expired(self):
+        now = time.time()
+        self.db.backer_cache.delete_many({'_id': {'$regex': '^%s' % self.namespace},
+                                          'expiration': {'$ne': None, '$lte': now}})
 
 class MongoSynchronizer(SynchronizerImpl):
     # If a cache entry generation function can take a lot,
