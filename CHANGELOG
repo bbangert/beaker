@@ -1,6 +1,16 @@
 Release $next
 =============
 
+Release 1.9.0 (2017-06-19)
+==========================
+
+* Beaker now provides builtin ``ext:mongodb`` and ``ext:redis`` namespace managers.
+  Both come with a Synchronizer implemented on the storage backend instead of relying on file one.
+* Fixed an issue where cookie options like ``Secure``, ``Domain`` and so on where lost.
+* Improved support for cache entries expiration. NamespaceManagers that support it will expire their key automatically.
+* Pycryptodome can be used instead of pycrypto.
+* An issue with ``Cookie`` module import on case insensitive file systems should have been resolved.
+* Cryptography module is now as a crypto function provider instead of pycrypto
 
 Release 1.8.1 (2016-10-24)
 ==========================
