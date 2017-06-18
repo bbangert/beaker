@@ -12,21 +12,18 @@ from beaker.container import NamespaceManager
 from beaker.synchronization import SynchronizerImpl
 from beaker.util import SyncDict, machine_identifier
 from beaker.crypto.util import sha1
-from beaker._compat import string_type, PY2, url_parse
-
-MONGO_CLIENTS = {}
+from beaker._compat import string_type, PY2
 
 
 class RedisNamespaceManager(NamespaceManager):
     """Provides the :class:`.NamespaceManager` API over Redis."""
     MAX_KEY_LENGTH = 1024
 
-    # TODO: Cache the mongodb client instance.
     clients = SyncDict()
 
     def __init__(self, namespace, url, **kw):
         super(RedisNamespaceManager, self).__init__(namespace)
-        self.lock_dir = None  # MongoDB uses mongo itself for locking.
+        self.lock_dir = None  # Redis uses redis itself for locking.
 
         if redis is None:
             raise RuntimeError('redis is not available')
