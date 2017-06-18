@@ -23,7 +23,12 @@ if not hasattr(inspect, 'signature'):
     INSTALL_REQUIRES.append('funcsigs')
 
 
-TESTS_REQUIRE = ['nose', 'webtest', 'Mock', 'pycryptodome', 'cryptography']
+TESTS_REQUIRE = ['nose', 'Mock', 'pycryptodome', 'cryptography']
+
+if py_version == (2, 6):
+    TESTS_REQUIRE.append('WebTest<2.0.24')
+else:
+    TESTS_REQUIRE.append('webtest')
 
 if py_version == (3, 2):
     TESTS_REQUIRE.append('coverage < 4.0')
@@ -31,11 +36,15 @@ else:
     TESTS_REQUIRE.append('coverage')
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
-    TESTS_REQUIRE.extend(['SQLALchemy'])
+    TESTS_REQUIRE.extend(['SQLALchemy', 'pymongo', 'redis'])
     try:
         import sqlite3
     except ImportError:
         TESTS_REQUIRE.append('pysqlite')
+
+    if py_version[0] == 2:
+        TESTS_REQUIRE.extend(['pylibmc', 'python-memcached'])
+
 
 setup(name='Beaker',
       version=VERSION,
