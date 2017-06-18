@@ -201,8 +201,9 @@ timeout (**optional**, integer)
 Encryption Options
 ------------------
 
-These options should then be used *instead* of the ``secret``
-option listed above.
+These options should then be used *instead* of the ``secret`` option when
+a **cookie** only session is used and *together* with the ``secret`` option
+when a server side session is used.
 
 encrypt_key (**required**, string)
     Encryption key to use for the AES cipher. This should be a fairly long
