@@ -20,7 +20,15 @@ from beaker._compat import string_type, PY2
 
 
 class MongoNamespaceManager(NamespaceManager):
-    """Provides the :class:`.NamespaceManager` API over MongoDB."""
+    """Provides the :class:`.NamespaceManager` API over MongoDB.
+
+    Provided ``url`` can be both a mongodb connection string or
+    an already existing MongoClient instance.
+
+    The data will be stored into ``beaker_cache`` collection of the
+    *default database*, so make sure your connection string or
+    MongoClient point to a default database.
+    """
     MAX_KEY_LENGTH = 1024
 
     clients = SyncDict()
@@ -100,6 +108,18 @@ class MongoNamespaceManager(NamespaceManager):
 
 
 class MongoSynchronizer(SynchronizerImpl):
+    """Provides a Writer/Reader lock based on MongoDB.
+
+    Provided ``url`` can be both a mongodb connection string or
+    an already existing MongoClient instance.
+
+    The data will be stored into ``beaker_locks`` collection of the
+    *default database*, so make sure your connection string or
+    MongoClient point to a default database.
+
+    Locks are identified by local machine, PID and threadid, so
+    are suitable for use in both local and distributed environments.
+    """
     # If a cache entry generation function can take a lot,
     # but 15 minutes is more than a reasonable time.
     LOCK_EXPIRATION = 900
@@ -124,16 +144,18 @@ class MongoSynchronizer(SynchronizerImpl):
         return '%s-%s-%s' % (self.MACHINE_ID, os.getpid(), threading.current_thread().ident)
 
     def do_release_read_lock(self):
-        self.db.beaker_locks.update_one({'_id': self.identifier, 'readers': self._get_owner_id()},
-                                        {'$pull': {'readers': self._get_owner_id()}})
+        owner_id = self._get_owner_id()
+        self.db.beaker_locks.update_one({'_id': self.identifier, 'readers': owner_id},
+                                        {'$pull': {'readers': owner_id}})
 
     def do_acquire_read_lock(self, wait):
         now = self._clear_expired_locks()
+        owner_id = self._get_owner_id()
         while True:
             try:
                 self.db.beaker_locks.update_one({'_id': self.identifier, 'owner': None},
                                                 {'$set': {'timestamp': now},
-                                                 '$push': {'readers': self._get_owner_id()}},
+                                                 '$push': {'readers': owner_id}},
                                                 upsert=True)
                 return True
             except pymongo.errors.DuplicateKeyError:
@@ -146,11 +168,12 @@ class MongoSynchronizer(SynchronizerImpl):
 
     def do_acquire_write_lock(self, wait):
         now = self._clear_expired_locks()
+        owner_id = self._get_owner_id()
         while True:
             try:
                 self.db.beaker_locks.update_one({'_id': self.identifier, 'owner': None,
                                                  'readers': []},
-                                                {'$set': {'owner': self._get_owner_id(),
+                                                {'$set': {'owner': owner_id,
                                                           'timestamp': now}},
                                                 upsert=True)
                 return True

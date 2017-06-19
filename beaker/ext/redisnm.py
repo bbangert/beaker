@@ -16,7 +16,16 @@ from beaker._compat import string_type, PY2
 
 
 class RedisNamespaceManager(NamespaceManager):
-    """Provides the :class:`.NamespaceManager` API over Redis."""
+    """Provides the :class:`.NamespaceManager` API over Redis.
+
+    Provided ``url`` can be both a redis connection string or
+    an already existing StrictRedis instance.
+
+    The data will be stored into redis keys, with their name
+    starting with ``beaker_cache:``. So make sure you provide
+    a specific database number if you don't want to mix them
+    with your own data.
+    """
     MAX_KEY_LENGTH = 1024
 
     clients = SyncDict()
@@ -80,6 +89,9 @@ class RedisNamespaceManager(NamespaceManager):
 
 class RedisSynchronizer(SynchronizerImpl):
     """Synchronizer based on redis.
+
+    Provided ``url`` can be both a redis connection string or
+    an already existing StrictRedis instance.
 
     This Synchronizer only supports 1 reader or 1 writer at time, not concurrent readers.
     """

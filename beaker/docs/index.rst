@@ -47,8 +47,10 @@ Module Listing
     modules/synchronization
     modules/util
     modules/database
-    modules/google
     modules/memcached
+    modules/mongodb
+    modules/redis
+    modules/google
     modules/sqla
     modules/pbkdf2
 
