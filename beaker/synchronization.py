@@ -5,7 +5,7 @@ as well as a name-based mutex which locks within an application
 based on a string name.
 
 """
-
+import errno
 import os
 import sys
 import tempfile
@@ -225,14 +225,20 @@ class FileSynchronizer(SynchronizerImpl):
                             [identifier],
                             extension='.lock'
                         )
+        self.lock_dir = os.path.dirname(self.filename)
 
     def _filedesc(self):
         return self._filedescriptor.get()
     _filedesc = property(_filedesc)
 
+    def _ensuredir(self):
+        if not os.path.exists(self.lock_dir):
+            util.verify_directory(self.lock_dir)
+
     def _open(self, mode):
         filedescriptor = self._filedesc
         if filedescriptor is None:
+            self._ensuredir()
             filedescriptor = os.open(self.filename, mode)
             self._filedescriptor.put(filedescriptor)
         return filedescriptor

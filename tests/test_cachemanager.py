@@ -1,6 +1,8 @@
 import time
 from datetime import datetime
 
+import shutil
+
 from beaker.cache import CacheManager, cache_regions
 from beaker.util import parse_cache_config_options
 
@@ -188,3 +190,31 @@ def test_cache_region_expire_is_always_int():
     finally:
         # throw away region for this test
         cache_regions.pop('short_term_with_string_expire', None)
+
+
+def test_directory_goes_away():
+    cache = CacheManager(cache_regions={
+        'short_term_without_key_length':{
+            'expire': 60,
+            'type': 'dbm',
+            'data_dir': '/tmp/beaker-tests/cache/data',
+            'lock_dir': '/tmp/beaker-tests/cache/lock'
+        }
+    })
+
+
+    @cache.region('short_term_without_key_length')
+    def load_with_str_expire(person):
+        now = datetime.now()
+        return "Hi there %s, its currently %s" % (person, now)
+
+
+    # Ensure that same person gets same time
+    msg = load_with_str_expire('fred')
+    msg2 = load_with_str_expire('fred')
+
+    shutil.rmtree('/tmp/beaker-tests')
+
+    msg3 = load_with_str_expire('fred')
+    assert msg == msg2, (msg, msg2)
+    assert msg2 != msg3, (msg2, msg3)

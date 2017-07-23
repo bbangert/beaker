@@ -1,4 +1,6 @@
 """Container and Namespace classes"""
+import errno
+
 from ._compat import pickle, anydbm, add_metaclass, PYVER, unicode_text
 
 import beaker.util as util
@@ -553,8 +555,14 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
 
         return False
 
+    def _ensuredir(self, filename):
+        dirname = os.path.dirname(filename)
+        if not os.path.exists(dirname):
+            util.verify_directory(dirname)
+
     def _checkfile(self):
         if not self.file_exists(self.file):
+            self._ensuredir(self.file)
             g = self.dbmmodule.open(self.file, 'c')
             g.close()
 
