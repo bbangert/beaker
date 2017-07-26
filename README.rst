@@ -29,11 +29,11 @@ Features
   cache creation
 * Cache back-ends include dbm, file, memory, memcached, and database (Using
   SQLAlchemy for multiple-db vendor support)
-* Signed cookie's to prevent session hijacking/spoofing
+* Signed cookies to prevent session hijacking/spoofing
 * Cookie-only sessions to remove the need for a db or file backend (ideal
   for clustered systems)
 * Extensible Container object to support new back-ends
-* Cache's can be divided into namespaces (to represent templates, objects,
+* Caches can be divided into namespaces (to represent templates, objects,
   etc.) then keyed for different copies
 * Create functions for automatic call-backs to create new cache copies after
   expiration
@@ -50,12 +50,12 @@ Documentation can be found on the `Official Beaker Docs site
 Source
 ======
 
-The latest developer version is available in a `github repository
+The latest developer version is available in a `GitHub repository
 <https://github.com/bbangert/beaker>`_.
 
 Contributing
 ============
 
-Bugs can be filed on github, **should be accompanied by a test case** to
-retain current code coverage, and should be in a Pull request when ready to be
+Bugs can be filed on GitHub, **should be accompanied by a test case** to
+retain current code coverage, and should be in a pull request when ready to be
 accepted into the beaker code-base.
