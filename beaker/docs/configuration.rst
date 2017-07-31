@@ -97,7 +97,8 @@ type (**required**, string)
     The name of the back-end to use for storing the sessions or cache objects.
 
     Available back-ends supplied with Beaker: ``file``, ``dbm``, ``memory``,
-    ``ext:memcached``, ``ext:database``, ``ext:google``
+    ``ext:memcached``, ``ext:database``, ``ext:google``, ``ext:mongodb``,
+    and ``ext:redis``.
 
     For sessions, the additional type of ``cookie`` is available which
     will store all the session data in the cookie itself. As such, size
@@ -110,11 +111,11 @@ webtest_varname (**optional**, string)
     the environ for use with WebTest. The name provided here is where the
     session object will be attached to the WebTest TestApp return value.
 
-url (**optional**, string)
-    URL is specific to use of either ext:memcached or ext:database. When using
-    one of those types, this option is **required**.
+url (**optional**, string) URL is specific to use of either ``ext:memcached``,
+    ``ext:database``, ``ext:mongodb``, or ``ext:redis``. When using one of those
+    types, this option is **required**.
 
-    When used with ext:memcached, this should be either a single, or
+    When used with ``ext:memcached``, this should be either a single, or
     semi-colon separated list of memcached servers::
 
         session_opts = {
@@ -122,8 +123,11 @@ url (**optional**, string)
             'session.url': '127.0.0.1:11211',
         }
 
-    When used with ext:database, this should be a valid `SQLAlchemy`_ database
+    When used with ``ext:database``, this should be a valid `SQLAlchemy`_ database
     string.
+
+    When used with ``ext:redis``, this should be an URL as passed to
+    ``StrictRedis.from_url()``.
 
 
 Session Options
@@ -220,9 +224,9 @@ crypto_type (**optional**, string)
 
 .. note::
 
-	You may need to install additional libraries to use Beaker's
-	cookie-based session encryption. See the :ref:`encryption` section for
-	more information.
+  You may need to install additional libraries to use Beaker's
+  cookie-based session encryption. See the :ref:`encryption` section for
+  more information.
 
 Cache Options
 =============

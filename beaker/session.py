@@ -801,6 +801,7 @@ class SessionObject(object):
 
         Always saves the whole session if save() or delete() have been called.
         If they haven't:
+
         - If autosave is set to true, saves the the entire session regardless.
         - If save_accessed_time is set to true or unset, only saves the updated
           access time.
