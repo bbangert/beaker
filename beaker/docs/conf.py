@@ -130,21 +130,6 @@ html_static_path = ['_static']
 # html_additional_pages = {'index': 'index.html'}
 
 html_theme_options = {
-    "bgcolor": "#fff",
-    "footertextcolor": "#666",
-    "relbarbgcolor": "#fff",
-    "relbarlinkcolor": "#590915",
-    "relbartextcolor": "#FFAA2D",
-    "sidebarlinkcolor": "#590915",
-    "sidebarbgcolor": "#fff",
-    "sidebartextcolor": "#333",
-    "footerbgcolor": "#fff",
-    "linkcolor": "#590915",
-    "bodyfont": "helvetica, 'bitstream vera sans', sans-serif",
-    "headfont": "georgia, 'bitstream vera sans serif', 'lucida grande', helvetica, verdana, sans-serif",
-    "headbgcolor": "#fff",
-    "headtextcolor": "#12347A",
-    "codebgcolor": "#fff",
 }
 
 # If false, no module index is generated.
