@@ -27,8 +27,8 @@ Features
 * Fast, robust performance
 * Multiple reader/single writer lock system to avoid duplicate simultaneous
   cache creation
-* Cache back-ends include dbm, file, memory, memcached, and database (Using
-  SQLAlchemy for multiple-db vendor support)
+* Cache back-ends include dbm, file, memory, memcached, Redis, MongoDB, and
+  database (Using SQLAlchemy for multiple-db vendor support)
 * Signed cookies to prevent session hijacking/spoofing
 * Cookie-only sessions to remove the need for a db or file backend (ideal
   for clustered systems)
