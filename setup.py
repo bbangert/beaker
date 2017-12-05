@@ -23,7 +23,7 @@ if not hasattr(inspect, 'signature'):
     INSTALL_REQUIRES.append('funcsigs')
 
 
-TESTS_REQUIRE = ['nose', 'Mock', 'pycryptodome', 'cryptography']
+TESTS_REQUIRE = ['nose', 'Mock', 'pycryptodome']
 
 if py_version == (2, 6):
     TESTS_REQUIRE.append('WebTest<2.0.24')
@@ -34,6 +34,11 @@ if py_version == (3, 2):
     TESTS_REQUIRE.append('coverage < 4.0')
 else:
     TESTS_REQUIRE.append('coverage')
+
+if py_version == (3, 3):
+    TESTS_REQUIRE.append('cryptography < 2.1.0')
+else:
+    TESTS_REQUIRE.append('cryptography')
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
     TESTS_REQUIRE.extend(['SQLALchemy', 'pymongo', 'redis'])
