@@ -677,7 +677,8 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
     def do_close(self):
         if self.flags == 'c' or self.flags == 'w':
             fh = open(self.file, 'wb')
-            pickle.dump(self.hash, fh)
+            pickledata = pickle.dumps(self.hash)
+            fh.write(pickledata)
             fh.close()
 
         self.hash = {}
