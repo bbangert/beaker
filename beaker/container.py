@@ -676,9 +676,16 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
 
     def do_close(self):
         if self.flags == 'c' or self.flags == 'w':
-            fh = open(self.file, 'wb')
-            pickle.dump(self.hash, fh)
-            fh.close()
+            if os.name == 'posix':
+                tempname = '%s.temp' % (self.file)
+                fh = open(tempname, 'wb')
+                pickle.dump(self.hash, fh)
+                fh.close()
+                os.rename(tempname, self.file)
+            else:
+                fh = open(self.file, 'wb')
+                pickle.dump(self.hash, fh)
+                fh.close()
 
         self.hash = {}
         self.flags = None
