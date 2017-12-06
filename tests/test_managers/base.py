@@ -238,8 +238,10 @@ class CacheManagerBaseTests(unittest.TestCase):
         def keepitlocked():
             lock = cache.namespace.get_creation_lock('test')
             lock.acquire()
+            keepitlocked.acquired = True
             time.sleep(1.0)
             lock.release()
+        keepitlocked.acquired = False
 
         v0 = cache.get_value('test', createfunc=createfunc)
         self.assertEqual(v0, 1)
@@ -252,6 +254,9 @@ class CacheManagerBaseTests(unittest.TestCase):
         begin = datetime.datetime.utcnow()
         t = threading.Thread(target=keepitlocked)
         t.start()
+        while not keepitlocked.acquired:
+            # Wait for the thread that should lock the cache to start.
+            time.sleep(0.001)
 
         v0 = cache.get_value('test', createfunc=createfunc)
         self.assertEqual(v0, 2)
