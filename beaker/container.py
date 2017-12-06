@@ -683,8 +683,9 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
                 fh.close()
                 os.rename(tempname, self.file)
             else:
+                pickled = pickle.dumps(self.hash)
                 fh = open(self.file, 'wb')
-                pickle.dump(self.hash, fh)
+                fh.write(pickled)
                 fh.close()
 
         self.hash = {}
