@@ -41,7 +41,11 @@ else:
     TESTS_REQUIRE.append('cryptography')
 
 if not sys.platform.startswith('java') and not sys.platform == 'cli':
-    TESTS_REQUIRE.extend(['SQLALchemy', 'pymongo', 'redis'])
+    if py_version == (2, 6):
+        TESTS_REQUIRE.append('sqlalchemy < 1.2')
+    else:
+        TESTS_REQUIRE.append('sqlalchemy')
+    TESTS_REQUIRE.extend(['pymongo', 'redis'])
     try:
         import sqlite3
     except ImportError:
