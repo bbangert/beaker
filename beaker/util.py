@@ -492,3 +492,16 @@ def machine_identifier():
     else:
         machine_hash.update(socket.gethostname())
     return binascii.hexlify(machine_hash.digest()[0:3]).decode('ascii')
+
+
+def safe_write (filepath, contents):
+    if os.name == 'posix':
+        tempname = '%s.temp' % (filepath)
+        fh = open(tempname, 'wb')
+        fh.write(contents)
+        fh.close()
+        os.rename(tempname, filepath)
+    else:
+        fh = open(filepath, 'wb')
+        fh.write(contents)
+        fh.close()
