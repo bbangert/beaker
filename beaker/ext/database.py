@@ -117,9 +117,12 @@ class DatabaseNamespaceManager(OpenResourceNamespaceManager):
             return
 
         cache = self.cache
-        result = sa.select([cache.c.data],
+        result_proxy = sa.select([cache.c.data],
                            cache.c.namespace == self.namespace
-                          ).execute().fetchone()
+                          ).execute()
+        result = result_proxy.fetchone()
+        result_proxy.close()
+        
         if not result:
             self._is_new = True
             self.hash = {}
