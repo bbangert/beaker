@@ -668,9 +668,14 @@ class FileNamespaceManager(OpenResourceNamespaceManager):
 
     def do_open(self, flags, replace):
         if not replace and self.file_exists(self.file):
-            fh = open(self.file, 'rb')
-            self.hash = pickle.load(fh)
-            fh.close()
+            try:
+                with open(self.file, 'rb') as fh:
+                    self.hash = pickle.load(fh)
+            except IOError as e:
+                # Ignore EACCES and ENOENT as it just means we are no longer
+                # able to access the file or that it no longer exists
+                if e.errno not in [errno.EACCES, errno.ENOENT]:
+                    raise
 
         self.flags = flags
 
