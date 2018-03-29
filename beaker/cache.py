@@ -595,6 +595,8 @@ def _cache_decorate(deco_args, manager, options, region):
 
             def go():
                 return func(*args, **kwargs)
+            # save org function name
+            go.__name__ = '_cached_%s' % (func.__name__,)
 
             return cache[0].get_value(cache_key, createfunc=go)
         cached._arg_namespace = namespace
