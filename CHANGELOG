@@ -1,5 +1,16 @@
-Release $next
-=============
+
+Release 1.9.1 (2018-04-09)
+==========================
+
+* When decorating a function with @cache_region decorator the function generated to update the cached value
+  will be named like the decorated function. So that during debugging it's easy to know which function is involved.
+* Removed usage of ``async`` as a variable in code, this fixes a compatibility problem with Python 3.7 where it's a keyword.
+* Fixed a race condition in ``FileNamespaceManager``.
+* ``ext.database`` backend will now properly close connections.
+* Do not leave bhind corrupted files if ``FileNamespaceManager`` is interrupted while writing a new file.
+  Replacing content of a file or writing a new one is now always an atomic operation.
+* ``DBMNamespaceManager`` and ``FileSynchronizer`` will now deal with directories disappearing while they try to write to them.
+* The Redis and MongoDB backends are not exposed in documentation.
 
 Release 1.9.0 (2017-06-19)
 ==========================
