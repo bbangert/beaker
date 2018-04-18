@@ -67,10 +67,12 @@ class RedisNamespaceManager(NamespaceManager):
     def has_key(self, key):
         return key in self
 
-    def set_value(self, key, value):
+    def set_value(self, key, value, expiretime=None):
         value = pickle.dumps(value)
-        if self.expiretime is not None:
-            self.client.setex(self._format_key(key), int(self.expiretime), value)
+        if expiretime is None and self.expiretime is not None:
+            expiretime = self.expiretime
+        if expiretime is not None:
+            self.client.setex(self._format_key(key), int(expiretime), value)
         else:
             self.client.set(self._format_key(key), value)
 
