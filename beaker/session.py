@@ -148,6 +148,13 @@ class Session(dict):
         self.namespace_class = namespace_class or clsmap[self.type]
 
         self.namespace_args = namespace_args
+        # We want to pass timeout param to redis backend to support expiration of keys
+        # In future, I believe, we can use this param for memcached and mongo as well
+        if self.type == 'ext:redis':
+            # The backend expiration should always be a bit longer (I decied to use 2 minutes) than the
+            # session expiration itself to prevent the case where the backend data expires while
+            # the session is being read (PR#153)
+            self.namespace_args['timeout'] = timeout + 60 * 2
 
         self.request = request
         self.data_dir = data_dir
