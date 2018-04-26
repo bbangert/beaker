@@ -574,7 +574,7 @@ class CookieSession(Session):
         self.secure = secure
         self.httponly = httponly
         self._domain = cookie_domain
-        self._path = cookie_path
+        self['_path'] = self._path = cookie_path
         self.invalidate_corrupt = invalidate_corrupt
         self._set_serializer(data_serializer)
 
