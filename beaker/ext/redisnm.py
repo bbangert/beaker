@@ -30,9 +30,10 @@ class RedisNamespaceManager(NamespaceManager):
 
     clients = SyncDict()
 
-    def __init__(self, namespace, url, **kw):
+    def __init__(self, namespace, url, timeout=None, **kw):
         super(RedisNamespaceManager, self).__init__(namespace)
         self.lock_dir = None  # Redis uses redis itself for locking.
+        self.timeout = timeout
 
         if redis is None:
             raise RuntimeError('redis is not available')
@@ -68,6 +69,8 @@ class RedisNamespaceManager(NamespaceManager):
 
     def set_value(self, key, value, expiretime=None):
         value = pickle.dumps(value)
+        if expiretime is None and self.timeout is not None:
+            expiretime = self.timeout
         if expiretime is not None:
             self.client.setex(self._format_key(key), int(expiretime), value)
         else:
