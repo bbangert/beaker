@@ -3,6 +3,7 @@ from . import base
 
 
 class TestMongoDB(base.CacheManagerBaseTests):
+    SUPPORTS_TIMEOUT = False
     CACHE_ARGS = {
         'type': 'ext:mongodb',
         'url': 'mongodb://localhost:27017/beaker_testdb'

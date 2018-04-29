@@ -14,6 +14,7 @@ from webtest import TestApp
 
 class CacheManagerBaseTests(unittest.TestCase):
     SUPPORTS_EXPIRATION = True
+    SUPPORTS_TIMEOUT = True
     CACHE_ARGS = {}
 
     @classmethod
@@ -111,6 +112,21 @@ class CacheManagerBaseTests(unittest.TestCase):
         res = app.get('/invalid', headers=dict(
             Cookie='beaker.session.id=df7324911e246b70b5781c3c58328442; Path=/'))
         assert 'current value is: 2' in res
+
+    def test_session_timeout(self):
+        app = TestApp(SessionMiddleware(self.simple_session_app, timeout=1, **self.CACHE_ARGS))
+
+        session = app.app._get_session()
+        session.save()
+        if self.SUPPORTS_TIMEOUT:
+            assert session.namespace.timeout == 121
+
+        res = app.get('/')
+        assert 'current value is: 1' in res
+        res = app.get('/')
+        assert 'current value is: 2' in res
+        res = app.get('/')
+        assert 'current value is: 3' in res
 
     def test_has_key(self):
         cache = Cache('test', **self.CACHE_ARGS)

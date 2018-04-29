@@ -156,12 +156,13 @@ class Session(dict):
         if timeout and not save_accessed_time:
             raise BeakerException("timeout requires save_accessed_time")
         self.timeout = timeout
-        # We want to pass timeout param to redis backend to support expiration of keys
-        # In future, I believe, we can use this param for memcached and mongo as well
-        if self.timeout is not None and self.type == 'ext:redis':
-            # The backend expiration should always be a bit longer (I decied to use 2 minutes) than the
+
+        # If a timeout was provided, forward it to the backend too, so the backend
+        # can automatically expire entries if it's supported.
+        if self.timeout is not None:
+            # The backend expiration should always be a bit longer than the
             # session expiration itself to prevent the case where the backend data expires while
-            # the session is being read (PR#153)
+            # the session is being read (PR#153). 2 Minutes seems a reasonable time.
             self.namespace_args['timeout'] = self.timeout + 60 * 2
 
         self.save_atime = save_accessed_time
