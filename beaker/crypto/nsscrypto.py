@@ -41,5 +41,7 @@ def aesDecrypt(data, key):
 
     return l1 + l2
 
+has_aes = True
+
 def getKeyLength():
     return 32
