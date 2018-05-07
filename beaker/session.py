@@ -567,7 +567,7 @@ class CookieSession(Session):
 
         self.crypto_module = get_crypto_module(crypto_type)
 
-        if not self.crypto_module.has_aes and encrypt_key:
+        if encrypt_key and not self.crypto_module.has_aes:
             raise InvalidCryptoBackendError("No AES library is installed, can't generate "
                                             "encrypted cookie-only Session.")
 
