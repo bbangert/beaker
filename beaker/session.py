@@ -127,6 +127,8 @@ class Session(dict):
                                to keep backward compatibility with sessions generated before 1.8.0
                                set this to 48.
     :param crypto_type: encryption module to use
+    :param samesite: SameSite value for the cookie -- should be either 'Lax',
+                     'Strict', or None.
     """
     def __init__(self, request, id=None, invalidate_corrupt=False,
                  use_cookies=True, type=None, data_dir=None,
@@ -135,7 +137,7 @@ class Session(dict):
                  data_serializer='pickle', secret=None,
                  secure=False, namespace_class=None, httponly=False,
                  encrypt_key=None, validate_key=None, encrypt_nonce_bits=DEFAULT_NONCE_BITS,
-                 crypto_type='default',
+                 crypto_type='default', samesite='Lax',
                  **namespace_args):
         if not type:
             if data_dir:
@@ -178,6 +180,7 @@ class Session(dict):
         self.secret = secret
         self.secure = secure
         self.httponly = httponly
+        self.samesite = samesite
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
         self.encrypt_nonce_size = get_nonce_size(encrypt_nonce_bits)
@@ -246,6 +249,8 @@ class Session(dict):
             self.cookie[self.key]['domain'] = self._domain
         if self.secure:
             self.cookie[self.key]['secure'] = True
+        if self.samesite:
+            self.cookie[self.key]['samesite'] = self.samesite
         self._set_cookie_http_only()
         self.cookie[self.key]['path'] = self._path
 
@@ -556,13 +561,15 @@ class CookieSession(Session):
                                otherwise invalid data will cause an exception.
     :type invalidate_corrupt: bool
     :param crypto_type: The crypto module to use.
+    :param samesite: SameSite value for the cookie -- should be either 'Lax',
+                     'Strict', or None.
     """
     def __init__(self, request, key='beaker.session.id', timeout=None,
                  save_accessed_time=True, cookie_expires=True, cookie_domain=None,
                  cookie_path='/', encrypt_key=None, validate_key=None, secure=False,
                  httponly=False, data_serializer='pickle',
                  encrypt_nonce_bits=DEFAULT_NONCE_BITS, invalidate_corrupt=False,
-                 crypto_type='default',
+                 crypto_type='default', samesite='Lax',
                  **kwargs):
 
         self.crypto_module = get_crypto_module(crypto_type)
@@ -582,6 +589,7 @@ class CookieSession(Session):
         self.request['set_cookie'] = False
         self.secure = secure
         self.httponly = httponly
+        self.samesite = samesite
         self._domain = cookie_domain
         self._path = cookie_path
         self.invalidate_corrupt = invalidate_corrupt

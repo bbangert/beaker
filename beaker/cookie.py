@@ -11,6 +11,9 @@ cookie_pickles_properly = (
     sys.version_info >= (3, 4, 3)
 )
 
+# Add support for the SameSite attribute (obsolete when PY37 is unsupported).
+http_cookies.Morsel._reserved.setdefault('samesite', 'SameSite')
+
 
 # Adapted from Django.http.cookies and always enabled the bad_cookies
 # behaviour to cope with any invalid cookie key while keeping around
