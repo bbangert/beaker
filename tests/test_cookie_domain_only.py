@@ -61,6 +61,7 @@ def test_cookie_attributes_are_preserved():
     assert 'path=/app' in cookie.lower()
     assert 'secure' in cookie.lower()
     assert 'httponly' in cookie.lower()
+    assert 'samesite=lax' in cookie.lower()
 
 
 if __name__ == '__main__':
