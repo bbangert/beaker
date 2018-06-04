@@ -1,4 +1,14 @@
 
+Release 1.10.0 (2018-06-04)
+==========================
+
+* Redis namespace manager now supports providing a TTL for session entries that had a ``timeout`` provided.
+  This will remove the need to manually clear expired sessions from the redis storage.
+* ``nsscrypto`` backend is now properly identified as providing AES support.
+* When a crypto backend doesn't support AES it will no longer crash if the ``encrypt_key`` is ``None``.
+* Session cookies will now provide support for ``SameSite`` through the ``samesite`` option. 
+  By default this will be ``Lax``, but can be set to ``Strict`` or ``None`` to disable it.
+
 Release 1.9.1 (2018-04-09)
 ==========================
 
