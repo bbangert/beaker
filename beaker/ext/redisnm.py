@@ -135,7 +135,6 @@ class RedisSynchronizer(SynchronizerImpl):
         owner_id = self._get_owner_id()
         while True:
             if self.client.set(self.identifier, owner_id, ex=self.LOCK_EXPIRATION, nx=True):
-                self.client.pexpire(self.identifier, self.LOCK_EXPIRATION * 1000)
                 return True
 
             if not wait:
