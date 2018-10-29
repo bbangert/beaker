@@ -714,6 +714,8 @@ class CookieSession(Session):
             self.cookie[self.key]['domain'] = self._domain
         if self.secure:
             self.cookie[self.key]['secure'] = True
+        if self.samesite:
+            self.cookie[self.key]['samesite'] = self.samesite
         self._set_cookie_http_only()
 
         self.cookie[self.key]['path'] = self.get('_path', '/')

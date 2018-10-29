@@ -302,6 +302,19 @@ def test_cookie_properly_expires():
     assert 'The current value is: 1' in res, res
 
 
+def test_cookie_attributes_are_preserved():
+    options = {'session.type': 'cookie',
+               'session.validate_key': 'hoobermas',
+               'session.httponly': True,
+               'session.secure': True,
+               'session.samesite': 'Strict'}
+    app = TestApp(SessionMiddleware(simple_app, options))
+    res = app.get('/')
+    cookie = res.headers['Set-Cookie']
+    assert 'secure' in cookie.lower()
+    assert 'httponly' in cookie.lower()
+    assert 'samesite=strict' in cookie.lower()
+
 if __name__ == '__main__':
     from paste import httpserver
     wsgi_app = SessionMiddleware(simple_app, {})
