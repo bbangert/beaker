@@ -27,6 +27,7 @@ TESTS_REQUIRE = ['nose', 'Mock', 'pycryptodome']
 
 if py_version == (2, 6):
     TESTS_REQUIRE.append('WebTest<2.0.24')
+    TESTS_REQUIRE.append('pycparser==2.18')
 else:
     TESTS_REQUIRE.append('webtest')
 
