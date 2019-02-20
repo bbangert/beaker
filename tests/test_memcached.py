@@ -52,8 +52,11 @@ def simple_session_app(environ, start_response):
         if not environ['PATH_INFO'].startswith('/nosave'):
             session.save()
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %d, session id is %s' % (session['value'],
-                                                            session.id)]
+    return [
+        ('The current value is: %d, session id is %s' % (
+            session['value'], session.id
+        )).encode('utf-8')
+    ]
 
 def simple_app(environ, start_response):
     extra_args = {}
@@ -72,7 +75,9 @@ def simple_app(environ, start_response):
         value = 0
     cache.set_value('value', value+1)
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %s' % cache.get_value('value')]
+    return [
+        ('The current value is: %s' % cache.get_value('value')).encode('utf-8')
+    ]
 
 
 def using_none_app(environ, start_response):
@@ -92,7 +97,9 @@ def using_none_app(environ, start_response):
         value = 10
     cache.set_value('value', None)
     start_response('200 OK', [('Content-type', 'text/plain')])
-    return ['The current value is: %s' % value]
+    return [
+        ('The current value is: %s' % value).encode('utf-8')
+    ]
 
 
 def cache_manager_app(environ, start_response):
@@ -100,16 +107,20 @@ def cache_manager_app(environ, start_response):
     cm.get_cache('test')['test_key'] = 'test value'
 
     start_response('200 OK', [('Content-type', 'text/plain')])
-    yield "test_key is: %s\n" % cm.get_cache('test')['test_key']
+    yield (
+        "test_key is: %s\n" % cm.get_cache('test')['test_key']
+    ).encode('utf-8')
     cm.get_cache('test').clear()
 
     try:
         test_value = cm.get_cache('test')['test_key']
     except KeyError:
-        yield "test_key cleared"
+        yield "test_key cleared".encode('utf-8')
     else:
-        yield "test_key wasn't cleared, is: %s\n" % \
-            cm.get_cache('test')['test_key']
+        yield ("test_key wasn't cleared, is: %s\n" % (
+            cm.get_cache('test')['test_key'],
+        )).encode('utf-8')
+
 
 @util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_session():
@@ -223,11 +234,11 @@ def test_spaces_in_keys():
 def test_increment():
     app = TestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
-    assert 'current value is: 1' in res
+    assert 'current value is: 1' in res.text
     res = app.get('/')
-    assert 'current value is: 2' in res
+    assert 'current value is: 2' in res.text
     res = app.get('/')
-    assert 'current value is: 3' in res
+    assert 'current value is: 3' in res.text
 
     app = TestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
@@ -241,16 +252,16 @@ def test_increment():
 def test_cache_manager():
     app = TestApp(CacheMiddleware(cache_manager_app))
     res = app.get('/')
-    assert 'test_key is: test value' in res
-    assert 'test_key cleared' in res
+    assert 'test_key is: test value' in res.text
+    assert 'test_key cleared' in res.text
 
 @util.skip_if(lambda: TestApp is None, "webtest not installed")
 def test_store_none():
     app = TestApp(CacheMiddleware(using_none_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
-    assert 'current value is: 10' in res
+    assert 'current value is: 10' in res.text
     res = app.get('/')
-    assert 'current value is: None' in res
+    assert 'current value is: None' in res.text
 
 class TestPylibmcInit(unittest.TestCase):
     def setUp(self):
