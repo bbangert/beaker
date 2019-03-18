@@ -169,7 +169,7 @@ class Session(dict):
 
         self.save_atime = save_accessed_time
         self.use_cookies = use_cookies
-        self.cookie_expires = cookie_expires
+        self._cookie_expires = cookie_expires
 
         self._set_serializer(data_serializer)
 
@@ -258,7 +258,7 @@ class Session(dict):
 
     def _set_cookie_expires(self, expires):
         if expires is None:
-            expires = self.cookie_expires
+            expires = self._cookie_expires
         if expires is False:
             expires_date = datetime.fromtimestamp(0x7FFFFFFF)
         elif isinstance(expires, timedelta):
@@ -267,8 +267,8 @@ class Session(dict):
             expires_date = expires
         elif expires is not True:
             raise ValueError("Invalid argument for cookie_expires: %s"
-                             % repr(self.cookie_expires))
-        self.cookie_expires = expires
+                             % repr(self._cookie_expires))
+        self._cookie_expires = expires
         if not self.cookie or self.key not in self.cookie:
             self.cookie[self.key] = self.id
         if expires is True:
@@ -278,8 +278,8 @@ class Session(dict):
             expires_date.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
         return expires_date
 
-    def _update_cookie_out(self, set_cookie=True):
-        self._set_cookie_values()
+    def _update_cookie_out(self, set_cookie=True, cookie_expires=None):
+        self._set_cookie_values(expires=cookie_expires)
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = set_cookie
 
@@ -305,6 +305,17 @@ class Session(dict):
     @property
     def created(self):
         return self['_creation_time']
+
+    def _set_cookie_expires_wrapper(self, cookie_expires):
+        if cookie_expires and isinstance(cookie_expires, int) and \
+                not isinstance(cookie_expires, bool):
+            cookie_expires = timedelta(seconds=cookie_expires)
+        self._update_cookie_out(cookie_expires=cookie_expires)
+
+    def _get_cookie_expires(self):
+        return self._cookie_expires
+
+    cookie_expires = property(_get_cookie_expires, _set_cookie_expires_wrapper)
 
     def _set_domain(self, domain):
         self['_domain'] = self._domain = domain
@@ -582,7 +593,7 @@ class CookieSession(Session):
         self.key = key
         self.timeout = timeout
         self.save_atime = save_accessed_time
-        self.cookie_expires = cookie_expires
+        self._cookie_expires = cookie_expires
         self.encrypt_key = encrypt_key
         self.validate_key = validate_key
         self.encrypt_nonce_size = get_nonce_size(encrypt_nonce_bits)
