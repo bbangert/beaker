@@ -315,6 +315,61 @@ def test_cookie_attributes_are_preserved():
     assert 'httponly' in cookie.lower()
     assert 'samesite=strict' in cookie.lower()
 
+
+def test_cookie_path_properly_set_after_init():
+    COOKIE_PATH = '/app'
+
+    options = {
+        'session.validate_key': 'hoobermas',
+        'session.type': 'cookie',
+        'session.cookie_path': COOKIE_PATH,
+    }
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    res = app.get('/app')
+    cookie = res.headers['Set-Cookie']
+
+    assert ('path=%s' % COOKIE_PATH) in cookie.lower()
+
+
+def test_cookie_path_properly_set_after_load():
+    COOKIE_PATH = '/app'
+
+    options = {
+        'session.validate_key': 'hoobermas',
+        'session.type': 'cookie',
+        'session.cookie_path': COOKIE_PATH,
+    }
+    app = TestApp(SessionMiddleware(simple_app, **options))
+    # Perform one request to set the cookie
+    res = app.get('/app')
+    # Perform another request to load the previous session from the cookie
+    res = app.get('/app')
+    cookie = res.headers['Set-Cookie']
+
+    assert ('path=%s' % COOKIE_PATH) in cookie.lower()
+
+
+def test_cookie_path_properly_set_after_delete():
+    COOKIE_PATH = '/app'
+
+    def delete_session_app(environ, start_response):
+        session = environ['beaker.session']
+        session.delete()
+        start_response('200 OK', [('Content-type', 'text/plain')])
+        return [('Cookie is %s' % session).encode('UTF-8')]
+
+    options = {
+        'session.validate_key': 'hoobermas',
+        'session.type': 'cookie',
+        'session.cookie_path': COOKIE_PATH,
+    }
+    app = TestApp(SessionMiddleware(delete_session_app, **options))
+    res = app.get('/app')
+    cookie = res.headers['Set-Cookie']
+
+    assert ('path=%s' % COOKIE_PATH) in cookie.lower()
+
+
 if __name__ == '__main__':
     from paste import httpserver
     wsgi_app = SessionMiddleware(simple_app, {})

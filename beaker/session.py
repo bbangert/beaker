@@ -628,7 +628,6 @@ class CookieSession(Session):
                 if cookie_data is InvalidSignature:
                     raise BeakerException("Invalid signature")
                 self.update(self._decrypt_data(cookie_data))
-                self._path = self.get('_path', '/')
             except Exception as e:
                 if self.invalidate_corrupt:
                     util.warn(
@@ -648,30 +647,9 @@ class CookieSession(Session):
             self.accessed_dict = self.copy()
             self._create_cookie()
 
-    def created(self):
-        return self['_creation_time']
-    created = property(created)
-
     def id(self):
         return self['_id']
     id = property(id)
-
-    def _set_domain(self, domain):
-        self['_domain'] = domain
-        self._domain = domain
-
-    def _get_domain(self):
-        return self._domain
-
-    domain = property(_get_domain, _set_domain)
-
-    def _set_path(self, path):
-        self['_path'] = self._path = path
-
-    def _get_path(self):
-        return self._path
-
-    path = property(_get_path, _set_path)
 
     def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage"""
@@ -712,13 +690,16 @@ class CookieSession(Session):
             self.cookie[self.key]['domain'] = self['_domain']
         elif self._domain:
             self.cookie[self.key]['domain'] = self._domain
+        if '_path' in self:
+            self.cookie[self.key]['path'] = self['_path']
+        elif self._path:
+            self.cookie[self.key]['path'] = self._path
+
         if self.secure:
             self.cookie[self.key]['secure'] = True
         if self.samesite:
             self.cookie[self.key]['samesite'] = self.samesite
         self._set_cookie_http_only()
-
-        self.cookie[self.key]['path'] = self.get('_path', '/')
 
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = True
