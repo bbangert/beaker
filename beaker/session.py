@@ -461,7 +461,7 @@ class Session(_ConfigurableSession):
 
                 # Set the path if applicable
                 if '_path' in session_data:
-                    self['path'] = session_data['_path']
+                    self['_path'] = session_data['_path']
                 self.update(session_data)
                 self.accessed_dict = session_data.copy()
         finally:
