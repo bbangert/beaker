@@ -86,7 +86,27 @@ class SignedCookie(SimpleCookie):
         return str(val), ("%s%s" % (sig, val))
 
 
-class Session(dict):
+class _ConfigurableSession(dict):
+    """Provides support for configurable Session objects.
+    
+    Provides a way to ensure some properties of sessions
+    are always available with pre-configured values
+    when they are not available in the session cookie itself.
+    """
+
+    def __init__(self, cookie_domain=None, cookie_path='/'):
+        self._config = {
+            '_domain': cookie_domain,
+            '_path': cookie_path
+        }
+
+    def clear(self):
+        """Clears Session data. Preserves session configuration."""
+        super(_ConfigurableSession, self).clear()
+        self.update(self._config)
+
+
+class Session(_ConfigurableSession):
     """Session object that uses container package for storage.
 
     :param invalidate_corrupt: How to handle corrupt data when loading. When
@@ -139,6 +159,13 @@ class Session(dict):
                  encrypt_key=None, validate_key=None, encrypt_nonce_bits=DEFAULT_NONCE_BITS,
                  crypto_type='default', samesite='Lax',
                  **namespace_args):
+        _ConfigurableSession.__init__(
+            self,
+            cookie_domain=cookie_domain,
+            cookie_path=cookie_path
+        )
+        self.clear()
+        
         if not type:
             if data_dir:
                 self.type = 'file'
@@ -174,8 +201,6 @@ class Session(dict):
         self._set_serializer(data_serializer)
 
         # Default cookie domain/path
-        self._domain = cookie_domain
-        self._path = cookie_path
         self.was_invalidated = False
         self.secret = secret
         self.secure = secure
@@ -245,14 +270,14 @@ class Session(dict):
 
     def _set_cookie_values(self, expires=None):
         self.cookie[self.key] = self.id
-        if self._domain:
-            self.cookie[self.key]['domain'] = self._domain
+        if self.domain:
+            self.cookie[self.key]['domain'] = self.domain
         if self.secure:
             self.cookie[self.key]['secure'] = True
         if self.samesite:
             self.cookie[self.key]['samesite'] = self.samesite
         self._set_cookie_http_only()
-        self.cookie[self.key]['path'] = self._path
+        self.cookie[self.key]['path'] = self.path
 
         self._set_cookie_expires(expires)
 
@@ -307,20 +332,20 @@ class Session(dict):
         return self['_creation_time']
 
     def _set_domain(self, domain):
-        self['_domain'] = self._domain = domain
+        self['_domain'] = domain
         self._update_cookie_out()
 
     def _get_domain(self):
-        return self._domain
+        return self['_domain']
 
     domain = property(_get_domain, _set_domain)
 
     def _set_path(self, path):
-        self['_path'] = self._path = path
+        self['_path'] = path
         self._update_cookie_out()
 
     def _get_path(self):
-        return self._path
+        return self.get('_path', '/')
 
     path = property(_get_path, _set_path)
 
@@ -436,7 +461,7 @@ class Session(dict):
 
                 # Set the path if applicable
                 if '_path' in session_data:
-                    self._path = session_data['_path']
+                    self['path'] = session_data['_path']
                 self.update(session_data)
                 self.accessed_dict = session_data.copy()
         finally:
@@ -571,6 +596,12 @@ class CookieSession(Session):
                  encrypt_nonce_bits=DEFAULT_NONCE_BITS, invalidate_corrupt=False,
                  crypto_type='default', samesite='Lax',
                  **kwargs):
+        _ConfigurableSession.__init__(
+            self,
+            cookie_domain=cookie_domain,
+            cookie_path=cookie_path
+        )
+        self.clear()
 
         self.crypto_module = get_crypto_module(crypto_type)
 
@@ -590,8 +621,6 @@ class CookieSession(Session):
         self.secure = secure
         self.httponly = httponly
         self.samesite = samesite
-        self._domain = cookie_domain
-        self._path = cookie_path
         self.invalidate_corrupt = invalidate_corrupt
         self._set_serializer(data_serializer)
 
@@ -647,9 +676,29 @@ class CookieSession(Session):
             self.accessed_dict = self.copy()
             self._create_cookie()
 
+    def created(self):
+        return self['_creation_time']
+    created = property(created)
+
     def id(self):
         return self['_id']
     id = property(id)
+
+    def _set_domain(self, domain):
+        self['_domain'] = domain
+
+    def _get_domain(self):
+        return self['_domain']
+
+    domain = property(_get_domain, _set_domain)
+
+    def _set_path(self, path):
+        self['_path'] = path
+
+    def _get_path(self):
+        return self['_path']
+
+    path = property(_get_path, _set_path)
 
     def save(self, accessed_only=False):
         """Saves the data for this session to persistent storage"""
@@ -686,20 +735,15 @@ class CookieSession(Session):
         if expires is not None:
             self['_expires'] = expires
 
-        if '_domain' in self:
-            self.cookie[self.key]['domain'] = self['_domain']
-        elif self._domain:
-            self.cookie[self.key]['domain'] = self._domain
-        if '_path' in self:
-            self.cookie[self.key]['path'] = self['_path']
-        elif self._path:
-            self.cookie[self.key]['path'] = self._path
-
+        if self.domain:
+            self.cookie[self.key]['domain'] = self.domain
         if self.secure:
             self.cookie[self.key]['secure'] = True
         if self.samesite:
             self.cookie[self.key]['samesite'] = self.samesite
         self._set_cookie_http_only()
+
+        self.cookie[self.key]['path'] = self.get('_path', '/')
 
         self.request['cookie_out'] = self.cookie[self.key].output(header='')
         self.request['set_cookie'] = True
