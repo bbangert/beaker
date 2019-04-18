@@ -305,7 +305,10 @@ class Session(_ConfigurableSession):
 
     def _update_cookie_out(self, set_cookie=True):
         self._set_cookie_values()
-        self.request['cookie_out'] = self.cookie[self.key].output(header='')
+        cookie_out = self.cookie[self.key].output(header='')
+        if not isinstance(cookie_out, str):
+            cookie_out = cookie_out.encode('latin1')
+        self.request['cookie_out'] = cookie_out
         self.request['set_cookie'] = set_cookie
 
     def _set_cookie_http_only(self):
@@ -459,9 +462,6 @@ class Session(_ConfigurableSession):
                 # Update the current _accessed_time
                 session_data['_accessed_time'] = now
 
-                # Set the path if applicable
-                if '_path' in session_data:
-                    self['_path'] = session_data['_path']
                 self.update(session_data)
                 self.accessed_dict = session_data.copy()
         finally:
@@ -745,7 +745,10 @@ class CookieSession(Session):
 
         self.cookie[self.key]['path'] = self.get('_path', '/')
 
-        self.request['cookie_out'] = self.cookie[self.key].output(header='')
+        cookie_out = self.cookie[self.key].output(header='')
+        if not isinstance(cookie_out, str):
+            cookie_out = cookie_out.encode('latin1')
+        self.request['cookie_out'] = cookie_out
         self.request['set_cookie'] = True
 
     def delete(self):
