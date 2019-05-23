@@ -1,9 +1,8 @@
 from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64decode, string_type
 
 import os
-import sys
 import time
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1, get_nonce_size, DEFAULT_NONCE_BITS, get_crypto_module
 from beaker import crypto, util
 from beaker.cache import clsmap

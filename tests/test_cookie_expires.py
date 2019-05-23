@@ -1,5 +1,5 @@
 from beaker.middleware import SessionMiddleware
-from beaker.session import Session, CookieSession
+from beaker.session import Session
 from nose.tools import *
 import datetime
 import re
