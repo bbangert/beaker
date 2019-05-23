@@ -2,6 +2,11 @@ language: python
 os:
   - linux
 dist: xenial
+addons:
+  apt:
+    packages:
+      - language-pack-it
+      - locales
 services:
   - mongodb
   - memcached

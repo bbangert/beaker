@@ -56,6 +56,17 @@ def test_cookie_exprires_2():
 
     assert no_expires is False, no_expires
 
+def test_cookie_expires_different_locale():
+    from locale import setlocale, LC_TIME
+    expires_date = datetime.datetime(2019, 5, 22)
+    setlocale(LC_TIME, 'it_IT.UTF-8')
+    # if you get locale.Error: unsupported locale setting. you have to enable that locale in your OS.
+    assert expires_date.strftime("%a, %d-%b-%Y %H:%M:%S GMT").startswith('mer,')
+    session = Session({}, cookie_expires=True, validate_key='validate_key')
+    assert session._set_cookie_expires(expires_date)
+    expires = cookie_expiration(session)
+    assert expires == 'Wed, 22-May-2019 00:00:00 GMT', expires
+    setlocale(LC_TIME, '')  # restore default locale for further tests
 
 def test_set_cookie_expires():
     """Exhibit Set-Cookie: values."""

@@ -9,6 +9,12 @@ from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
 from beaker.cookie import SimpleCookie
 
+
+months = (None, "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+
 __all__ = ['SignedCookie', 'Session', 'InvalidSignature']
 
 
@@ -281,6 +287,13 @@ class Session(_ConfigurableSession):
 
         self._set_cookie_expires(expires)
 
+    @staticmethod
+    def serialize_cookie_date(v):
+        v = v.timetuple()
+        r = time.strftime("%%s, %d-%%s-%Y %H:%M:%S GMT", v)
+        return r % (weekdays[v[6]], months[v[1]])
+
+        
     def _set_cookie_expires(self, expires):
         if expires is None:
             expires = self.cookie_expires
@@ -300,7 +313,7 @@ class Session(_ConfigurableSession):
             self.cookie[self.key]['expires'] = ''
             return True
         self.cookie[self.key]['expires'] = \
-            expires_date.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
+            self.serialize_cookie_date(expires_date)
         return expires_date
 
     def _update_cookie_out(self, set_cookie=True):
