@@ -111,9 +111,10 @@ webtest_varname (**optional**, string)
     the environ for use with WebTest. The name provided here is where the
     session object will be attached to the WebTest TestApp return value.
 
-url (**optional**, string) URL is specific to use of either ``ext:memcached``,
-    ``ext:database``, ``ext:mongodb``, or ``ext:redis``. When using one of those
-    types, this option is **required**.
+url (**optional**, string)
+    URL is specific to use of either ``ext:memcached``, ``ext:database``,
+    ``ext:mongodb``, or ``ext:redis``. When using one of those types, this
+    option is **required**.
 
     When used with ``ext:memcached``, this should be either a single, or
     semi-colon separated list of memcached servers::
