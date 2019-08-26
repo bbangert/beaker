@@ -1,4 +1,11 @@
 
+Release 1.11.0 (2019-08-26)
+===========================
+
+* Fixed cookie path option not being properly set (`self._path` was removed, only `self.path` exists)
+* Documented `SameSite` option
+* Fixed cookie expiration being localised when it shouldn't. 
+
 Release 1.10.1 (2019-02-21)
 ===========================
 
