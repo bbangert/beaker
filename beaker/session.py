@@ -534,7 +534,7 @@ class Session(_ConfigurableSession):
         """
             creates a new session id, retains all session data
 
-            Its a good security practice to regnerate the id after a client
+            Its a good security practice to regenerate the id after a client
             elevates privileges.
 
         """
