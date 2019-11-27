@@ -8,6 +8,7 @@ from beaker import crypto, util
 from beaker.cache import clsmap
 from beaker.exceptions import BeakerException, InvalidCryptoBackendError
 from beaker.cookie import SimpleCookie
+import uuid
 
 
 months = (None, "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -30,34 +31,8 @@ class _InvalidSignatureType(object):
 InvalidSignature = _InvalidSignatureType()
 
 
-try:
-    import uuid
-
-    def _session_id():
-        return uuid.uuid4().hex
-except ImportError:
-    import random
-    if hasattr(os, 'getpid'):
-        getpid = os.getpid
-    else:
-        def getpid():
-            return ''
-
-    def _session_id():
-        id_str = "%f%s%f%s" % (
-                    time.time(),
-                    id({}),
-                    random.random(),
-                    getpid()
-                )
-        # NB: nothing against second parameter to b64encode, but it seems
-        #     to be slower than simple chained replacement
-        if not PY2:
-            raw_id = b64encode(sha1(id_str.encode('ascii')).digest())
-            return str(raw_id.replace(b'+', b'-').replace(b'/', b'_').rstrip(b'='))
-        else:
-            raw_id = b64encode(sha1(id_str).digest())
-            return raw_id.replace('+', '-').replace('/', '_').rstrip('=')
+def _session_id():
+    return uuid.uuid4().hex
 
 
 class SignedCookie(SimpleCookie):
