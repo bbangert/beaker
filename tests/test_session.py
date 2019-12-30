@@ -397,7 +397,7 @@ def test_use_json_serializer_without_encryption_key():
     so.save()
     session = get_session(id=so.id, use_cookies=False, type='file', data_dir='./cache', data_serializer='json')
     assert 'foo' in session
-    serialized_session = open(session.namespace.file, 'r').read()
+    serialized_session = open(session.namespace.file, 'rb').read()
     memory_state = pickle.loads(serialized_session)
     session_data = b64decode(memory_state.get('session'))
     data = deserialize(session_data, 'json')
