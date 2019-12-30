@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from beaker._compat import u_, pickle
+from beaker._compat import u_, pickle, b64decode
 
 import binascii
 import shutil
@@ -14,7 +14,7 @@ from beaker.container import MemoryNamespaceManager
 from beaker.crypto import get_crypto_module
 from beaker.exceptions import BeakerException
 from beaker.session import CookieSession, Session, SessionObject
-from beaker.util import assert_raises
+from beaker.util import assert_raises, deserialize
 
 
 def get_session(**kwargs):
