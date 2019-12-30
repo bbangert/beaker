@@ -436,7 +436,7 @@ class Session(_ConfigurableSession):
             try:
                 session_data = self.namespace['session']
 
-                if (session_data is not None and self.encrypt_key):
+                if session_data is not None:
                     session_data = self._decrypt_data(session_data)
 
                 # Memcached always returns a key, its None when its not
@@ -511,8 +511,7 @@ class Session(_ConfigurableSession):
             else:
                 data = dict(self.items())
 
-            if self.encrypt_key:
-                data = self._encrypt_data(data)
+            data = self._encrypt_data(data)
 
             # Save the data
             if not data and 'session' in self.namespace:

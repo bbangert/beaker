@@ -390,6 +390,19 @@ def test_file_based_replace_optimization():
     assert 'test' not in session.namespace
     session.namespace.do_close()
 
+@with_setup(setup_cookie_request)
+def test_use_json_serializer_without_encryption_key():
+    so = get_session(use_cookies=False, type='file', data_dir='./cache', data_serializer='json')
+    so['foo'] = 'bar'
+    so.save()
+    session = get_session(id=so.id, use_cookies=False, type='file', data_dir='./cache', data_serializer='json')
+    assert 'foo' in session
+    serialized_session = open(session.namespace.file, 'r').read()
+    memory_state = pickle.loads(serialized_session)
+    session_data = b64decode(memory_state.get('session'))
+    data = deserialize(session_data, 'json')
+    assert 'foo' in data
+
 
 @with_setup(setup_cookie_request)
 def test_invalidate_corrupt():
