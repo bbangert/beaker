@@ -399,7 +399,7 @@ def test_use_json_serializer_without_encryption_key():
     assert 'foo' in session
     serialized_session = open(session.namespace.file, 'rb').read()
     memory_state = pickle.loads(serialized_session)
-    session_data = b64decode(memory_state.get('session'))
+    session_data = memory_state.get('session')
     data = deserialize(session_data, 'json')
     assert 'foo' in data
 
