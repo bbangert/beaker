@@ -379,7 +379,7 @@ class Session(_ConfigurableSession):
             return nonce + b64encode(self.crypto_module.aesEncrypt(data, encrypt_key))
         else:
             data = self.serializer.dumps(session_data)
-            if self.__class__ == CookieSession:
+            if isinstance(self, CookieSession):
                 return b64encode(data)
             else:
                 return data
@@ -398,7 +398,7 @@ class Session(_ConfigurableSession):
             data = self.crypto_module.aesDecrypt(payload, encrypt_key)
         else:
             data = session_data
-            if self.__class__ == CookieSession:
+            if isinstance(self, CookieSession):
                 data = b64decode(session_data)
 
         return self.serializer.loads(data)
