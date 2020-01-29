@@ -94,7 +94,7 @@ class SignedCookie(SimpleCookie):
 
 class _ConfigurableSession(dict):
     """Provides support for configurable Session objects.
-
+    
     Provides a way to ensure some properties of sessions
     are always available with pre-configured values
     when they are not available in the session cookie itself.
@@ -171,7 +171,7 @@ class Session(_ConfigurableSession):
             cookie_path=cookie_path
         )
         self.clear()
-
+        
         if not type:
             if data_dir:
                 self.type = 'file'
@@ -293,7 +293,7 @@ class Session(_ConfigurableSession):
         r = time.strftime("%%s, %d-%%s-%Y %H:%M:%S GMT", v)
         return r % (weekdays[v[6]], months[v[1]])
 
-
+        
     def _set_cookie_expires(self, expires):
         if expires is None:
             expires = self.cookie_expires
@@ -379,10 +379,7 @@ class Session(_ConfigurableSession):
             return nonce + b64encode(self.crypto_module.aesEncrypt(data, encrypt_key))
         else:
             data = self.serializer.dumps(session_data)
-            if isinstance(self, CookieSession):
-                return b64encode(data)
-            else:
-                return data
+            return b64encode(data)
 
     def _decrypt_data(self, session_data):
         """Base64, decipher, then un-serialize the data for the session
@@ -397,9 +394,7 @@ class Session(_ConfigurableSession):
             payload = b64decode(session_data[nonce_b64len:])
             data = self.crypto_module.aesDecrypt(payload, encrypt_key)
         else:
-            data = session_data
-            if isinstance(self, CookieSession):
-                data = b64decode(session_data)
+            data = b64decode(session_data)
 
         return self.serializer.loads(data)
 
