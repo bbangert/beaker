@@ -283,7 +283,7 @@ regions (**optional**, list, tuple)
             'cache.long_term.expire': '86400',
 
 
-.. _Pylons: http://pylonshq.com/
+.. _Pylons: https://pylonsproject.org/
 .. _TurboGears2: http://turbogears.org/
 .. _SQLAlchemy: http://www.sqlalchemy.org/
 .. _pycryptopp: http://pypi.python.org/pypi/pycryptopp
