@@ -44,7 +44,7 @@ Documentation
 =============
 
 Documentation can be found on the `Official Beaker Docs site
-<http://beaker.groovie.org/>`_.
+<https://beaker.readthedocs.org/>`_.
 
 
 Source
