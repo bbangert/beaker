@@ -390,8 +390,8 @@ def test_file_based_replace_optimization():
     assert 'test' not in session.namespace
     session.namespace.do_close()
 
-@with_setup(setup_cookie_request)
 def test_use_json_serializer_without_encryption_key():
+    setup_cookie_request()
     so = get_session(use_cookies=False, type='file', data_dir='./cache', data_serializer='json')
     so['foo'] = 'bar'
     so.save()
