@@ -3,7 +3,7 @@ import pytest
 from beaker.middleware import SessionMiddleware
 from beaker import crypto
 
-webtest = pytest.importorskip("webtest", reason="webtest not installed")
+webtest = pytest.importorskip("webtest")
 
 pytest.mark.skipif(not crypto.get_crypto_module('default').has_aes,
                    reason="No AES library is installed, can't test " +
