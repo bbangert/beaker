@@ -58,7 +58,7 @@ def test_parse_doesnt_allow_empty_region_name():
 
 def test_decorators():
     for func in (make_region_cached_func, make_cached_func):
-        yield check_decorator, func()
+        check_decorator(func())
 
 def check_decorator(func):
     result = func('Fred')
