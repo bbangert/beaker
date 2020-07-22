@@ -1,6 +1,6 @@
-import datetime, time
+import datetime
+import time
 import re
-import os
 import json
 
 import beaker.session
@@ -8,9 +8,9 @@ import beaker.util
 from beaker.session import SignedCookie
 from beaker._compat import b64decode
 from beaker.middleware import SessionMiddleware
-from nose import SkipTest
+from unittest import SkipTest
 try:
-    from webtest import TestApp
+    from webtest import TestApp as WebTestApp
 except ImportError:
     raise SkipTest("webtest not installed")
 
@@ -21,7 +21,7 @@ if not crypto.get_crypto_module('default').has_aes:
 
 def simple_app(environ, start_response):
     session = environ['beaker.session']
-    if not session.has_key('value'):
+    if 'value' not in session:
         session['value'] = 0
     session['value'] += 1
     if not environ['PATH_INFO'].startswith('/nosave'):
@@ -32,7 +32,7 @@ def simple_app(environ, start_response):
 
 def test_increment():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -43,7 +43,7 @@ def test_increment():
 def test_invalid_cookie():
     # This is not actually a cookie only session, but we still test the cookie part.
     options = {'session.validate_key':'hoobermas'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
 
     res = app.get('/')
     assert 'current value is: 1' in res
@@ -59,7 +59,7 @@ def test_invalid_cookie():
 def test_invalid_cookie_cookietype():
     # This is not actually a cookie only session, but we still test the cookie part.
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
 
     res = app.get('/')
     assert 'current value is: 1' in res
@@ -74,7 +74,7 @@ def test_invalid_cookie_cookietype():
 
 def test_json_serializer():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': 'json'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
 
     res = app.get('/')
     assert 'current value is: 1' in res
@@ -91,7 +91,7 @@ def test_json_serializer():
 
 def test_pickle_serializer():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': 'pickle'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
 
     res = app.get('/')
     assert 'current value is: 1' in res
@@ -119,7 +119,7 @@ def test_custom_serializer():
 
     serializer = CustomSerializer()
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie', 'data_serializer': serializer}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
 
     res = app.get('/')
     assert 'current value is: 1' in res
@@ -139,15 +139,15 @@ def test_custom_serializer():
 def test_expires():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie',
                'session.cookie_expires': datetime.timedelta(days=1)}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'expires=' in res.headers.getall('Set-Cookie')[0]
     assert 'current value is: 1' in res
 
 def test_different_sessions():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
-    app2 = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
+    app2 = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app2.get('/')
@@ -161,7 +161,7 @@ def test_different_sessions():
 
 def test_nosave():
     options = {'session.validate_key':'hoobermas', 'session.type':'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/nosave')
     assert 'current value is: 1' in res
     assert [] == res.headers.getall('Set-Cookie')
@@ -177,7 +177,7 @@ def test_nosave():
 def test_increment_with_encryption():
     options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
                'session.type':'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -188,8 +188,8 @@ def test_increment_with_encryption():
 def test_different_sessions_with_encryption():
     options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
                'session.type':'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
-    app2 = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
+    app2 = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app2.get('/')
@@ -204,7 +204,7 @@ def test_different_sessions_with_encryption():
 def test_nosave_with_encryption():
     options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
                'session.type':'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/nosave')
     assert 'current value is: 1' in res
     assert [] == res.headers.getall('Set-Cookie')
@@ -220,7 +220,7 @@ def test_nosave_with_encryption():
 def test_cookie_id():
     options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
                'session.type':'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
 
     res = app.get('/')
     assert "_id':" in res
@@ -239,7 +239,7 @@ def test_invalidate_with_save_does_not_delete_session():
 
     options = {'session.encrypt_key':'666a19cf7f61c64c', 'session.validate_key':'hoobermas',
                'session.type':'cookie'}
-    app = TestApp(SessionMiddleware(invalidate_session_app, **options))
+    app = WebTestApp(SessionMiddleware(invalidate_session_app, **options))
     res = app.get('/')
     assert 'expires=' not in res.headers.getall('Set-Cookie')[0]
 
@@ -252,7 +252,7 @@ def test_changing_encrypt_key_with_timeout():
                'session.timeout': 300,
                'session.validate_key': 'hoobermas',
                'session.type': 'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'The current value is: 1' in res, res
 
@@ -264,7 +264,7 @@ def test_changing_encrypt_key_with_timeout():
                'session.timeout': 300,
                'session.validate_key': 'hoobermas',
                'session.type': 'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/', headers={'Cookie': cookies})
     assert 'The current value is: 2' in res, res
 
@@ -274,7 +274,7 @@ def test_changing_encrypt_key_with_timeout():
                'session.timeout': 300,
                'session.validate_key': 'hoobermas',
                'session.type': 'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/', headers={'Cookie': cookies})
 
     # Let's check it created a new session as the old one is invalid
@@ -289,7 +289,7 @@ def test_cookie_properly_expires():
                'session.timeout': 1,
                'session.validate_key': 'hoobermas',
                'session.type': 'cookie'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'The current value is: 1' in res, res
 
@@ -308,7 +308,7 @@ def test_cookie_attributes_are_preserved():
                'session.httponly': True,
                'session.secure': True,
                'session.samesite': 'Strict'}
-    app = TestApp(SessionMiddleware(simple_app, options))
+    app = WebTestApp(SessionMiddleware(simple_app, options))
     res = app.get('/')
     cookie = res.headers['Set-Cookie']
     assert 'secure' in cookie.lower()
@@ -324,7 +324,7 @@ def test_cookie_path_properly_set_after_init():
         'session.type': 'cookie',
         'session.cookie_path': COOKIE_PATH,
     }
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/app')
     cookie = res.headers['Set-Cookie']
 
@@ -339,7 +339,7 @@ def test_cookie_path_properly_set_after_load():
         'session.type': 'cookie',
         'session.cookie_path': COOKIE_PATH,
     }
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     # Perform one request to set the cookie
     res = app.get('/app')
     # Perform another request to load the previous session from the cookie
@@ -363,7 +363,7 @@ def test_cookie_path_properly_set_after_delete():
         'session.type': 'cookie',
         'session.cookie_path': COOKIE_PATH,
     }
-    app = TestApp(SessionMiddleware(delete_session_app, **options))
+    app = WebTestApp(SessionMiddleware(delete_session_app, **options))
     res = app.get('/app')
     cookie = res.headers['Set-Cookie']
 

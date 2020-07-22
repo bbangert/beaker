@@ -1,6 +1,10 @@
 import os
+import pickle
 import random
+import shutil
 import time
+import pytest
+
 from beaker.container import *
 from beaker.synchronization import _synchronizers
 from beaker.cache import clsmap
@@ -34,10 +38,10 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
 
             if threadlocal:
                 localvalue = Value(
-                                'test', 
-                                cls('test', data_dir='./cache'), 
-                                createfunc=CachedWidget, 
-                                expiretime=expiretime, 
+                                'test',
+                                cls('test', data_dir='./cache'),
+                                createfunc=CachedWidget,
+                                expiretime=expiretime,
                                 starttime=starttime)
                 localvalue.clear_value()
             else:
@@ -60,10 +64,10 @@ def _run_container_test(cls, totaltime, expiretime, delay, threadlocal):
 
     if not threadlocal:
         value = Value(
-                    'test', 
-                    cls('test', data_dir='./cache'), 
-                    createfunc=CachedWidget, 
-                    expiretime=expiretime, 
+                    'test',
+                    cls('test', data_dir='./cache'),
+                    createfunc=CachedWidget,
+                    expiretime=expiretime,
                     starttime=starttime)
         value.clear_value()
     else:
@@ -137,35 +141,29 @@ def test_file_open_bug():
     f.write("BLAH BLAH BLAH")
     f.close()
 
-    # TODO: do we have an assertRaises() in nose to use here ?
-    try:
+    with pytest.raises(pickle.UnpicklingError):
         value.set_value("y")
-        assert False
-    except:
-        pass
 
     _synchronizers.clear()
 
     value = Value('test', clsmap['file']('reentrant_test', data_dir='./cache'))
 
     # TODO: do we have an assertRaises() in nose to use here ?
-    try:
+    with pytest.raises(pickle.UnpicklingError):
         value.set_value("z")
-        assert False
-    except:
-        pass
 
 
 def test_removing_file_refreshes():
     """test that the cache doesn't ignore file removals"""
 
     x = [0]
+
     def create():
         x[0] += 1
         return x[0]
 
-    value = Value('test', 
-                    clsmap['file']('refresh_test', data_dir='./cache'), 
+    value = Value('test',
+                    clsmap['file']('refresh_test', data_dir='./cache'),
                     createfunc=create, starttime=time.time()
                     )
     if os.path.exists(value.namespace.file):
@@ -176,6 +174,5 @@ def test_removing_file_refreshes():
     assert value.get_value() == 2
 
 
-def teardown():
-    import shutil
+def teardown_module():
     shutil.rmtree('./cache', True)

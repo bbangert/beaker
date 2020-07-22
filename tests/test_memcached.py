@@ -2,34 +2,32 @@
 from beaker._compat import u_
 
 import mock
-import os
 
-from beaker.cache import clsmap, Cache, CacheManager, util
+from beaker.cache import Cache, CacheManager, util
 from beaker.middleware import CacheMiddleware, SessionMiddleware
 from beaker.exceptions import InvalidCacheBackendError
 from beaker.util import parse_cache_config_options
-from nose import SkipTest
 import unittest
 
 try:
-    from webtest import TestApp
+    from webtest import TestApp as WebTestApp
 except ImportError:
-    TestApp = None
+    WebTestApp = None
 
 try:
     from beaker.ext import memcached
     client = memcached._load_client()
 except InvalidCacheBackendError:
-    raise SkipTest("an appropriate memcached backend is not installed")
+    raise unittest.SkipTest("an appropriate memcached backend is not installed")
 
 mc_url = '127.0.0.1:11211'
 
 c =client.Client([mc_url])
 c.set('x', 'y')
 if not c.get('x'):
-    raise SkipTest("Memcached is not running at %s" % mc_url)
+    raise unittest.SkipTest("Memcached is not running at %s" % mc_url)
 
-def teardown():
+def teardown_module():
     import shutil
     shutil.rmtree('./cache', True)
 
@@ -122,9 +120,9 @@ def cache_manager_app(environ, start_response):
         )).encode('utf-8')
 
 
-@util.skip_if(lambda: TestApp is None, "webtest not installed")
+@util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_session():
-    app = TestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
+    app = WebTestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -133,9 +131,9 @@ def test_session():
     assert 'current value is: 3' in res
 
 
-@util.skip_if(lambda: TestApp is None, "webtest not installed")
+@util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_session_invalid():
-    app = TestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
+    app = WebTestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
     res = app.get('/invalid', headers=dict(Cookie='beaker.session.id=df7324911e246b70b5781c3c58328442; Path=/'))
     assert 'current value is: 2' in res
 
@@ -230,9 +228,9 @@ def test_spaces_in_keys():
     assert cache.has_key("hasspace")
     assert 42 == cache.get_value("hasspace")
 
-@util.skip_if(lambda: TestApp is None, "webtest not installed")
+@util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_increment():
-    app = TestApp(CacheMiddleware(simple_app))
+    app = WebTestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
     assert 'current value is: 1' in res.text
     res = app.get('/')
@@ -240,7 +238,7 @@ def test_increment():
     res = app.get('/')
     assert 'current value is: 3' in res.text
 
-    app = TestApp(CacheMiddleware(simple_app))
+    app = WebTestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -248,16 +246,16 @@ def test_increment():
     res = app.get('/')
     assert 'current value is: 3' in res
 
-@util.skip_if(lambda: TestApp is None, "webtest not installed")
+@util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_cache_manager():
-    app = TestApp(CacheMiddleware(cache_manager_app))
+    app = WebTestApp(CacheMiddleware(cache_manager_app))
     res = app.get('/')
     assert 'test_key is: test value' in res.text
     assert 'test_key cleared' in res.text
 
-@util.skip_if(lambda: TestApp is None, "webtest not installed")
+@util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_store_none():
-    app = TestApp(CacheMiddleware(using_none_app))
+    app = WebTestApp(CacheMiddleware(using_none_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
     assert 'current value is: 10' in res.text
     res = app.get('/')
@@ -286,8 +284,8 @@ class TestPylibmcInit(unittest.TestCase):
 
     def test_uses_pylibmc_client(self):
         from beaker.ext import memcached
-        cache = Cache('test', data_dir='./cache', 
-                            memcache_module='pylibmc', 
+        cache = Cache('test', data_dir='./cache',
+                            memcache_module='pylibmc',
                             url=mc_url, type="ext:memcached")
         assert isinstance(cache.namespace, memcached.PyLibMCNamespaceManager)
 
@@ -301,7 +299,7 @@ class TestPylibmcInit(unittest.TestCase):
             assert isinstance(cache.namespace, memcached.MemcachedNamespaceManager)
 
     def test_client(self):
-        cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached", 
+        cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached",
                       protocol='binary')
         o = object()
         cache.set_value("test", o)
@@ -314,22 +312,22 @@ class TestPylibmcInit(unittest.TestCase):
 
     def test_client_behaviors(self):
         config = {
-            'cache.lock_dir':'./lock', 
-            'cache.data_dir':'./cache',  
-            'cache.type':'ext:memcached', 
+            'cache.lock_dir':'./lock',
+            'cache.data_dir':'./cache',
+            'cache.type':'ext:memcached',
             'cache.url':mc_url,
-            'cache.memcache_module':'pylibmc', 
-            'cache.protocol':'binary', 
-            'cache.behavior.ketama': 'True', 
-            'cache.behavior.cas':False, 
+            'cache.memcache_module':'pylibmc',
+            'cache.protocol':'binary',
+            'cache.behavior.ketama': 'True',
+            'cache.behavior.cas':False,
             'cache.behavior.receive_timeout':'3600',
-            'cache.behavior.send_timeout':1800, 
+            'cache.behavior.send_timeout':1800,
             'cache.behavior.tcp_nodelay':1,
             'cache.behavior.auto_eject':"0"
         }
         cache_manager = CacheManager(**parse_cache_config_options(config))
         cache = cache_manager.get_cache('test_behavior', expire=6000)
-        
+
         with cache.namespace.pool.reserve() as mc:
             assert "ketama" in mc.behaviors
             assert mc.behaviors["ketama"] == 1

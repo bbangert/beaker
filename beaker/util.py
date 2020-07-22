@@ -50,7 +50,7 @@ def skip_if(predicate, reason=None):
     """Skip a test if predicate is true."""
     reason = reason or predicate.__name__
 
-    from nose import SkipTest
+    from unittest import SkipTest
 
     def decorate(fn):
         fn_name = fn.__name__
