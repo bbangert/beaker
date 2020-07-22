@@ -2,6 +2,7 @@ import os
 import pickle
 import random
 import shutil
+import sys
 import time
 import pytest
 
@@ -128,6 +129,9 @@ def test_file_container_3():
 def test_file_container_tlocal():
     test_file_container(expiretime=15, delay=2, threadlocal=True)
 
+
+@pytest.mark.skipif(sys.version_info < (3, 6),
+                    reason="Cryptography not supported on Python 3 lower than 3.6")
 def test_file_open_bug():
     """ensure errors raised during reads or writes don't lock the namespace open."""
 
