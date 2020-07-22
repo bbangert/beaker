@@ -21,4 +21,4 @@ python:
 install:
     - pip install -e .[testsuite]
 script:
-    - nosetests -v -d --with-coverage --cover-package=beaker
+    - pytest -vv
