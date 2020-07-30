@@ -23,7 +23,7 @@ if not hasattr(inspect, 'signature'):
     INSTALL_REQUIRES.append('funcsigs')
 
 
-TESTS_REQUIRE = ['nose', 'Mock', 'pycryptodome']
+TESTS_REQUIRE = ['pytest', 'Mock', 'pycryptodome']
 
 if py_version == (2, 6):
     TESTS_REQUIRE.append('WebTest<2.0.24')
@@ -94,7 +94,7 @@ setup(name='Beaker',
           'cryptography': ['cryptography'],
           'testsuite': [TESTS_REQUIRE]
       },
-      test_suite='nose.collector',
+      test_suite='tests',
       tests_require=TESTS_REQUIRE,
       entry_points="""
           [paste.filter_factory]

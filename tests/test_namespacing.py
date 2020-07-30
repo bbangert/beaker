@@ -2,7 +2,7 @@ import os
 import sys
 
 
-def teardown():
+def teardown_module():
     import shutil
     shutil.rmtree('./cache', True)
 

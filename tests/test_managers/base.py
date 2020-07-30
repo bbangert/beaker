@@ -9,7 +9,7 @@ import datetime
 from beaker._compat import u_
 from beaker.cache import Cache
 from beaker.middleware import SessionMiddleware, CacheMiddleware
-from webtest import TestApp
+from webtest import TestApp as WebTestApp
 
 
 class CacheManagerBaseTests(unittest.TestCase):
@@ -99,7 +99,7 @@ class CacheManagerBaseTests(unittest.TestCase):
         Cache('test', **self.CACHE_ARGS).clear()
 
     def test_session(self):
-        app = TestApp(SessionMiddleware(self.simple_session_app, **self.CACHE_ARGS))
+        app = WebTestApp(SessionMiddleware(self.simple_session_app, **self.CACHE_ARGS))
         res = app.get('/')
         assert 'current value is: 1' in res
         res = app.get('/')
@@ -108,13 +108,13 @@ class CacheManagerBaseTests(unittest.TestCase):
         assert 'current value is: 3' in res
 
     def test_session_invalid(self):
-        app = TestApp(SessionMiddleware(self.simple_session_app, **self.CACHE_ARGS))
+        app = WebTestApp(SessionMiddleware(self.simple_session_app, **self.CACHE_ARGS))
         res = app.get('/invalid', headers=dict(
             Cookie='beaker.session.id=df7324911e246b70b5781c3c58328442; Path=/'))
         assert 'current value is: 2' in res
 
     def test_session_timeout(self):
-        app = TestApp(SessionMiddleware(self.simple_session_app, timeout=1, **self.CACHE_ARGS))
+        app = WebTestApp(SessionMiddleware(self.simple_session_app, timeout=1, **self.CACHE_ARGS))
 
         session = app.app._get_session()
         session.save()
@@ -197,7 +197,7 @@ class CacheManagerBaseTests(unittest.TestCase):
         assert 42 == cache.get_value("hasspace")
 
     def test_increment(self):
-        app = TestApp(CacheMiddleware(self.simple_app))
+        app = WebTestApp(CacheMiddleware(self.simple_app))
         res = app.get('/', extra_environ={'beaker.clear': True})
         assert 'current value is: 1' in res
         res = app.get('/')
@@ -205,7 +205,7 @@ class CacheManagerBaseTests(unittest.TestCase):
         res = app.get('/')
         assert 'current value is: 3' in res
 
-        app = TestApp(CacheMiddleware(self.simple_app))
+        app = WebTestApp(CacheMiddleware(self.simple_app))
         res = app.get('/', extra_environ={'beaker.clear': True})
         assert 'current value is: 1' in res
         res = app.get('/')
@@ -214,13 +214,13 @@ class CacheManagerBaseTests(unittest.TestCase):
         assert 'current value is: 3' in res
 
     def test_cache_manager(self):
-        app = TestApp(CacheMiddleware(self.cache_manager_app))
+        app = WebTestApp(CacheMiddleware(self.cache_manager_app))
         res = app.get('/')
         assert 'test_key is: test value' in res
         assert 'test_key cleared' in res
 
     def test_store_none(self):
-        app = TestApp(CacheMiddleware(self.using_none_app))
+        app = WebTestApp(CacheMiddleware(self.using_none_app))
         res = app.get('/', extra_environ={'beaker.clear': True})
         assert 'current value is: 10' in res
         res = app.get('/')

@@ -1,13 +1,15 @@
 # coding: utf-8
-"""If we try to use a character not in ascii range as a cache key, we get an 
-unicodeencode error. See 
+"""If we try to use a character not in ascii range as a cache key, we get an
+unicodeencode error. See
 https://bitbucket.org/bbangert/beaker/issue/31/cached-function-decorators-break-when-some
 for more on this
 """
 
-from nose.tools import *
 from beaker._compat import u_
 from beaker.cache import CacheManager
+
+def eq_(a, b, msg=''):
+    assert a == b, msg
 
 memory_cache = CacheManager(type='memory')
 
@@ -47,11 +49,11 @@ def test_B_replacing_non_ascii():
     the function distinguishes between the two it should not return the
     past value
     """
-    assert_false(foo(u_('Espaáol'))==u_('Español')) 
+    assert foo(u_('Espaáol')) != u_('Español')
     eq_(foo(u_('Espaáol')), u_('Espaáol'))
 
 def test_C_more_unicode():
-    """We again test the same stuff but this time we use 
+    """We again test the same stuff but this time we use
     http://tools.ietf.org/html/draft-josefsson-idn-test-vectors-00#section-5
     as keys"""
     keys = [

@@ -8,7 +8,7 @@ from beaker.util import parse_cache_config_options
 
 defaults = {'cache.data_dir':'./cache', 'cache.type':'dbm', 'cache.expire': 2}
 
-def teardown():
+def teardown_module():
     import shutil
     shutil.rmtree('./cache', True)
 
@@ -58,7 +58,7 @@ def test_parse_doesnt_allow_empty_region_name():
 
 def test_decorators():
     for func in (make_region_cached_func, make_cached_func):
-        yield check_decorator, func()
+        check_decorator(func())
 
 def check_decorator(func):
     result = func('Fred')
@@ -119,7 +119,7 @@ def test_long_name():
     name = 'Fred' * 250
     result = func(name)
     assert name in result
-    
+
     result2 = func(name)
     assert result == result2
     # This won't actually invalidate it since the key won't be sha'd
@@ -127,7 +127,7 @@ def test_long_name():
 
     result3 = func(name)
     assert result3 == result2
-    
+
     # And now this should invalidate it
     _cache_obj.invalidate(func, 'loader', name)
     result4 = func(name)

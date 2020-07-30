@@ -176,7 +176,7 @@ def cache_region(region, *args):
     :param region: String name of the region corresponding to the desired
       caching arguments, established in :attr:`.cache_regions`.
 
-    :param \*args: Optional ``str()``-compatible arguments which will uniquely
+    :param *args: Optional ``str()``-compatible arguments which will uniquely
       identify the key used by this decorated function, in addition
       to the positional arguments passed to the function itself at call time.
       This is recommended as it is needed to distinguish between any two functions

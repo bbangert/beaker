@@ -1,14 +1,11 @@
-import re
-import os
-
 from beaker.middleware import SessionMiddleware
-from nose import SkipTest
+from unittest import SkipTest
 try:
-    from webtest import TestApp
+    from webtest import TestApp as WebTestApp
 except ImportError:
     raise SkipTest("webtest not installed")
 
-def teardown():
+def teardown_module():
     import shutil
     shutil.rmtree('./cache', True)
 
@@ -17,7 +14,7 @@ def simple_app(environ, start_response):
     domain = environ.get('domain')
     if domain:
         session.domain = domain
-    if not session.has_key('value'):
+    if 'value' not in session:
         session['value'] = 0
     session['value'] += 1
     if not environ['PATH_INFO'].startswith('/nosave'):
@@ -32,7 +29,7 @@ def test_same_domain():
     options = {'session.data_dir':'./cache',
                'session.secret':'blah',
                'session.cookie_domain': '.hoop.com'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/', extra_environ=dict(HTTP_HOST='subdomain.hoop.com'))
     assert 'current value is: 1' in res
     assert 'Domain=.hoop.com' in res.headers['Set-Cookie']
@@ -46,7 +43,7 @@ def test_same_domain():
 def test_different_domain():
     options = {'session.data_dir':'./cache',
                'session.secret':'blah'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/', extra_environ=dict(domain='.hoop.com',
                                           HTTP_HOST='www.hoop.com'))
     res = app.get('/', extra_environ=dict(domain='.hoop.co.uk',

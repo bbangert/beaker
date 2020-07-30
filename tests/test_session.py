@@ -8,13 +8,13 @@ import time
 import unittest
 import warnings
 
-from nose import SkipTest, with_setup
+import pytest
 
 from beaker.container import MemoryNamespaceManager
 from beaker.crypto import get_crypto_module
 from beaker.exceptions import BeakerException
 from beaker.session import CookieSession, Session, SessionObject
-from beaker.util import assert_raises, deserialize
+from beaker.util import deserialize
 
 
 def get_session(**kwargs):
@@ -25,6 +25,8 @@ def get_session(**kwargs):
 
 
 COOKIE_REQUEST = {}
+
+
 def setup_cookie_request():
     COOKIE_REQUEST.clear()
 
@@ -38,8 +40,8 @@ def get_cookie_session(**kwargs):
     return CookieSession(COOKIE_REQUEST, **options)
 
 
-@with_setup(setup_cookie_request)
 def test_session():
+    setup_cookie_request()
     for test_case in (
         check_save_load,
         check_save_load_encryption,
@@ -50,9 +52,9 @@ def test_session():
         check_invalidate,
         check_timeout,
     ):
-      for session_getter in (get_session, get_cookie_session,):
+        for session_getter in (get_session, get_cookie_session,):
             setup_cookie_request()
-            yield test_case, session_getter
+            test_case(session_getter)
 
 
 def check_save_load(session_getter):
@@ -73,10 +75,9 @@ def check_save_load(session_getter):
     assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
 
+@pytest.mark.skipif(not get_crypto_module('default').has_aes)
 def check_save_load_encryption(session_getter):
     """Test if the data is actually persistent across requests"""
-    if not get_crypto_module('default').has_aes:
-        raise SkipTest()
     session = session_getter(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
     session[u_('Suomi')] = u_('Kimi Räikkönen')
@@ -95,15 +96,15 @@ def check_save_load_encryption(session_getter):
     assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
 
+# cryptography only works for py3.3+, so skip for python 3.2
+@pytest.mark.skipif(sys.version_info[0] == 3 and sys.version_info[1] < 3,
+                    reason="Cryptography not supported on Python 3 lower than 3.3")
 def check_save_load_encryption_cryptography(session_getter):
     """Test if the data is actually persistent across requests"""
-    # cryptography only works for py3.3+, so skip for python 3.2
-    if sys.version_info[0] == 3 and sys.version_info[1] < 3:
-        raise SkipTest("Cryptography not supported on Python 3 lower than 3.3")
     try:
         get_crypto_module('cryptography').has_aes
     except BeakerException:
-        raise SkipTest()
+        raise unittest.SkipTest()
     session = session_getter(
         encrypt_key='666a19cf7f61c64c',
         validate_key='hoobermas',
@@ -126,10 +127,9 @@ def check_save_load_encryption_cryptography(session_getter):
     assert session[u_('Deutchland')] == u_('Sebastian Vettel')
 
 
+@pytest.mark.skipif(not get_crypto_module('default').has_aes)
 def check_decryption_failure(session_getter):
     """Test if the data fails without the right keys"""
-    if not get_crypto_module('default').has_aes:
-        raise SkipTest()
     session = session_getter(encrypt_key='666a19cf7f61c64c',
                           validate_key='hoobermas')
     session[u_('Suomi')] = u_('Kimi Räikkönen')
@@ -196,10 +196,10 @@ def check_invalidate(session_getter):
     assert u_('Deutchland') not in session
 
 
-@with_setup(setup_cookie_request)
 def test_regenerate_id():
     """Test :meth:`Session.regenerate_id`"""
     # new session & save
+    setup_cookie_request()
     session = get_session()
     orig_id = session.id
     session[u_('foo')] = u_('bar')
@@ -260,44 +260,42 @@ def check_timeout(session_getter):
     assert u_('Deutchland') not in session
 
 
-@with_setup(setup_cookie_request)
 def test_timeout_requires_accessed_time():
     """Test that it doesn't allow setting save_accessed_time to False with
     timeout enabled
     """
+    setup_cookie_request()
     get_session(timeout=None, save_accessed_time=True)  # is ok
     get_session(timeout=None, save_accessed_time=False)  # is ok
-    assert_raises(BeakerException,
-                  get_session,
-                  timeout=2,
-                  save_accessed_time=False)
+    with pytest.raises(BeakerException):
+        get_session(timeout=2, save_accessed_time=False)
 
 
-@with_setup(setup_cookie_request)
 def test_cookies_enabled():
     """
     Test if cookies are sent out properly when ``use_cookies``
     is set to ``True``
     """
+    setup_cookie_request()
     session = get_session(use_cookies=True)
     assert 'cookie_out' in session.request
-    assert session.request['set_cookie'] == False
+    assert not session.request['set_cookie']
 
     session.domain = 'example.com'
     session.path = '/example'
-    assert session.request['set_cookie'] == True
+    assert session.request['set_cookie']
     assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
     assert 'Domain=example.com' in session.request['cookie_out']
     assert 'Path=/' in session.request['cookie_out']
 
     session = get_session(use_cookies=True)
     session.save()
-    assert session.request['set_cookie'] == True
+    assert session.request['set_cookie']
     assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
 
     session = get_session(use_cookies=True, id=session.id)
     session.delete()
-    assert session.request['set_cookie'] == True
+    assert session.request['set_cookie']
     assert 'beaker.session.id=%s' % session.id in session.request['cookie_out']
     assert 'expires=' in session.request['cookie_out']
 
@@ -310,6 +308,7 @@ def test_cookies_enabled():
     class ShowWarning(object):
         def __init__(self):
             self.msg = None
+
         def __call__(self, message, category, filename, lineno, file=None, line=None):
             self.msg = str(message)
     orig_sw = warnings.showwarning
@@ -323,6 +322,7 @@ def test_cookies_enabled():
         cookie = session.request['cookie_out'].lower()
         assert 'httponly' in cookie, cookie
     warnings.showwarning = orig_sw
+
 
 def test_cookies_disabled():
     """
@@ -345,12 +345,12 @@ def test_cookies_disabled():
     assert 'cookie_out' not in session.request
 
 
-@with_setup(setup_cookie_request)
 def test_file_based_replace_optimization():
     """Test the file-based backend with session,
     which includes the 'replace' optimization.
 
     """
+    setup_cookie_request()
 
     session = get_session(use_cookies=False, type='file',
                             data_dir='./cache')
@@ -390,8 +390,8 @@ def test_file_based_replace_optimization():
     assert 'test' not in session.namespace
     session.namespace.do_close()
 
-@with_setup(setup_cookie_request)
 def test_use_json_serializer_without_encryption_key():
+    setup_cookie_request()
     so = get_session(use_cookies=False, type='file', data_dir='./cache', data_serializer='json')
     so['foo'] = 'bar'
     so.save()
@@ -404,10 +404,10 @@ def test_use_json_serializer_without_encryption_key():
     assert 'foo' in data
 
 
-@with_setup(setup_cookie_request)
 def test_invalidate_corrupt():
+    setup_cookie_request()
     session = get_session(use_cookies=False, type='file',
-                            data_dir='./cache')
+                          data_dir='./cache')
     session['foo'] = 'bar'
     session.save()
 
@@ -415,12 +415,9 @@ def test_invalidate_corrupt():
     f.write("crap")
     f.close()
 
-    assert_raises(
-        (pickle.UnpicklingError, EOFError, TypeError, binascii.Error),
-        get_session,
-        use_cookies=False, type='file',
-                data_dir='./cache', id=session.id
-    )
+    with pytest.raises((pickle.UnpicklingError, EOFError, TypeError, binascii.Error,)):
+        get_session(use_cookies=False, type='file',
+                    data_dir='./cache', id=session.id)
 
     session = get_session(use_cookies=False, type='file',
                             invalidate_corrupt=True,
@@ -428,8 +425,8 @@ def test_invalidate_corrupt():
     assert "foo" not in dict(session)
 
 
-@with_setup(setup_cookie_request)
 def test_invalidate_empty_cookie():
+    setup_cookie_request()
     kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
     session = get_cookie_session(**kwargs)
     session['foo'] = 'bar'
@@ -440,8 +437,8 @@ def test_invalidate_empty_cookie():
     assert "foo" not in dict(session)
 
 
-@with_setup(setup_cookie_request)
 def test_unrelated_cookie():
+    setup_cookie_request()
     kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
     session = get_cookie_session(**kwargs)
     session['foo'] = 'bar'
@@ -452,8 +449,8 @@ def test_unrelated_cookie():
     assert "foo" in dict(session)
 
 
-@with_setup(setup_cookie_request)
 def test_invalidate_invalid_signed_cookie():
+    setup_cookie_request()
     kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
     session = get_cookie_session(**kwargs)
     session['foo'] = 'bar'
@@ -465,16 +462,12 @@ def test_invalidate_invalid_signed_cookie():
         COOKIE_REQUEST['cookie_out'][25:]
     )
 
-    assert_raises(
-        BeakerException,
-        get_cookie_session,
-        id=session.id,
-        invalidate_corrupt=False,
-    )
+    with pytest.raises(BeakerException):
+        get_cookie_session(id=session.id, invalidate_corrupt=False)
 
 
-@with_setup(setup_cookie_request)
 def test_invalidate_invalid_signed_cookie_invalidate_corrupt():
+    setup_cookie_request()
     kwargs = {'validate_key': 'test_key', 'encrypt_key': 'encrypt'}
     session = get_cookie_session(**kwargs)
     session['foo'] = 'bar'
@@ -488,6 +481,7 @@ def test_invalidate_invalid_signed_cookie_invalidate_corrupt():
 
     session = get_cookie_session(id=session.id, invalidate_corrupt=True, **kwargs)
     assert "foo" not in dict(session)
+
 
 class TestSaveAccessedTime(unittest.TestCase):
     # These tests can't use the memory session type since it seems that loading
@@ -517,7 +511,6 @@ class TestSaveAccessedTime(unittest.TestCase):
             '%r is not greater than %r' %
             (session.last_accessed, last_accessed))
 
-
     def test_saves_if_session_not_written_and_accessed_time_true(self):
         session = get_session(data_dir='./cache', save_accessed_time=True)
         # New sessions are treated a little differently so save the session
@@ -534,7 +527,6 @@ class TestSaveAccessedTime(unittest.TestCase):
         assert session.last_accessed > last_accessed, (
             '%r is not greater than %r' %
             (session.last_accessed, last_accessed))
-
 
     def test_doesnt_save_if_session_not_written_and_accessed_time_false(self):
         session = get_session(data_dir='./cache', save_accessed_time=False)

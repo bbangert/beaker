@@ -1,15 +1,14 @@
 import re
-import os
+import unittest
 
 from beaker.middleware import SessionMiddleware
-from nose import SkipTest
 try:
-    from webtest import TestApp
+    from webtest import TestApp as WebTestApp
 except ImportError:
-    raise SkipTest("webtest not installed")
+    raise unittest.SkipTest("webtest not installed")
 
 
-def teardown():
+def teardown_module():
     import shutil
     shutil.rmtree('./cache', True)
 
@@ -60,7 +59,7 @@ def simple_auto_app(environ, start_response):
 
 def test_no_save():
     options = {'session.data_dir':'./cache', 'session.secret':'blah'}
-    app = TestApp(SessionMiddleware(no_save_app, **options))
+    app = WebTestApp(SessionMiddleware(no_save_app, **options))
     res = app.get('/')
     assert 'current value is: None' in res
     assert [] == res.headers.getall('Set-Cookie')
@@ -68,7 +67,7 @@ def test_no_save():
 
 def test_increment():
     options = {'session.data_dir':'./cache', 'session.secret':'blah'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -78,7 +77,7 @@ def test_increment():
 
 def test_increment_auto():
     options = {'session.data_dir':'./cache', 'session.secret':'blah'}
-    app = TestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
+    app = WebTestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -89,8 +88,8 @@ def test_increment_auto():
 
 def test_different_sessions():
     options = {'session.data_dir':'./cache', 'session.secret':'blah'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
-    app2 = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
+    app2 = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app2.get('/')
@@ -104,8 +103,8 @@ def test_different_sessions():
 
 def test_different_sessions_auto():
     options = {'session.data_dir':'./cache', 'session.secret':'blah'}
-    app = TestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
-    app2 = TestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
+    app = WebTestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
+    app2 = WebTestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app2.get('/')
@@ -119,7 +118,7 @@ def test_different_sessions_auto():
 
 def test_nosave():
     options = {'session.data_dir':'./cache', 'session.secret':'blah'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/nosave')
     assert 'current value is: 1' in res
     res = app.get('/nosave')
@@ -132,7 +131,7 @@ def test_nosave():
 
 def test_revert():
     options = {'session.data_dir':'./cache', 'session.secret':'blah'}
-    app = TestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
+    app = WebTestApp(SessionMiddleware(simple_auto_app, auto=True, **options))
     res = app.get('/nosave')
     assert 'current value is: 0' in res
     res = app.get('/nosave')
@@ -152,7 +151,7 @@ def test_revert():
 
 def test_load_session_by_id():
     options = {'session.data_dir':'./cache', 'session.secret':'blah'}
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -161,7 +160,7 @@ def test_load_session_by_id():
     old_id = re.sub(r'^.*?session id is (\S+)$', r'\1', res.body.decode('utf-8'), re.M)
 
     # Clear the cookies and do a new request
-    app = TestApp(SessionMiddleware(simple_app, **options))
+    app = WebTestApp(SessionMiddleware(simple_app, **options))
     res = app.get('/')
     assert 'current value is: 1' in res
 

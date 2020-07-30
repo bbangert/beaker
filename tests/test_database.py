@@ -4,12 +4,12 @@ from beaker._compat import u_
 from beaker.cache import clsmap, Cache, util
 from beaker.exceptions import InvalidCacheBackendError
 from beaker.middleware import CacheMiddleware
-from nose import SkipTest
+from unittest import SkipTest
 
 try:
-    from webtest import TestApp
+    from webtest import TestApp as WebTestApp
 except ImportError:
-    TestApp = None
+    WebTestApp = None
 
 
 try:
@@ -57,30 +57,30 @@ def test_has_key():
     cache = Cache('test', data_dir='./cache', url=db_url, type='ext:database')
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
     assert "test" in cache
-    assert not cache.has_key("foo")
+    assert "test" in cache
+    assert "foo" not in cache
     assert "foo" not in cache
     cache.remove_value("test")
-    assert not cache.has_key("test")
+    assert "test" not in cache
 
 def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', url=db_url, type='ext:database')
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
+    assert "test" in cache
     assert "test" in cache
     cache = Cache('test', data_dir='./cache', url=db_url, type='ext:database')
-    assert cache.has_key("test")
+    assert "test" in cache
     cache.remove_value('test')
 
 def test_clear():
     cache = Cache('test', data_dir='./cache', url=db_url, type='ext:database')
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
+    assert "test" in cache
     cache.clear()
-    assert not cache.has_key("test")
+    assert "test" not in cache
 
 def test_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=db_url, type='ext:database')
@@ -91,9 +91,9 @@ def test_unicode_keys():
     cache.remove_value(u_('hiŏ'))
     assert u_('hiŏ') not in cache
 
-@util.skip_if(lambda: TestApp is None, "webtest not installed")
+@util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_increment():
-    app = TestApp(CacheMiddleware(simple_app))
+    app = WebTestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.clear':True})
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -101,9 +101,9 @@ def test_increment():
     res = app.get('/')
     assert 'current value is: 3' in res
 
-@util.skip_if(lambda: TestApp is None, "webtest not installed")
+@util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_cache_manager():
-    app = TestApp(CacheMiddleware(cache_manager_app))
+    app = WebTestApp(CacheMiddleware(cache_manager_app))
     res = app.get('/')
     assert 'test_key is: test value' in res
     assert 'test_key cleared' in res

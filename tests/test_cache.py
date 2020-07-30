@@ -10,15 +10,15 @@ import time
 from beaker.middleware import CacheMiddleware
 from beaker import util
 from beaker.cache import Cache
-from nose import SkipTest
+from unittest import SkipTest
 from beaker.util import skip_if
 import base64
 import zlib
 
 try:
-    from webtest import TestApp
+    from webtest import TestApp as WebTestApp
 except ImportError:
-    TestApp = None
+    WebTestApp = None
 
 # Tarballs of the output of:
 # >>> from beaker.cache import Cache
@@ -202,9 +202,9 @@ def test_multi_keys():
     assert 'howdy' == cache.get_value('key2', createfunc=create_func)
     assert called == {}
 
-@skip_if(lambda: TestApp is None, "webtest not installed")
+@skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_increment():
-    app = TestApp(CacheMiddleware(simple_app))
+    app = WebTestApp(CacheMiddleware(simple_app))
     res = app.get('/', extra_environ={'beaker.type':type, 'beaker.clear':True})
     assert 'current value is: 1' in res
     res = app.get('/')
@@ -212,9 +212,9 @@ def test_increment():
     res = app.get('/')
     assert 'current value is: 3' in res
 
-@skip_if(lambda: TestApp is None, "webtest not installed")
+@skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_cache_manager():
-    app = TestApp(CacheMiddleware(cache_manager_app))
+    app = WebTestApp(CacheMiddleware(cache_manager_app))
     res = app.get('/')
     assert 'test_key is: test value' in res
     assert 'test_key cleared' in res
@@ -300,6 +300,6 @@ def _test_upgrade_setitem(dir):
     assert cache['foo'] == 'bar'
 
 
-def teardown():
+def teardown_module():
     import shutil
     shutil.rmtree('./cache', True)

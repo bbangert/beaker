@@ -1,14 +1,13 @@
 import time
 from datetime import datetime
 
-import beaker.cache as cache
 from beaker.cache import CacheManager, cache_region, region_invalidate
 from beaker import util
-from nose import SkipTest
+from unittest import SkipTest
 
 defaults = {'cache.data_dir':'./cache', 'cache.type':'dbm', 'cache.expire': 2}
 
-def teardown():
+def teardown_module():
     import shutil
     shutil.rmtree('./cache', True)
 

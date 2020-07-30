@@ -1,6 +1,5 @@
 from beaker.middleware import SessionMiddleware
 from beaker.session import Session
-from nose.tools import *
 import datetime
 import re
 
@@ -18,7 +17,7 @@ def test_cookie_expires():
         datetime.timedelta(minutes=5), now]
 
     expected = [datetime.timedelta(seconds=300),
-            datetime.timedelta(seconds=300), 
+            datetime.timedelta(seconds=300),
             True, True, True, True,
             False, False, False, False,
             datetime.timedelta(minutes=5), now]
@@ -31,7 +30,7 @@ def test_cookie_expires():
             val = s.options['cookie_expires']
         except:
             val = None
-        assert_equal(val, expected[pos])
+        assert val == expected[pos]
 
 
 def cookie_expiration(session):
