@@ -17,8 +17,8 @@ extended with database support.
 
 Beaker includes Cache and Session WSGI middleware to ease integration with
 WSGI capable frameworks, and is automatically used by `Pylons
-<http://www.pylonsproject.org/projects/pylons-framework/about>`_ and 
-`TurboGears <http://www.turbogears.org/>`_.
+<https://pylonsproject.org/about-pylons-framework.html>`_ and 
+`TurboGears <https://www.turbogears.org/>`_.
 
 
 Features
@@ -44,7 +44,7 @@ Documentation
 =============
 
 Documentation can be found on the `Official Beaker Docs site
-<https://beaker.readthedocs.org/>`_.
+<https://beaker.readthedocs.io/en/latest/>`_.
 
 
 Source
