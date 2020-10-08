@@ -437,6 +437,7 @@ class Session(_ConfigurableSession):
                 self.is_new = True
 
             if self.timeout is not None and \
+               '_accessed_time' in session_data and \
                now - session_data['_accessed_time'] > self.timeout:
                 timed_out = True
             else:
