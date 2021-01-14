@@ -43,7 +43,13 @@ f3_test_params = [
         'args': [1],
         'kwargs': {'c': 5},
         'expected': {'a': 1, 'b': 2, 'c': 5}
+    },
+    {
+        'args': [1],
+        'kwargs': {'c': 5, 'b': 2},
+        'expected': {'a': 1, 'b': 2, 'c': 5}
     }
+
 ]
 
 def test_func_params_serializer():
