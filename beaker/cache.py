@@ -498,7 +498,7 @@ class CacheManager(object):
 
         """
         args_to_ignore = kwargs.pop('args_to_ignore', [])
-        return _cache_decorate(args, self, kwargs, None, args_to_ignore)
+        return _cache_decorate(args, self, kwargs, None, args_to_ignore=args_to_ignore)
 
     def invalidate(self, func, *args, **kwargs):
         """Invalidate a cache decorated function
@@ -603,7 +603,6 @@ def _cache_decorate(deco_args, manager, options, region, ignore_self=True, args_
 
     def decorate(func):
         namespace = util.func_namespace(func)
-        signature = func_signature(func)
         args_to_ign = args_to_ignore
         if ignore_self:
             self_arg = util.get_self_arg(func)
@@ -630,7 +629,6 @@ def _cache_decorate(deco_args, manager, options, region, ignore_self=True, args_
 
             cache_key_kwargs = params_serializer(*args, **kwargs)
             cache_key_args = cache_key_kwargs.values()
-
             cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args)))
 
             if region:
