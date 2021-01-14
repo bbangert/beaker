@@ -101,6 +101,16 @@ def has_self_arg(func):
     else:
         return False
 
+def get_self_arg(func):
+    """Returns the name of the first argument if it is a self arg ('self' or 'cls);
+    otherwise None
+    """
+    args = list(func_signature(func).parameters)
+    if args and args[0] in ('self', 'cls'):
+        return args[0]
+    else:
+        return None
+
 
 def warn(msg, stacklevel=3):
     """Issue a warning."""

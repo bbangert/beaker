@@ -8,6 +8,7 @@ as well as the function decorators :func:`.region_decorate`,
 """
 import warnings
 from itertools import chain
+from collections import OrderedDict
 
 from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
 import beaker.container as container
@@ -496,7 +497,8 @@ class CacheManager(object):
             positional arguments.
 
         """
-        return _cache_decorate(args, self, kwargs, None)
+        args_to_ignore = kwargs.pop('args_to_ignore', [])
+        return _cache_decorate(args, self, kwargs, None, args_to_ignore)
 
     def invalidate(self, func, *args, **kwargs):
         """Invalidate a cache decorated function
@@ -542,15 +544,70 @@ class CacheManager(object):
         _cache_decorator_invalidate(cache, key_length, args)
 
 
-def _cache_decorate(deco_args, manager, options, region):
+def make_params_serializer(func, args_to_ignore=[]):
+    """Returns a function that will serialize the args and kwargs
+    passed when calling `func`.
+
+    :param func: The function whose args we want to serialize
+
+    :param args_to_ignore: List of string representing the names of the arguments
+        we want to ignore in the generated function call signature
+
+    The returned function
+     - takes as input the *args and **kwargs of a `func` call.
+     - returns an OrderedDict mapping each argument name to its call value, excluding
+        arguments whose name is in the `args_to_ignore` list.
+
+    Example:
+
+        def f1(a, b=2):
+            return a + b
+
+        func_params_serializer(f1)(2, b=4)
+
+        -> {'a': 2, 'b': 4}
+    """
+    func_sig = func_signature(func)
+
+    func_sig_dict = OrderedDict(
+        [
+            (p.name, p.default)
+            for p in func_sig.parameters.values()
+        ]
+    )
+
+    def serializer(*args, **kwargs):
+        # check that args and kwargs are compatible with func
+        func_sig.bind(*args, **kwargs)
+
+        args_dict = dict(zip(func_sig_dict.keys(), args))
+        kwargs_dict = {
+            name: kwargs.get(name, default)
+            for name, default in func_sig_dict.items()
+            if name not in args_dict
+        }
+        full_serialization = {}
+        full_serialization.update(args_dict)
+        full_serialization.update(kwargs_dict)
+        return {
+            k: v for k, v in full_serialization.items()
+            if k not in args_to_ignore
+        }
+    return serializer
+
+
+def _cache_decorate(deco_args, manager, options, region, ignore_self=True, args_to_ignore=[]):
     """Return a caching function decorator."""
 
     cache = [None]
 
     def decorate(func):
-        namespace = util.func_namespace(func)
-        skip_self = util.has_self_arg(func)
         signature = func_signature(func)
+        if ignore_self:
+            self_arg = util.get_self_arg(signature)
+            if self_arg:
+                args_to_ignore = args_to_ignore.extend([self_arg])
+        params_serializer = make_params_serializer(func, args_to_ignore)
 
         @wraps(func)
         def cached(*args, **kwargs):
@@ -569,18 +626,9 @@ def _cache_decorate(deco_args, manager, options, region):
                     raise Exception("'manager + kwargs' or 'region' "
                                     "argument is required")
 
-            cache_key_kwargs = []
-            if kwargs:
-                # kwargs provided, merge them in positional args
-                # to avoid having different cache keys.
-                args, kwargs = bindfuncargs(signature, args, kwargs)
-                cache_key_kwargs = [u_(':').join((u_(key), u_(value))) for key, value in kwargs.items()]
+            cache_key_args = params_serializer(*args, **kwargs)
 
-            cache_key_args = args
-            if skip_self:
-                cache_key_args = args[1:]
-
-            cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args, cache_key_kwargs)))
+            cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args)))
 
             if region:
                 cachereg = cache_regions[region]
