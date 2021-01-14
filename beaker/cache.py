@@ -600,16 +600,15 @@ def _cache_decorate(deco_args, manager, options, region, ignore_self=True, args_
     """Return a caching function decorator."""
 
     cache = [None]
-    # why do I need to do this ?
-    args_to_ign = args_to_ignore
 
     def decorate(func):
         namespace = util.func_namespace(func)
         signature = func_signature(func)
+        args_to_ign = args_to_ignore
         if ignore_self:
             self_arg = util.get_self_arg(func)
             if self_arg:
-                args_to_ignore = args_to_ign.extend([self_arg])
+                args_to_ign.append(self_arg)
         params_serializer = make_params_serializer(func, args_to_ign)
 
         @wraps(func)
