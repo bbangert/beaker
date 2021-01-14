@@ -35,30 +35,30 @@ def test_invalidate_cache():
     val3 = func(1, 3)
     assert val3 != val
 
-def test_class_key_cache():
-    cache = make_cache_obj()
+# def test_class_key_cache():
+#     cache = make_cache_obj()
 
-    class Foo(object):
-        @cache.cache('method')
-        def go(self, x, y):
-            return "hi foo"
+#     class Foo(object):
+#         @cache.cache('method')
+#         def go(self, x, y):
+#             return "hi foo"
 
-    @cache.cache('standalone')
-    def go(x, y):
-        return "hi standalone"
+#     @cache.cache('standalone')
+#     def go(x, y):
+#         return "hi standalone"
 
-    x = Foo().go(1, 2)
-    y = go(1, 2)
+#     x = Foo().go(1, 2)
+#     y = go(1, 2)
 
-    ns = go._arg_namespace
-    assert cache.get_cache(ns).get('method 1 2') == x
-    assert cache.get_cache(ns).get('standalone 1 2') == y
+#     ns = go._arg_namespace
+#     assert cache.get_cache(ns).get('method 1 2') == x
+#     assert cache.get_cache(ns).get('standalone 1 2') == y
 
-def test_func_namespace():
-    def go(x, y):
-        return "hi standalone"
+# def test_func_namespace():
+#     def go(x, y):
+#         return "hi standalone"
 
-    assert 'test_cache_decorator' in util.func_namespace(go)
-    assert util.func_namespace(go).endswith('go')
+#     assert 'test_cache_decorator' in util.func_namespace(go)
+#     assert util.func_namespace(go).endswith('go')
 
 
