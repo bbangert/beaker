@@ -629,7 +629,8 @@ def _cache_decorate(deco_args, manager, options, region, ignore_self=True, args_
                     raise Exception("'manager + kwargs' or 'region' "
                                     "argument is required")
 
-            cache_key_args = params_serializer(*args, **kwargs)
+            cache_key_kwargs = params_serializer(*args, **kwargs)
+            cache_key_args = cache_key_kwargs.values()
 
             cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args)))
 
