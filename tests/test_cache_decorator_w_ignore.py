@@ -58,3 +58,27 @@ def test_both_include_exclude():
         assert False
     except TypeError:
         pass
+
+def make_cached_method():
+    cache = make_cache_obj()
+
+    class Computer:
+        def __init__(self, a):
+            self.a = a
+
+        @cache.cache(exclude_self=False)
+        def add(self, b):
+            return "Hi there, my result is %d" % (self.a+b)
+
+    return cache, Computer
+
+
+def test_dont_exclude_self():
+    cache, A = make_cached_method()
+
+    a1 = A(1)
+    a2 = A(2)
+
+    val1 = a1.add(1)
+    val2 = a2.add(1)
+    assert val1 != val2
