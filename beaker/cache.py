@@ -568,7 +568,6 @@ def make_params_serializer(func, args_to_ignore=[]):
         -> {'a': 2, 'b': 4}
     """
     func_sig = func_signature(func)
-
     func_sig_dict = OrderedDict(
         [
             (p.name, p.default)
@@ -580,19 +579,22 @@ def make_params_serializer(func, args_to_ignore=[]):
         # check that args and kwargs are compatible with func
         func_sig.bind(*args, **kwargs)
 
-        args_dict = dict(zip(func_sig_dict.keys(), args))
-        kwargs_dict = {
-            name: kwargs.get(name, default)
+        args_dict = OrderedDict(zip(func_sig_dict.keys(), args))
+        kwargs_dict = OrderedDict([
+            (name, kwargs.get(name, default))
             for name, default in func_sig_dict.items()
             if name not in args_dict
-        }
-        full_serialization = {}
+        ])
+        full_serialization = OrderedDict()
         full_serialization.update(args_dict)
         full_serialization.update(kwargs_dict)
-        return {
-            k: v for k, v in full_serialization.items()
-            if k not in args_to_ignore
-        }
+        return OrderedDict(
+            [
+                (k, v)
+                for k, v in full_serialization.items()
+                if k not in args_to_ignore
+            ]
+        )
     return serializer
 
 
