@@ -74,11 +74,11 @@ def make_cached_method():
 
 
 def test_dont_exclude_self():
-    cache, A = make_cached_method()
+    cache, Computer = make_cached_method()
 
-    a1 = A(1)
-    a2 = A(2)
+    c1 = Computer(1)
+    c2 = Computer(2)
 
-    val1 = a1.add(1)
-    val2 = a2.add(1)
+    val1 = c1.add(1)
+    val2 = c2.add(1)
     assert val1 != val2
