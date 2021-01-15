@@ -6,8 +6,7 @@ def test_serializer_simple_fun():
     def f0():
         pass
 
-    f0_serializer = serialize_params(f0)
-    assert f0_serializer() == {}
+    assert serialize_params(f0) == {}
 
 
 f1_test_params = [
