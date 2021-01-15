@@ -497,8 +497,13 @@ class CacheManager(object):
             positional arguments.
 
         """
-        args_to_ignore = kwargs.pop('args_to_ignore', [])
-        return _cache_decorate(args, self, kwargs, None, args_to_ignore=args_to_ignore)
+        args_to_include = kwargs.pop('args_to_include', [])
+        args_to_exclude = kwargs.pop('args_to_exclude', [])
+        return _cache_decorate(
+            args, self, kwargs, None,
+            args_to_include=args_to_include,
+            args_to_exclude=args_to_exclude
+        )
 
     def invalidate(self, func, *args, **kwargs):
         """Invalidate a cache decorated function
@@ -544,7 +549,7 @@ class CacheManager(object):
         _cache_decorator_invalidate(cache, key_length, args)
 
 
-def make_params_serializer(func, args_to_ignore=[]):
+def make_params_serializer(func, args_to_include=None, args_to_exclude=None):
     """Returns a function that will serialize the args and kwargs
     passed when calling `func`.
 
@@ -598,19 +603,30 @@ def make_params_serializer(func, args_to_ignore=[]):
     return serializer
 
 
-def _cache_decorate(deco_args, manager, options, region, ignore_self=True, args_to_ignore=[]):
+def _cache_decorate(
+    deco_args, manager, options, region, ignore_self=True,
+    args_to_include=None, args_to_exclude=None
+):
     """Return a caching function decorator."""
+
+    if args_to_include is not None and args_to_exclude is not None:
+        raise TypeError(
+            'The cache decorator cannot use `args_to_include` and'
+            ' `args_to_exclude at the same time`'
+        )
 
     cache = [None]
 
     def decorate(func):
         namespace = util.func_namespace(func)
-        args_to_ign = args_to_ignore
+        args_to_in = args_to_include
+        args_to_ex = args_to_exclude
+
         if ignore_self:
             self_arg = util.get_self_arg(func)
             if self_arg:
-                args_to_ign.append(self_arg)
-        params_serializer = make_params_serializer(func, args_to_ign)
+                args_to_in.append(self_arg)
+        params_serializer = make_params_serializer(func, args_to_in)
 
         @wraps(func)
         def cached(*args, **kwargs):
