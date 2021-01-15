@@ -499,8 +499,10 @@ class CacheManager(object):
         """
         args_to_include = kwargs.pop('args_to_include', None)
         args_to_exclude = kwargs.pop('args_to_exclude', None)
+        exclude_self = kwargs.pop('exclude_self', True)
         return _cache_decorate(
             args, self, kwargs, None,
+            exclude_self=exclude_self,
             args_to_include=args_to_include,
             args_to_exclude=args_to_exclude
         )
