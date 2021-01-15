@@ -497,8 +497,8 @@ class CacheManager(object):
             positional arguments.
 
         """
-        args_to_include = kwargs.pop('args_to_include', [])
-        args_to_exclude = kwargs.pop('args_to_exclude', [])
+        args_to_include = kwargs.pop('args_to_include', None)
+        args_to_exclude = kwargs.pop('args_to_exclude', None)
         return _cache_decorate(
             args, self, kwargs, None,
             args_to_include=args_to_include,
@@ -549,26 +549,24 @@ class CacheManager(object):
         _cache_decorator_invalidate(cache, key_length, args)
 
 
-def make_params_serializer(func, args_to_include=None, args_to_exclude=None):
-    """Returns a function that will serialize the args and kwargs
-    passed when calling `func`.
+def serialize_params(func, args=[], kwargs={}):
+    """Returns the full dict serialization of the arguments passed to `func`
+    when the given `args` and `kwargs` are provided.
 
     :param func: The function whose args we want to serialize
 
-    :param args_to_ignore: List of string representing the names of the arguments
-        we want to ignore in the generated function call signature
+    :param args: The args to serialize
 
-    The returned function
-     - takes as input the *args and **kwargs of a `func` call.
-     - returns an OrderedDict mapping each argument name to its call value, excluding
-        arguments whose name is in the `args_to_ignore` list.
+    :param kwargs: The kwargs to serialize
+
+     returns an OrderedDict mapping each argument name to its call value
 
     Example:
 
         def f1(a, b=2):
             return a + b
 
-        func_params_serializer(f1)(2, b=4)
+        serialize_params(f1, (2,), {'b': 4})
 
         -> {'a': 2, 'b': 4}
     """
@@ -579,32 +577,23 @@ def make_params_serializer(func, args_to_include=None, args_to_exclude=None):
             for p in func_sig.parameters.values()
         ]
     )
+    # check that func is compatible with given arguments
+    func_sig.bind(*args, **kwargs)
 
-    def serializer(*args, **kwargs):
-        # check that args and kwargs are compatible with func
-        func_sig.bind(*args, **kwargs)
-
-        args_dict = OrderedDict(zip(func_sig_dict.keys(), args))
-        kwargs_dict = OrderedDict([
-            (name, kwargs.get(name, default))
-            for name, default in func_sig_dict.items()
-            if name not in args_dict
-        ])
-        full_serialization = OrderedDict()
-        full_serialization.update(args_dict)
-        full_serialization.update(kwargs_dict)
-        return OrderedDict(
-            [
-                (k, v)
-                for k, v in full_serialization.items()
-                if k not in args_to_ignore
-            ]
-        )
-    return serializer
+    args_dict = OrderedDict(zip(func_sig_dict.keys(), args))
+    kwargs_dict = OrderedDict([
+        (name, kwargs.get(name, default))
+        for name, default in func_sig_dict.items()
+        if name not in args_dict
+    ])
+    full_serialization = OrderedDict()
+    full_serialization.update(args_dict)
+    full_serialization.update(kwargs_dict)
+    return full_serialization
 
 
 def _cache_decorate(
-    deco_args, manager, options, region, ignore_self=True,
+    deco_args, manager, options, region, exclude_self=True,
     args_to_include=None, args_to_exclude=None
 ):
     """Return a caching function decorator."""
@@ -612,21 +601,21 @@ def _cache_decorate(
     if args_to_include is not None and args_to_exclude is not None:
         raise TypeError(
             'The cache decorator cannot use `args_to_include` and'
-            ' `args_to_exclude at the same time`'
+            ' `args_to_exclude` at the same time`'
         )
+    if args_to_include is not None:
+        exclude_self = False
 
     cache = [None]
+    args_to_exclude = list(args_to_exclude) if args_to_exclude is not None else []
 
     def decorate(func):
         namespace = util.func_namespace(func)
-        args_to_in = args_to_include
-        args_to_ex = args_to_exclude
 
-        if ignore_self:
+        if exclude_self:
             self_arg = util.get_self_arg(func)
             if self_arg:
-                args_to_in.append(self_arg)
-        params_serializer = make_params_serializer(func, args_to_in)
+                args_to_exclude.append(self_arg)
 
         @wraps(func)
         def cached(*args, **kwargs):
@@ -645,7 +634,19 @@ def _cache_decorate(
                     raise Exception("'manager + kwargs' or 'region' "
                                     "argument is required")
 
-            cache_key_kwargs = params_serializer(*args, **kwargs)
+            cache_key_kwargs = serialize_params(func, args, kwargs)
+            # do we really want to factorize this ?
+            if args_to_include is not None:
+                cache_key_kwargs = OrderedDict([
+                    (k, v) for k, v in cache_key_kwargs.items()
+                    if k in args_to_include
+                ])
+            if args_to_exclude is not None:
+                cache_key_kwargs = OrderedDict([
+                    (k, v) for k, v in cache_key_kwargs.items()
+                    if k not in args_to_exclude
+                ])
+
             cache_key_args = cache_key_kwargs.values()
             cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args)))
 

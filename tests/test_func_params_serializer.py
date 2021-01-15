@@ -1,12 +1,12 @@
 import pytest
-from beaker.cache import make_params_serializer
+from beaker.cache import serialize_params
 
 def test_serializer_simple_fun():
 
     def f0():
         pass
 
-    f0_serializer = make_params_serializer(f0)
+    f0_serializer = serialize_params(f0)
     assert f0_serializer() == {}
 
 
@@ -22,8 +22,7 @@ def test_serializer_args_fun(args, expected):
     def f1(a, b):
         pass
 
-    f1_serializer = make_params_serializer(f1)
-    assert f1_serializer(*args) == expected
+    assert serialize_params(f1, args) == expected
 
 
 f2_test_params = [
@@ -61,5 +60,4 @@ def test_serializer_generic(args, kwargs, expected):
     def f2(a, b, c=3):
         pass
 
-    f2_serializer = make_params_serializer(f2)
-    assert f2_serializer(*args, **kwargs) == expected
+    assert serialize_params(f2, args, kwargs) == expected
