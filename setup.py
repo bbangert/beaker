@@ -23,7 +23,7 @@ if not hasattr(inspect, 'signature'):
     INSTALL_REQUIRES.append('funcsigs')
 
 
-TESTS_REQUIRE = ['pytest', 'Mock', 'pycryptodome']
+TESTS_REQUIRE = ['pytest', 'Mock', 'pycryptodomex']
 
 if py_version == (2, 6):
     TESTS_REQUIRE.append('WebTest<2.0.24')
@@ -90,7 +90,7 @@ setup(name='Beaker',
       extras_require={
           'crypto': ['pycryptopp>=0.5.12'],
           'pycrypto': ['pycrypto'],
-          'pycryptodome': ['pycryptodome'],
+          'pycryptodome': ['pycryptodomex'],
           'cryptography': ['cryptography'],
           'testsuite': [TESTS_REQUIRE]
       },
