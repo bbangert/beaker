@@ -20,3 +20,4 @@ jyenv/
 pypyenv/
 env*/
 tests/test.db
+/.eggs/
