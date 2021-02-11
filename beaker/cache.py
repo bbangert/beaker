@@ -569,7 +569,7 @@ def _cache_decorate(deco_args, manager, options, region):
                 return True
         return False
 
-    def _find_cache(namespace, region, **options):
+    def _find_cache(namespace, region, options):
         if region is not None:
             reg = _get_cache_region(region)
             return Cache._get_cache(namespace, reg)
@@ -624,7 +624,7 @@ def _cache_decorate(deco_args, manager, options, region):
                     return await func(*args, **kwargs)
 
                 if not cache[0]:
-                    cache[0] = _find_cache(namespace, region, **options)
+                    cache[0] = _find_cache(namespace, region, options)
 
                 key_length = _determine_key_length(region, options)
                 cache_key = _determine_cache_key(key_length, *args, **kwargs)
@@ -642,7 +642,7 @@ def _cache_decorate(deco_args, manager, options, region):
                     return func(*args, **kwargs)
 
                 if not cache[0]:
-                    cache[0] = _find_cache(namespace, region, **options)
+                    cache[0] = _find_cache(namespace, region, options)
 
                 key_length = _determine_key_length(region, options)
                 cache_key = _determine_cache_key(key_length, *args, **kwargs)
