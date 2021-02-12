@@ -8,6 +8,7 @@ as well as the function decorators :func:`.region_decorate`,
 """
 import inspect
 import warnings
+import sys
 from itertools import chain
 
 from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
@@ -323,10 +324,11 @@ class Cache(object):
         return self._get_value(key, **kw).get_value()
     get_value = get
 
-    async def aget(self, key, **kw):
-        """Retrieve a cached value from the container"""
-        return await self._get_value(key, **kw).aget_value()
-    aget_value = aget
+    if sys.version_info[0] == 3 and sys.version_info[1] > 4:
+        async def aget(self, key, **kw):
+            """Retrieve a cached value from the container"""
+            return await self._get_value(key, **kw).aget_value()
+        aget_value = aget
 
     def remove_value(self, key, **kw):
         mycontainer = self._get_value(key, **kw)

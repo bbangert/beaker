@@ -6,6 +6,7 @@ from ._compat import pickle, anydbm, add_metaclass, PYVER, unicode_text
 import beaker.util as util
 import logging
 import os
+import sys
 import time
 
 from beaker.exceptions import CreationAbortedError, MissingCacheParameter
@@ -383,27 +384,28 @@ class Value(object):
             creation_lock.release()
             debug("released create lock")
 
-    async def aget_value(self):
-        has_value, value = self._check_cache()
-        if has_value is None:
-            return value
-
-        creation_lock, value = self._creation_lock_or_value(has_value)
-        if creation_lock is None:
-            return value
-
-        try:
+    if sys.version_info[0] == 3 and sys.version_info[1] > 4:
+        async def aget_value(self):
             has_value, value = self._check_cache()
             if has_value is None:
                 return value
 
-            debug("get_value creating new value")
-            v = await self.createfunc()
-            self.set_value(v)
-            return v
-        finally:
-            creation_lock.release()
-            debug("released create lock")
+            creation_lock, value = self._creation_lock_or_value(has_value)
+            if creation_lock is None:
+                return value
+
+            try:
+                has_value, value = self._check_cache()
+                if has_value is None:
+                    return value
+
+                debug("get_value creating new value")
+                v = await self.createfunc()
+                self.set_value(v)
+                return v
+            finally:
+                creation_lock.release()
+                debug("released create lock")
 
     def _get_value(self):
         value = self.namespace[self.key]
