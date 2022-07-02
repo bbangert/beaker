@@ -3,7 +3,7 @@ import nss.nss
 
 nss.nss.nss_init_nodb()
 
-# Apparently the rest of beaker doesn't care about the particluar cipher,
+# Apparently the rest of beaker doesn't care about the particular cipher,
 # mode and padding used.
 # NOTE: A constant IV!!! This is only secure if the KEY is never reused!!!
 _mech = nss.nss.CKM_AES_CBC_PAD

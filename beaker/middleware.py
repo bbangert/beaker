@@ -31,7 +31,7 @@ class CacheMiddleware(object):
             setups that accumulate multiple component settings in a
             single dictionary. If config contains *no cache. prefixed
             args*, then *all* of the config options will be used to
-            intialize the Cache objects.
+            initialize the Cache objects.
 
         ``environ_key``
             Location where the Cache instance will keyed in the WSGI
@@ -91,7 +91,7 @@ class SessionMiddleware(object):
             setups that accumulate multiple component settings in a
             single dictionary. If config contains *no session. prefixed
             args*, then *all* of the config options will be used to
-            intialize the Session objects.
+            initialize the Session objects.
 
         ``environ_key``
             Location where the Session instance will keyed in the WSGI
