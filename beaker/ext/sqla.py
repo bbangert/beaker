@@ -70,16 +70,16 @@ class SqlaNamespaceManager(OpenResourceNamespaceManager):
         if self.loaded:
             self.flags = flags
             return
-        select = sa.select([self.table.c.data],
-                           (self.table.c.namespace == self.namespace))
-        result = self.bind.execute(select).fetchone()
+        select = sa.select(self.table.c.data).where(self.table.c.namespace == self.namespace)
+        with self.bind.connect() as conn:
+            result = conn.execute(select).fetchone()
         if not result:
             self._is_new = True
             self.hash = {}
         else:
             self._is_new = False
             try:
-                self.hash = result['data']
+                self.hash = result.data
             except (IOError, OSError, EOFError, pickle.PickleError,
                     pickle.PickleError):
                 log.debug("Couln't load pickle data, creating new storage")
@@ -90,19 +90,21 @@ class SqlaNamespaceManager(OpenResourceNamespaceManager):
 
     def do_close(self):
         if self.flags is not None and (self.flags == 'c' or self.flags == 'w'):
-            if self._is_new:
-                insert = self.table.insert()
-                self.bind.execute(insert, namespace=self.namespace, data=self.hash,
-                                  accessed=datetime.now(), created=datetime.now())
-                self._is_new = False
-            else:
-                update = self.table.update(self.table.c.namespace == self.namespace)
-                self.bind.execute(update, data=self.hash, accessed=datetime.now())
+            with self.bind.begin() as conn:
+                if self._is_new:
+                    insert = self.table.insert()
+                    conn.execute(insert, dict(namespace=self.namespace, data=self.hash,
+                                              accessed=datetime.now(), created=datetime.now()))
+                    self._is_new = False
+                else:
+                    update = self.table.update().where(self.table.c.namespace == self.namespace)
+                    conn.execute(update, dict(data=self.hash, accessed=datetime.now()))
         self.flags = None
 
     def do_remove(self):
-        delete = self.table.delete(self.table.c.namespace == self.namespace)
-        self.bind.execute(delete)
+        delete = self.table.delete().where(self.table.c.namespace == self.namespace)
+        with self.bind.begin() as conn:
+            conn.execute(delete)
         self.hash = {}
         self._is_new = True
 
