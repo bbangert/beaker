@@ -1,3 +1,21 @@
+"""Provide a crypto object, depending on the available modules.
+
+The object has this interface:
+
+aesEncrypt(DATA, KEY)
+  Encrypt the DATA with key KEY.
+
+aesDecrypt(DATA, KEY):
+  Decrypt the DATA with key KEY.
+
+has_aes
+  True if the encryption provides AES encryption.
+
+getKeyLength()
+  Return the maximum size for keys for this crypto object, in bytes.
+
+"""
+
 from .._compat import JYTHON
 
 
@@ -13,7 +31,11 @@ CRYPTO_MODULES = {}
 
 
 def load_default_module():
-    """ Load the default crypto module
+    """Load the default crypto module and return it.
+
+    Note: if no crypto module is available, return a dummy module
+    which does not encrypt at all.
+
     """
     if JYTHON:
         try:
