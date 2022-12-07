@@ -10,10 +10,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: locales language-pack-it
-          execute_install_scripts: true
+      - name: Install locales
+        run: sudo apt-get install -y locales language-pack-it
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
