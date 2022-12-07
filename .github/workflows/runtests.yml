@@ -13,6 +13,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: locales language-pack-it
+          execute_install_scripts: true
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
