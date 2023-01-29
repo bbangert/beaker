@@ -43,6 +43,8 @@ class DatabaseNamespaceManager(SqlaNamespaceManager):
         ``schema_name``
             The schema name to use in the database for the cache.
         """
+        OpenResourceNamespaceManager.__init__(self, namespace)
+        
         if sa_opts is None:
             sa_opts = {}
 
