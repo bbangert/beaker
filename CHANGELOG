@@ -1,3 +1,17 @@
+Release 1.12.1 (2023-01-04)
+===========================
+
+* Fix ext:database backend failing to initialize.
+* Improved inline code documentation for the crypto module.
+
+Release 1.12.0 (2022-12-07)
+===========================
+
+* Enabled testing on Python 3.10 and 3.11
+* Fixed issue #122 - Session ignores deserializer json
+* Remove ID generation fallback for when the uuid module is not found
+* Port testing from nose to pytest
+* Fixed issue #180 - KeyError when loading deleted session
 
 Release 1.11.0 (2019-08-26)
 ===========================
