@@ -23,7 +23,7 @@ if not hasattr(inspect, 'signature'):
     INSTALL_REQUIRES.append('funcsigs')
 
 
-TESTS_REQUIRE = ['pytest', 'Mock', 'pycryptodome']
+TESTS_REQUIRE = ['pytest', 'pycryptodome']
 
 if py_version == (2, 6):
     TESTS_REQUIRE.append('WebTest<2.0.24')
