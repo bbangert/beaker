@@ -1,7 +1,7 @@
 # coding: utf-8
 from beaker._compat import u_
 
-from unittest.mock import Mock
+import unittest.mock
 
 from beaker.cache import Cache, CacheManager, util
 from beaker.middleware import CacheMiddleware, SessionMiddleware
@@ -291,9 +291,9 @@ class TestPylibmcInit(unittest.TestCase):
 
     def test_dont_use_pylibmc_client(self):
         from beaker.ext.memcached import _load_client
-        load_mock = Mock()
+        load_mock = unittest.mock.Mock()
         load_mock.return_value = _load_client('memcache')
-        with mock.patch('beaker.ext.memcached._load_client', load_mock):
+        with unittest.mock.patch('beaker.ext.memcached._load_client', load_mock):
             cache = Cache('test', data_dir='./cache', url=mc_url, type="ext:memcached")
             assert not isinstance(cache.namespace, memcached.PyLibMCNamespaceManager)
             assert isinstance(cache.namespace, memcached.MemcachedNamespaceManager)
