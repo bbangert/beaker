@@ -1,7 +1,7 @@
 # coding: utf-8
 from beaker._compat import u_
 
-import mock
+import unittest.mock
 
 from beaker.cache import Cache, CacheManager, util
 from beaker.middleware import CacheMiddleware, SessionMiddleware
