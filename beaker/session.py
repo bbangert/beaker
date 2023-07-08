@@ -180,6 +180,7 @@ class Session(_ConfigurableSession):
         self.cookie_expires = cookie_expires
 
         self._set_serializer(data_serializer)
+        self.encode_base64 = False
 
         # Default cookie domain/path
         self.was_invalidated = False
@@ -340,7 +341,7 @@ class Session(_ConfigurableSession):
 
     path = property(_get_path, _set_path)
 
-    def _encrypt_data(self, session_data=None):
+    def _serialize_data(self, session_data=None):
         """Serialize, encipher, and base64 the session dict"""
         session_data = session_data or self.copy()
         if self.encrypt_key:
@@ -352,11 +353,13 @@ class Session(_ConfigurableSession):
                                                     self.crypto_module.getKeyLength())
             data = self.serializer.dumps(session_data)
             return nonce + b64encode(self.crypto_module.aesEncrypt(data, encrypt_key))
-        else:
+        elif self.encode_base64:
             data = self.serializer.dumps(session_data)
             return b64encode(data)
+        else:
+            return session_data
 
-    def _decrypt_data(self, session_data):
+    def _deserialize_data(self, session_data):
         """Base64, decipher, then un-serialize the data for the session
         dict"""
         if self.encrypt_key:
@@ -368,10 +371,12 @@ class Session(_ConfigurableSession):
                                                     self.crypto_module.getKeyLength())
             payload = b64decode(session_data[nonce_b64len:])
             data = self.crypto_module.aesDecrypt(payload, encrypt_key)
-        else:
+            return self.serializer.loads(data)
+        elif self.encode_base64:
             data = b64decode(session_data)
-
-        return self.serializer.loads(data)
+            return self.serializer.loads(data)
+        else:
+            return session_data
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -412,7 +417,7 @@ class Session(_ConfigurableSession):
                 session_data = self.namespace['session']
 
                 if session_data is not None:
-                    session_data = self._decrypt_data(session_data)
+                    session_data = self._deserialize_data(session_data)
 
                 # Memcached always returns a key, its None when its not
                 # present
@@ -487,7 +492,7 @@ class Session(_ConfigurableSession):
             else:
                 data = dict(self.items())
 
-            data = self._encrypt_data(data)
+            data = self._serialize_data(data)
 
             # Save the data
             if not data and 'session' in self.namespace:
@@ -611,6 +616,7 @@ class CookieSession(Session):
         self.samesite = samesite
         self.invalidate_corrupt = invalidate_corrupt
         self._set_serializer(data_serializer)
+        self.encode_base64 = True
 
         try:
             cookieheader = request['cookie']
@@ -644,7 +650,7 @@ class CookieSession(Session):
                 cookie_data = self.cookie[self.key].value
                 if cookie_data is InvalidSignature:
                     raise BeakerException("Invalid signature")
-                self.update(self._decrypt_data(cookie_data))
+                self.update(self._deserialize_data(cookie_data))
             except Exception as e:
                 if self.invalidate_corrupt:
                     util.warn(
@@ -709,7 +715,7 @@ class CookieSession(Session):
             self['_id'] = _session_id()
         self['_accessed_time'] = time.time()
 
-        val = self._encrypt_data()
+        val = self._serialize_data()
         if len(val) > 4064:
             raise BeakerException("Cookie value is too long to store")
 
