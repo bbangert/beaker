@@ -357,7 +357,7 @@ class Session(_ConfigurableSession):
             data = self.serializer.dumps(session_data)
             return b64encode(data)
         else:
-            return session_data
+            return self.serializer.dumps(session_data)
 
     def _deserialize_data(self, session_data):
         """Base64, decipher, then un-serialize the data for the session
@@ -376,7 +376,7 @@ class Session(_ConfigurableSession):
             data = b64decode(session_data)
             return self.serializer.loads(data)
         else:
-            return session_data
+            return self.serializer.loads(session_data)
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
@@ -405,6 +405,7 @@ class Session(_ConfigurableSession):
             data_dir=self.data_dir,
             digest_filenames=False,
             **self.namespace_args)
+        self.namespace.has_serialized_value = True
         now = time.time()
         if self.use_cookies:
             self.request['set_cookie'] = True
@@ -485,6 +486,7 @@ class Session(_ConfigurableSession):
                                     digest_filenames=False,
                                     **self.namespace_args)
 
+        self.namespace.has_serialized_value = True
         self.namespace.acquire_write_lock(replace=True)
         try:
             if accessed_only:
