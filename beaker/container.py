@@ -63,6 +63,7 @@ class NamespaceManager(object):
     def __init__(self, namespace):
         self._init_dependencies()
         self.namespace = namespace
+        self.has_serialized_value = False
 
     def get_creation_lock(self, key):
         """Return a locking object that is used to synchronize
@@ -594,7 +595,7 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
             os.remove(f)
 
     def __getitem__(self, key):
-        return pickle.loads(self.dbm[key])
+        return self.dbm[key] if self.has_serialized_value else pickle.loads(self.dbm[key])
 
     def __contains__(self, key):
         if PYVER == (3, 2):
@@ -605,7 +606,9 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
         return key in self.dbm
 
     def __setitem__(self, key, value):
-        self.dbm[key] = pickle.dumps(value)
+        if not self.has_serialized_value:
+            value = pickle.dumps(value)
+        self.dbm[key] = value
 
     def __delitem__(self, key):
         del self.dbm[key]

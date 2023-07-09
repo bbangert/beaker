@@ -59,7 +59,7 @@ class RedisNamespaceManager(NamespaceManager):
         entry = self.client.get(self._format_key(key))
         if entry is None:
             raise KeyError(key)
-        return pickle.loads(entry)
+        return entry if self.has_serialized_value else pickle.loads(entry)
 
     def __contains__(self, key):
         return self.client.exists(self._format_key(key))
@@ -68,7 +68,8 @@ class RedisNamespaceManager(NamespaceManager):
         return key in self
 
     def set_value(self, key, value, expiretime=None):
-        value = pickle.dumps(value)
+        if not self.has_serialized_value:
+            value = pickle.dumps(value)
         if expiretime is None and self.timeout is not None:
             expiretime = self.timeout
         if expiretime is not None:

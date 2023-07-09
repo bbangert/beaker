@@ -63,7 +63,7 @@ class MongoNamespaceManager(NamespaceManager):
         entry = self.db.backer_cache.find_one({'_id': self._format_key(key)})
         if entry is None:
             raise KeyError(key)
-        return pickle.loads(entry['value'])
+        return entry['value'] if self.has_serialized_value else pickle.loads(entry['value'])
 
     def __contains__(self, key):
         self._clear_expired()
@@ -80,7 +80,8 @@ class MongoNamespaceManager(NamespaceManager):
         if expiretime is not None:
             expiration = time.time() + expiretime
 
-        value = pickle.dumps(value)
+        if not self.has_serialized_value:
+            value = pickle.dumps(value)
         self.db.backer_cache.update_one({'_id': self._format_key(key)},
                                         {'$set': {'value': bson.Binary(value),
                                                   'expiration': expiration}},
