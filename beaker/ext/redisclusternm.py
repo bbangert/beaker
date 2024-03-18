@@ -43,18 +43,21 @@ class RedisClusterNamespaceManager(NamespaceManager):
             raise RuntimeError('redis is not available')
 
         if isinstance(urls, string_type):
+            options = None
             for url in urls.split(','):
                 url_options = redis.connection.parse_url(url)
                 if 'db' in url_options:
-                    raise redis.cluster.RedisClusterException(
+                    raise redis.exceptions.RedisClusterException(
                         "A ``db`` querystring option can only be 0 in cluster mode"
                     )
                 self.nodes.append(redis.cluster.ClusterNode(
-                    host=url_options.get('host'),
-                    port=url_options.get('port')
+                    host=url_options.pop('host'),
+                    port=url_options.pop('port')
                 ))
+                if options is None:
+                    options = url_options
             self.client = RedisClusterNamespaceManager.clients.get(
-                urls, redis.cluster.RedisCluster, startup_nodes=self.nodes
+                urls, redis.cluster.RedisCluster, startup_nodes=self.nodes, **options
             )
         else:
             self.client = urls
