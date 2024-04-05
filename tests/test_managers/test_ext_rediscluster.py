@@ -5,7 +5,7 @@ from . import base
 class TestRedis(base.CacheManagerBaseTests):
     CACHE_ARGS = {
         'type': 'ext:rediscluster',
-        'urls': 'redis://localhost:6379'
+        'urls': 'redis://localhost:5000'
     }
 
     def test_client_reuse(self):
