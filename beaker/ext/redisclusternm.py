@@ -92,7 +92,7 @@ class RedisClusterSynchronizer(RedisSynchronizer):
             )
         else:
             self.client = urls
-        self._release_lock = self.client.register_lua(self.RELEASE_LOCK_LUA)
+        self._release_lock = self.client.register_script(self.RELEASE_LOCK_LUA)
 
     def do_release_write_lock(self):
         identifier = self.identifier
