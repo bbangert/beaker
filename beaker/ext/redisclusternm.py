@@ -75,6 +75,13 @@ class RedisClusterSynchronizer(RedisSynchronizer):
 
     This Synchronizer only supports 1 reader or 1 writer at time, not concurrent readers.
     """
+    RELEASE_LOCK_LUA = """
+        if redis.call('get', KEYS[1]) == ARGV[1] then
+            return redis.call('del', KEYS[1])
+        else
+            return 0
+        end
+    """
 
     def __init__(self, identifier, urls, nodes=None, **kwargs):
         super(RedisSynchronizer, self).__init__()
@@ -85,3 +92,9 @@ class RedisClusterSynchronizer(RedisSynchronizer):
             )
         else:
             self.client = urls
+        self._release_lock = self.client.register_lua(self.RELEASE_LOCK_LUA)
+
+    def do_release_write_lock(self):
+        identifier = self.identifier
+        owner_id = self._get_owner_id()
+        self._release_lock(keys=[identifier], args=[owner_id])
