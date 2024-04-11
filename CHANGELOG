@@ -1,3 +1,10 @@
+Release 1.13.0 (2024-04-11)
+===========================
+
+* Fix validation messages for validate_key and encrypt_key
+* Added support for rediscluster via ext:redisclusternm
+* Removed the need to install mock library to run tests
+
 Release 1.12.1 (2023-01-04)
 ===========================
 
