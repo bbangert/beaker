@@ -458,7 +458,7 @@ class PickleSerializer(object):
         return pickle.loads(data_string)
 
     def dumps(self, data):
-        return pickle.dumps(data, 2)
+        return pickle.dumps(data, 2) if PY2 else pickle.dumps(data)
 
 
 class JsonSerializer(object):
