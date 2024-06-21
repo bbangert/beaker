@@ -28,10 +28,17 @@ if not PY2:  # pragma: no cover
     import http.cookies as http_cookies
     from base64 import b64decode as _b64decode, b64encode as _b64encode
 
+    # this reproduces the default behavior of Python 3.0 to 3.12
+    # Python 3.13 added dbm.sqlite3 as the first choice, but it
+    # doesn't work for us due to threading violations:
+    # https://github.com/bbangert/beaker/issues/242
     try:
-        import dbm as anydbm
+        import dbm.gnu as anydbm
     except:
-        import dumbdbm as anydbm
+        try:
+            import dbm.ndbm as anydbm
+        except:
+            import dbm.dumb as anydbm
 
     def b64decode(b):
         return _b64decode(b.encode('ascii'))
