@@ -486,7 +486,14 @@ def deserialize(data_string, method):
 
 
 def machine_identifier():
-    machine_hash = hashlib.md5()
+    try:
+        machine_hash = hashlib.md5(usedforsecurity=False)
+    except TypeError:
+        # Fall back to earlier version that did not support the 
+        # usedforsecurity parameter. This fallback will not work on
+        # systems configured to enforce Federal Information Processing
+        # Standard (FIPS) compliance.
+        machine_hash = hashlib.md5()
     if not PY2:
         machine_hash.update(socket.gethostname().encode())
     else:
