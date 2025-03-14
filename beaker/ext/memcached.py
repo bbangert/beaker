@@ -16,17 +16,11 @@ def _load_client(name='auto'):
     if name in _client_libs:
         return _client_libs[name]
 
-    def _pylibmc():
-        global pylibmc
-        import pylibmc
-        return pylibmc
-
     def _cmemcache():
         global cmemcache
         import cmemcache
         warnings.warn("cmemcache is known to have serious "
-                    "concurrency issues; consider using 'memcache' "
-                    "or 'pylibmc'")
+                    "concurrency issues; consider using 'memcache' ")
         return cmemcache
 
     def _memcache():
@@ -40,7 +34,7 @@ def _load_client(name='auto'):
         return bmemcached
 
     def _auto():
-        for _client in (_pylibmc, _cmemcache, _memcache, _bmemcached):
+        for _client in (_cmemcache, _memcache, _bmemcached):
             try:
                 return _client()
             except ImportError:
@@ -51,7 +45,6 @@ def _load_client(name='auto'):
                     "of: 'pylibmc' or 'memcache' to be installed.")
 
     clients = {
-        'pylibmc': _pylibmc,
         'cmemcache': _cmemcache,
         'memcache': _memcache,
         'bmemcached': _bmemcached,
@@ -61,25 +54,10 @@ def _load_client(name='auto'):
     return clib
 
 
-def _is_configured_for_pylibmc(memcache_module_config, memcache_client):
-    return memcache_module_config == 'pylibmc' or \
-        memcache_client.__name__.startswith('pylibmc')
-
-
 class MemcachedNamespaceManager(NamespaceManager):
     """Provides the :class:`.NamespaceManager` API over a memcache client library."""
 
     clients = SyncDict()
-
-    def __new__(cls, *args, **kw):
-        memcache_module = kw.pop('memcache_module', 'auto')
-
-        memcache_client = _load_client(memcache_module)
-
-        if _is_configured_for_pylibmc(memcache_module, memcache_client):
-            return object.__new__(PyLibMCNamespaceManager)
-        else:
-            return object.__new__(MemcachedNamespaceManager)
 
     def __init__(self, namespace, url,
                         memcache_module='auto',
@@ -87,7 +65,7 @@ class MemcachedNamespaceManager(NamespaceManager):
                         **kw):
         NamespaceManager.__init__(self, namespace)
 
-        _memcache_module = _client_libs[memcache_module]
+        _memcache_module = _load_client(memcache_module)
 
         if not url:
             raise MissingCacheParameter("url is required")
@@ -101,14 +79,10 @@ class MemcachedNamespaceManager(NamespaceManager):
         if self.lock_dir:
             verify_directory(self.lock_dir)
 
-        # Check for pylibmc namespace manager, in which case client will be
-        # instantiated by subclass __init__, to handle behavior passing to the
-        # pylibmc client
-        if not _is_configured_for_pylibmc(memcache_module, _memcache_module):
-            self.mc = MemcachedNamespaceManager.clients.get(
-                        (memcache_module, url),
-                        _memcache_module.Client,
-                        url.split(';'))
+        self.mc = MemcachedNamespaceManager.clients.get(
+                    (memcache_module, url),
+                    _memcache_module.Client,
+                    url.split(';'))
 
     def get_creation_lock(self, key):
         return file_synchronizer(
@@ -154,63 +128,6 @@ class MemcachedNamespaceManager(NamespaceManager):
         raise NotImplementedError(
                 "Memcache caching does not "
                 "support iteration of all cache keys")
-
-
-class PyLibMCNamespaceManager(MemcachedNamespaceManager):
-    """Provide thread-local support for pylibmc."""
-
-    pools = SyncDict()
-
-    def __init__(self, *arg, **kw):
-        super(PyLibMCNamespaceManager, self).__init__(*arg, **kw)
-
-        memcache_module = kw.get('memcache_module', 'auto')
-        _memcache_module = _client_libs[memcache_module]
-        protocol = kw.get('protocol', 'text')
-        username = kw.get('username', None)
-        password = kw.get('password', None)
-        url = kw.get('url')
-        behaviors = parse_memcached_behaviors(kw)
-
-        self.mc = MemcachedNamespaceManager.clients.get(
-                        (memcache_module, url),
-                        _memcache_module.Client,
-                        servers=url.split(';'), behaviors=behaviors,
-                        binary=(protocol == 'binary'), username=username,
-                        password=password)
-        self.pool = PyLibMCNamespaceManager.pools.get(
-                        (memcache_module, url),
-                        pylibmc.ThreadMappedPool, self.mc)
-
-    def __getitem__(self, key):
-        with self.pool.reserve() as mc:
-            return mc.get(self._format_key(key))
-
-    def __contains__(self, key):
-        with self.pool.reserve() as mc:
-            value = mc.get(self._format_key(key))
-            return value is not None
-
-    def has_key(self, key):
-        return key in self
-
-    def set_value(self, key, value, expiretime=None):
-        with self.pool.reserve() as mc:
-            if expiretime:
-                mc.set(self._format_key(key), value, time=expiretime)
-            else:
-                mc.set(self._format_key(key), value)
-
-    def __setitem__(self, key, value):
-        self.set_value(key, value)
-
-    def __delitem__(self, key):
-        with self.pool.reserve() as mc:
-            mc.delete(self._format_key(key))
-
-    def do_remove(self):
-        with self.pool.reserve() as mc:
-            mc.flush_all()
 
 
 class MemcachedContainer(Container):
