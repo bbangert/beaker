@@ -101,5 +101,19 @@ def test_cookiesession_expires_values():
             {},
             **options,
         )
+        # Check the cookie has expire
+        #   True = expire when browser is closed, so no Expire=
         cookie_session.save()
+        if cookie_expires != True:
+            assert "expires" in cookie_session.cookie.output()
+
+        # Check we can save it again.
         cookie_session.save()
+        if cookie_expires != True:
+            assert "expires" in cookie_session.cookie.output()
+
+        # Check we can load it back.
+        loaded_back = CookieSession({"cookie": cookie_session.cookie}, **options)
+        loaded_back.save()
+        if cookie_expires != True:
+            assert "expires" in cookie_session.cookie.output()

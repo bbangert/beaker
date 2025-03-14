@@ -16,7 +16,7 @@ months = (None, "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
 
-__all__ = ['SignedCookie', 'Session', 'InvalidSignature']
+__all__ = ['SignedCookie', 'Session', 'CookieSession', 'InvalidSignature']
 
 
 class _InvalidSignatureType(object):
@@ -697,11 +697,6 @@ class CookieSession(Session):
             self.update(self.accessed_dict)
         self._create_cookie()
 
-    def expire(self):
-        """Delete the 'expires' attribute on this Session, if any."""
-
-        self.pop('_expires', None)
-
     def _create_cookie(self):
         if '_creation_time' not in self:
             self['_creation_time'] = time.time()
@@ -715,14 +710,7 @@ class CookieSession(Session):
 
         self.cookie[self.key] = val
 
-        if '_expires' in self:
-            expires = self['_expires']
-        else:
-            expires = None
-        expires = self._set_cookie_expires(expires)
-        if expires is not None:
-            self['_expires'] = expires
-
+        self._set_cookie_expires(None)
         if self.domain:
             self.cookie[self.key]['domain'] = self.domain
         if self.secure:
