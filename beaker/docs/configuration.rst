@@ -87,11 +87,11 @@ lock_dir (**required**, string)
     to re-create the same value at the same time (The :term:`Dog-Pile Effect`)
 
 memcache_module (**optional**, string)
-    One of the names ``memcache``, ``cmemcache``, ``pylibmc``, or ``auto``.
+    One of the names ``memcache``, ``cmemcache``,  ``bmemcache`` or ``auto``.
     Default is ``auto``.  Specifies which memcached client library should
     be imported when using the ext:memcached backend.  If left at its
-    default of ``auto``, ``pylibmc`` is favored first, then ``cmemcache``,
-    then ``memcache``.  New in 1.5.5.
+    default of ``auto``, ``cmemcache`` is favored first, then ``memcache``,
+    then ``bmemcache``.
 
 type (**required**, string)
     The name of the back-end to use for storing the sessions or cache objects.

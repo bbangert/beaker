@@ -4,7 +4,7 @@ from beaker.container import NamespaceManager, Container
 from beaker.crypto.util import sha1
 from beaker.exceptions import InvalidCacheBackendError, MissingCacheParameter
 from beaker.synchronization import file_synchronizer
-from beaker.util import verify_directory, SyncDict, parse_memcached_behaviors
+from beaker.util import verify_directory, SyncDict
 import warnings
 
 MAX_KEY_LENGTH = 250
@@ -41,8 +41,8 @@ def _load_client(name='auto'):
                 pass
         else:
             raise InvalidCacheBackendError(
-                    "Memcached cache backend requires one "
-                    "of: 'pylibmc' or 'memcache' to be installed.")
+                "Memcached cache backend requires one memcache to be installed."
+            )
 
     clients = {
         'cmemcache': _cmemcache,
