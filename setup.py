@@ -51,7 +51,7 @@ if not sys.platform.startswith('java') and not sys.platform == 'cli':
         import sqlite3
     except ImportError:
         TESTS_REQUIRE.append('pysqlite')
-    TESTS_REQUIRE.extend(['pylibmc', 'python-memcached'])
+    TESTS_REQUIRE.extend(['python-memcached'])
 
 
 setup(name='Beaker',

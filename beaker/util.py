@@ -462,11 +462,23 @@ class PickleSerializer(object):
 
 
 class JsonSerializer(object):
+    DATETIME_PREFIX = "$DATETIME$"
+    DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
     def loads(self, data_string):
-        return json.loads(zlib.decompress(data_string).decode('utf-8'))
+        loaded_data = json.loads(zlib.decompress(data_string).decode('utf-8'))
+        for k, v in loaded_data.items():
+            if isinstance(v, str) and v.startswith(self.DATETIME_PREFIX):
+                v = v[len(self.DATETIME_PREFIX):]
+                loaded_data[k] = datetime.strptime(v, self.DATETIME_FORMAT)
+        return loaded_data
 
     def dumps(self, data):
-        return zlib.compress(json.dumps(data).encode('utf-8'))
+        dumpable_data = data.copy()
+        for k, v in dumpable_data.items():
+            if isinstance(v, datetime):
+                dumpable_data[k] = self.DATETIME_PREFIX + v.strftime(self.DATETIME_FORMAT)
+        return zlib.compress(json.dumps(dumpable_data).encode('utf-8'))
 
 
 def serialize(data, method):

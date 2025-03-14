@@ -1,5 +1,5 @@
 from beaker.middleware import SessionMiddleware
-from beaker.session import Session
+from beaker.session import Session, CookieSession
 import datetime
 import re
 
@@ -75,3 +75,31 @@ def test_set_cookie_expires():
     assert cookie_expiration(session) is False
     session._set_cookie_expires(True)
     assert cookie_expiration(session) is True
+
+def test_cookiesession_expires_values():
+    BASE_OPTIONS = {
+        'invalidate_corrupt': True,
+        'type': 'cookie',
+        'data_dir': None,
+        'key': 'ckan',
+        'timeout': None,
+        'save_accessed_time': True,
+        'secret': '12341234',
+        'log_file': None,
+        'data_serializer': 'json',
+        'validate_key': 'asdfasdf',
+        'httponly': True,
+        'secure': False,
+        'samesite': 'Strict',
+        'auto': False,
+        'cookie_domain': None
+    }
+
+    for cookie_expires in (True, False, datetime.timedelta(seconds=10)):
+        options = dict(BASE_OPTIONS, cookie_expires=cookie_expires)
+        cookie_session = CookieSession(
+            {},
+            **options,
+        )
+        cookie_session.save()
+        cookie_session.save()
