@@ -29,9 +29,9 @@ if not PY2:  # pragma: no cover
     from base64 import b64decode as _b64decode, b64encode as _b64encode
 
     try:
-        import dbm as anydbm
-    except:
-        import dumbdbm as anydbm
+        import dbm.gnu as anydbm
+    except ImportError:
+        import dbm.dumb as anydbm
 
     def b64decode(b):
         return _b64decode(b.encode('ascii'))
