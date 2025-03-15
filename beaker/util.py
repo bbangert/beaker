@@ -1,5 +1,5 @@
 """Beaker utilities"""
-import hashlib
+import uuid
 import socket
 
 import binascii
@@ -435,12 +435,8 @@ def deserialize(data_string, method):
 
 
 def machine_identifier():
-    machine_hash = hashlib.md5()
-    if not PY2:
-        machine_hash.update(socket.gethostname().encode())
-    else:
-        machine_hash.update(socket.gethostname())
-    return binascii.hexlify(machine_hash.digest()[0:3]).decode('ascii')
+    # UUID1 includes a unique machine identifier
+    return uuid.uuid1().hex
 
 
 def safe_write (filepath, contents):
