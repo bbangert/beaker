@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from beaker._compat import u_, pickle, b64decode
+from beaker._compat import u_, pickle
 
 import binascii
 import shutil
@@ -390,6 +390,7 @@ def test_file_based_replace_optimization():
     assert 'test' not in session.namespace
     session.namespace.do_close()
 
+
 def test_use_json_serializer_without_encryption_key():
     setup_cookie_request()
     so = get_session(use_cookies=False, type='file', data_dir='./cache', data_serializer='json')
@@ -399,8 +400,23 @@ def test_use_json_serializer_without_encryption_key():
     assert 'foo' in session
     serialized_session = open(session.namespace.file, 'rb').read()
     memory_state = pickle.loads(serialized_session)
-    session_data = b64decode(memory_state.get('session'))
+    session_data = memory_state.get('session')
     data = deserialize(session_data, 'json')
+    assert 'foo' in data
+
+
+def test_use_pickle_serializer_without_encryption_key():
+    setup_cookie_request()
+    so = get_session(use_cookies=False, type='file', data_dir='./cache', data_serializer='pickle')
+    so['foo'] = 'bar'
+    so.save()
+    # default data_serializer will pickle
+    session = get_session(id=so.id, use_cookies=False, type='file', data_dir='./cache')
+    assert 'foo' in session
+    serialized_session = open(session.namespace.file, 'rb').read()
+    memory_state = pickle.loads(serialized_session)
+    session_data = memory_state.get('session')
+    data = deserialize(session_data, 'pickle')
     assert 'foo' in data
 
 
