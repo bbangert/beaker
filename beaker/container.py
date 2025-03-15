@@ -6,6 +6,7 @@ from ._compat import pickle, anydbm, add_metaclass, PYVER, unicode_text
 import beaker.util as util
 import logging
 import os
+import sys
 import time
 
 from beaker.exceptions import CreationAbortedError, MissingCacheParameter
@@ -328,7 +329,7 @@ class Value(object):
             )
         )
 
-    def get_value(self):
+    def _check_cache(self):
         self.namespace.acquire_read_lock()
         try:
             has_value = self.has_value()
@@ -336,7 +337,7 @@ class Value(object):
                 try:
                     stored, expired, value = self._get_value()
                     if not self._is_expired(stored, expired):
-                        return value
+                        return None, value
                 except KeyError:
                     # guard against un-mutexed backends raising KeyError
                     has_value = False
@@ -345,36 +346,35 @@ class Value(object):
                 raise KeyError(self.key)
         finally:
             self.namespace.release_read_lock()
+        return has_value, None
 
-        has_createlock = False
+    def _creation_lock_or_value(self, has_value):
         creation_lock = self.namespace.get_creation_lock(self.key)
         if has_value:
             if not creation_lock.acquire(wait=False):
                 debug("get_value returning old value while new one is created")
-                return value
+                return None, value
             else:
                 debug("lock_creatfunc (didnt wait)")
-                has_createlock = True
-
-        if not has_createlock:
+        else:
             debug("lock_createfunc (waiting)")
             creation_lock.acquire()
             debug("lock_createfunc (waited)")
+        return creation_lock, None
+
+    def get_value(self):
+        has_value, value = self._check_cache()
+        if has_value is None:
+            return value
+
+        creation_lock, value = self._creation_lock_or_value(has_value)
+        if creation_lock is None:
+            return value
 
         try:
-            # see if someone created the value already
-            self.namespace.acquire_read_lock()
-            try:
-                if self.has_value():
-                    try:
-                        stored, expired, value = self._get_value()
-                        if not self._is_expired(stored, expired):
-                            return value
-                    except KeyError:
-                        # guard against un-mutexed backends raising KeyError
-                        pass
-            finally:
-                self.namespace.release_read_lock()
+            has_value, value = self._check_cache()
+            if has_value is None:
+                return value
 
             debug("get_value creating new value")
             v = self.createfunc()
@@ -383,6 +383,29 @@ class Value(object):
         finally:
             creation_lock.release()
             debug("released create lock")
+
+    if sys.version_info[0] == 3 and sys.version_info[1] > 4:
+        async def aget_value(self):
+            has_value, value = self._check_cache()
+            if has_value is None:
+                return value
+
+            creation_lock, value = self._creation_lock_or_value(has_value)
+            if creation_lock is None:
+                return value
+
+            try:
+                has_value, value = self._check_cache()
+                if has_value is None:
+                    return value
+
+                debug("get_value creating new value")
+                v = await self.createfunc()
+                self.set_value(v)
+                return v
+            finally:
+                creation_lock.release()
+                debug("released create lock")
 
     def _get_value(self):
         value = self.namespace[self.key]

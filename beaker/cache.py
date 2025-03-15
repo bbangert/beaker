@@ -6,7 +6,9 @@ as well as the function decorators :func:`.region_decorate`,
 :func:`.region_invalidate`.
 
 """
+import inspect
 import warnings
+import sys
 from itertools import chain
 
 from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
@@ -324,6 +326,12 @@ class Cache(object):
         return self._get_value(key, **kw).get_value()
     get_value = get
 
+    if sys.version_info[0] == 3 and sys.version_info[1] > 4:
+        async def aget(self, key, **kw):
+            """Retrieve a cached value from the container"""
+            return await self._get_value(key, **kw).aget_value()
+        aget_value = aget
+
     def remove_value(self, key, **kw):
         mycontainer = self._get_value(key, **kw)
         mycontainer.clear_value()
@@ -549,28 +557,42 @@ def _cache_decorate(deco_args, manager, options, region):
 
     cache = [None]
 
-    def decorate(func):
-        namespace = util.func_namespace(func)
-        skip_self = util.has_self_arg(func)
-        signature = func_signature(func)
+    def _get_cache_region(region):
+        if region is None:
+            return None
+        if region not in cache_regions:
+            raise BeakerException(
+                'Cache region not configured: %s' % region
+            )
+        return cache_regions[region]
 
-        @wraps(func)
-        def cached(*args, **kwargs):
-            if not cache[0]:
-                if region is not None:
-                    if region not in cache_regions:
-                        raise BeakerException(
-                            'Cache region not configured: %s' % region)
-                    reg = cache_regions[region]
-                    if not reg.get('enabled', True):
-                        return func(*args, **kwargs)
-                    cache[0] = Cache._get_cache(namespace, reg)
-                elif manager:
-                    cache[0] = manager.get_cache(namespace, **options)
-                else:
-                    raise Exception("'manager + kwargs' or 'region' "
-                                    "argument is required")
+    def _short_circuit(cache, region):
+        if not cache and region is not None:
+            reg = _get_cache_region(region)
+            if not reg.get('enabled', True):
+                return True
+        return False
 
+    def _find_cache(namespace, region, options):
+        if region is not None:
+            reg = _get_cache_region(region)
+            return Cache._get_cache(namespace, reg)
+        elif manager:
+            return manager.get_cache(namespace, **options)
+        else:
+            raise Exception("'manager + kwargs' or 'region' "
+                            "argument is required")
+
+    def _determine_key_length(region, options):
+        if region:
+            cachereg = cache_regions[region]
+            key_length = cachereg.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
+        else:
+            key_length = options.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
+        return key_length
+
+    def _cache_key_func(namespace, skip_self, signature):
+        def _inner(key_length, *args, **kwargs):
             cache_key_kwargs = []
             if kwargs:
                 # kwargs provided, merge them in positional args
@@ -584,23 +606,58 @@ def _cache_decorate(deco_args, manager, options, region):
 
             cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args, cache_key_kwargs)))
 
-            if region:
-                cachereg = cache_regions[region]
-                key_length = cachereg.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
-            else:
-                key_length = options.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
-
-            # TODO: This is probably a bug as length is checked before converting to UTF8
+            # TODO: This is probably a bug as length is checked before converting to UTF-8
             # which will cause cache_key to grow in size.
             if len(cache_key) + len(namespace) > int(key_length):
                 cache_key = sha1(cache_key.encode('utf-8')).hexdigest()
+            return cache_key
+        return _inner
 
-            def go():
-                return func(*args, **kwargs)
-            # save org function name
-            go.__name__ = '_cached_%s' % (func.__name__,)
+    def decorate(func):
+        namespace = util.func_namespace(func)
+        skip_self = util.has_self_arg(func)
+        signature = func_signature(func)
 
-            return cache[0].get_value(cache_key, createfunc=go)
+        _determine_cache_key = _cache_key_func(namespace, skip_self, signature)
+
+        async_func = inspect.iscoroutinefunction(func)
+        if async_func:
+            @wraps(func)
+            async def cached(*args, **kwargs):
+                if _short_circuit(cache[0], region):
+                    return await func(*args, **kwargs)
+
+                if not cache[0]:
+                    cache[0] = _find_cache(namespace, region, options)
+
+                key_length = _determine_key_length(region, options)
+                cache_key = _determine_cache_key(key_length, *args, **kwargs)
+
+                async def go():
+                    return await func(*args, **kwargs)
+                # save org function name
+                go.__name__ = '_cached_%s' % (func.__name__,)
+
+                return await cache[0].aget_value(cache_key, createfunc=go)
+        else:
+            @wraps(func)
+            def cached(*args, **kwargs):
+                if _short_circuit(cache[0], region):
+                    return func(*args, **kwargs)
+
+                if not cache[0]:
+                    cache[0] = _find_cache(namespace, region, options)
+
+                key_length = _determine_key_length(region, options)
+                cache_key = _determine_cache_key(key_length, *args, **kwargs)
+
+                def go():
+                    return func(*args, **kwargs)
+                # save org function name
+                go.__name__ = '_cached_%s' % (func.__name__,)
+
+                return cache[0].get_value(cache_key, createfunc=go)
+
         cached._arg_namespace = namespace
         if region is not None:
             cached._arg_region = region
