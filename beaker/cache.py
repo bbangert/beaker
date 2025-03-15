@@ -132,7 +132,7 @@ clsmap = _backends({
 })
 
 
-def cache_region(region, *args):
+def cache_region(region, *args, ignore_args=None):
     """Decorate a function such that its return result is cached,
     using a "region" to indicate the cache arguments.
 
@@ -200,7 +200,7 @@ def cache_region(region, *args):
         not included in the "key" used for caching.   New in 1.6.
 
     """
-    return _cache_decorate(args, None, None, region)
+    return _cache_decorate(args, None, None, region, ignore_args=ignore_args)
 
 
 def region_invalidate(namespace, region, *args):
@@ -544,10 +544,11 @@ class CacheManager(object):
         _cache_decorator_invalidate(cache, key_length, args)
 
 
-def _cache_decorate(deco_args, manager, options, region):
+def _cache_decorate(deco_args, manager, options, region, ignore_args=None):
     """Return a caching function decorator."""
 
     cache = [None]
+    ignore_args = [ignore_args]
 
     def decorate(func):
         namespace = util.func_namespace(func)
@@ -581,6 +582,14 @@ def _cache_decorate(deco_args, manager, options, region):
             cache_key_args = args
             if skip_self:
                 cache_key_args = args[1:]
+            if ignore_args and ignore_args[0]:
+                cache_key_args_include = []
+                arg_names = list(signature.parameters)
+                arg_names = arg_names[1:] if skip_self else arg_names
+                for name, value in zip(arg_names, cache_key_args):
+                    if name not in ignore_args[0]:
+                        cache_key_args_include.append(value)
+                cache_key_args = cache_key_args_include
 
             cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args, cache_key_kwargs)))
 
