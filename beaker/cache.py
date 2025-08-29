@@ -95,25 +95,24 @@ class _backends(object):
                 except (InvalidCacheBackendError, SyntaxError):
                     # Ignore invalid backends
                     pass
-                except:
-                    import sys
-                    from pkg_resources import DistributionNotFound
+                except pkg_resources.DistributionNotFound:
+                    pass
+                except Exception:
                     # Warn when there's a problem loading a NamespaceManager
-                    if not isinstance(sys.exc_info()[1], DistributionNotFound):
-                        import traceback
-                        try:
-                            from StringIO import StringIO  # Python2
-                        except ImportError:
-                            from io import StringIO        # Python3
+                    import traceback
+                    try:
+                        from StringIO import StringIO  # Python2
+                    except ImportError:
+                        from io import StringIO        # Python3
 
-                        tb = StringIO()
-                        traceback.print_exc(file=tb)
-                        warnings.warn(
-                            "Unable to load NamespaceManager "
-                            "entry point: '%s': %s" % (
-                                        entry_point,
-                                        tb.getvalue()),
-                                        RuntimeWarning, 2)
+                    tb = StringIO()
+                    traceback.print_exc(file=tb)
+                    warnings.warn(
+                        "Unable to load NamespaceManager "
+                        "entry point: '%s': %s" % (
+                                    entry_point,
+                                    tb.getvalue()),
+                                    RuntimeWarning, 2)
         except ImportError:
             pass
 
