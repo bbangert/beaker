@@ -80,39 +80,36 @@ class _backends(object):
             raise e
 
     def _init(self):
-        try:
-            import importlib.metadata
+        import importlib.metadata
 
-            # Load up the additional entry point defined backends
-            for entry_point in importlib.metadata.entry_points(group='beaker.backends'):
+        # Load up the additional entry point defined backends
+        for entry_point in importlib.metadata.entry_points(group='beaker.backends'):
+            try:
+                namespace_manager = entry_point.load()
+                name = entry_point.name
+                if name in self._clsmap:
+                    raise BeakerException("NamespaceManager name conflict,'%s' "
+                                          "already loaded" % name)
+                self._clsmap[name] = namespace_manager
+            except (InvalidCacheBackendError, SyntaxError):
+                # Ignore invalid backends
+                pass
+            except Exception:
+                # Warn when there's a problem loading a NamespaceManager
+                import traceback
                 try:
-                    namespace_manager = entry_point.load()
-                    name = entry_point.name
-                    if name in self._clsmap:
-                        raise BeakerException("NamespaceManager name conflict,'%s' "
-                                              "already loaded" % name)
-                    self._clsmap[name] = namespace_manager
-                except (InvalidCacheBackendError, SyntaxError):
-                    # Ignore invalid backends
-                    pass
-                except Exception:
-                    # Warn when there's a problem loading a NamespaceManager
-                    import traceback
-                    try:
-                        from StringIO import StringIO  # Python2
-                    except ImportError:
-                        from io import StringIO        # Python3
+                    from StringIO import StringIO  # Python2
+                except ImportError:
+                    from io import StringIO        # Python3
 
-                    tb = StringIO()
-                    traceback.print_exc(file=tb)
-                    warnings.warn(
-                        "Unable to load NamespaceManager "
-                        "entry point: '%s': %s" % (
-                                    entry_point,
-                                    tb.getvalue()),
-                                    RuntimeWarning, 2)
-        except ImportError:
-            pass
+                tb = StringIO()
+                traceback.print_exc(file=tb)
+                warnings.warn(
+                    "Unable to load NamespaceManager "
+                    "entry point: '%s': %s" % (
+                                entry_point,
+                                tb.getvalue()),
+                                RuntimeWarning, 2)
 
 # Initialize the basic available backends
 clsmap = _backends({
