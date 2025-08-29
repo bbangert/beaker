@@ -81,10 +81,10 @@ class _backends(object):
 
     def _init(self):
         try:
-            import pkg_resources
+            import importlib.metadata
 
             # Load up the additional entry point defined backends
-            for entry_point in pkg_resources.iter_entry_points('beaker.backends'):
+            for entry_point in importlib.metadata.entry_points(group='beaker.backends'):
                 try:
                     namespace_manager = entry_point.load()
                     name = entry_point.name
@@ -94,8 +94,6 @@ class _backends(object):
                     self._clsmap[name] = namespace_manager
                 except (InvalidCacheBackendError, SyntaxError):
                     # Ignore invalid backends
-                    pass
-                except pkg_resources.DistributionNotFound:
                     pass
                 except Exception:
                     # Warn when there's a problem loading a NamespaceManager
