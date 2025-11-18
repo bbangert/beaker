@@ -6,7 +6,10 @@ as well as the function decorators :func:`.region_decorate`,
 :func:`.region_invalidate`.
 
 """
+import importlib.metadata
+import traceback
 import warnings
+from io import StringIO
 from itertools import chain
 
 from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
@@ -80,8 +83,6 @@ class _backends(object):
             raise e
 
     def _init(self):
-        import importlib.metadata
-
         # Load up the additional entry point defined backends
         for entry_point in importlib.metadata.entry_points(group='beaker.backends'):
             try:
@@ -96,12 +97,6 @@ class _backends(object):
                 pass
             except Exception:
                 # Warn when there's a problem loading a NamespaceManager
-                import traceback
-                try:
-                    from StringIO import StringIO  # Python2
-                except ImportError:
-                    from io import StringIO        # Python3
-
                 tb = StringIO()
                 traceback.print_exc(file=tb)
                 warnings.warn(
