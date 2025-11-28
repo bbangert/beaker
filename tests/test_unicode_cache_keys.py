@@ -5,7 +5,7 @@ https://bitbucket.org/bbangert/beaker/issue/31/cached-function-decorators-break-
 for more on this
 """
 
-from beaker._compat import u_
+# Removed u_ import
 from beaker.cache import CacheManager
 
 def eq_(a, b, msg=''):
@@ -31,17 +31,17 @@ class bar(object):
 def test_A_unicode_encode_key_str():
     eq_(foo('Espanol'), 'Espanol')
     eq_(foo(12334), 12334)
-    eq_(foo(u_('Espanol')), u_('Espanol'))
-    eq_(foo(u_('Español')), u_('Español'))
+    eq_(foo('Espanol'), 'Espanol')
+    eq_(foo('Español'), 'Español')
     b = bar()
     eq_(b.baz('Espanol'), 'Espanol')
     eq_(b.baz(12334), 12334)
-    eq_(b.baz(u_('Espanol')), u_('Espanol'))
-    eq_(b.baz(u_('Español')), u_('Español'))
+    eq_(b.baz('Espanol'), 'Espanol')
+    eq_(b.baz('Español'), 'Español')
     eq_(b.quux('Espanol'), 'Espanol')
     eq_(b.quux(12334), 12334)
-    eq_(b.quux(u_('Espanol')), u_('Espanol'))
-    eq_(b.quux(u_('Español')), u_('Español'))
+    eq_(b.quux('Espanol'), 'Espanol')
+    eq_(b.quux('Español'), 'Español')
 
 
 def test_B_replacing_non_ascii():
@@ -49,8 +49,8 @@ def test_B_replacing_non_ascii():
     the function distinguishes between the two it should not return the
     past value
     """
-    assert foo(u_('Espaáol')) != u_('Español')
-    eq_(foo(u_('Espaáol')), u_('Espaáol'))
+    assert foo('Espaáol') != 'Español'
+    eq_(foo('Espaáol'), 'Espaáol')
 
 def test_C_more_unicode():
     """We again test the same stuff but this time we use

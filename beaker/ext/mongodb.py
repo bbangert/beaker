@@ -16,7 +16,6 @@ from beaker.container import NamespaceManager
 from beaker.synchronization import SynchronizerImpl
 from beaker.util import SyncDict, machine_identifier
 from beaker.crypto.util import sha1
-from beaker._compat import string_type
 
 
 class MongoNamespaceManager(NamespaceManager):
@@ -40,7 +39,7 @@ class MongoNamespaceManager(NamespaceManager):
         if pymongo is None:
             raise RuntimeError('pymongo3 is not available')
 
-        if isinstance(url, string_type):
+        if isinstance(url, str):
             self.client = MongoNamespaceManager.clients.get(url, pymongo.MongoClient, url)
         else:
             self.client = url
@@ -127,7 +126,7 @@ class MongoSynchronizer(SynchronizerImpl):
     def __init__(self, identifier, url):
         super(MongoSynchronizer, self).__init__()
         self.identifier = identifier
-        if isinstance(url, string_type):
+        if isinstance(url, str):
             self.client = MongoNamespaceManager.clients.get(url, pymongo.MongoClient, url)
         else:
             self.client = url

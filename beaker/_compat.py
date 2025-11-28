@@ -19,12 +19,6 @@ try:
 except ImportError:
     import dbm.dumb as anydbm
 
-# Type aliases for backwards compatibility
-NoneType = type(None)
-string_type = str
-unicode_text = str
-byte_string = bytes
-
 
 def b64decode(b):
     """Base64 decode a string, returning bytes."""
@@ -34,11 +28,6 @@ def b64decode(b):
 def b64encode(s):
     """Base64 encode bytes, returning a string."""
     return _b64encode(s).decode('ascii')
-
-
-def u_(s):
-    """Convert to string (unicode)."""
-    return str(s)
 
 
 def bytes_(s):

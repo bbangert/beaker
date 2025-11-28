@@ -12,7 +12,6 @@ from beaker.container import NamespaceManager
 from beaker.synchronization import SynchronizerImpl
 from beaker.util import SyncDict, machine_identifier
 from beaker.crypto.util import sha1
-from beaker._compat import string_type
 
 
 class RedisNamespaceManager(NamespaceManager):
@@ -38,7 +37,7 @@ class RedisNamespaceManager(NamespaceManager):
         if redis is None:
             raise RuntimeError('redis is not available')
 
-        if isinstance(url, string_type):
+        if isinstance(url, str):
             self.client = RedisNamespaceManager.clients.get(url, redis.StrictRedis.from_url, url)
         else:
             self.client = url
@@ -105,7 +104,7 @@ class RedisSynchronizer(SynchronizerImpl):
     def __init__(self, identifier, url):
         super(RedisSynchronizer, self).__init__()
         self.identifier = 'beaker_lock:%s' % identifier
-        if isinstance(url, string_type):
+        if isinstance(url, str):
             self.client = RedisNamespaceManager.clients.get(url, redis.StrictRedis.from_url, url)
         else:
             self.client = url

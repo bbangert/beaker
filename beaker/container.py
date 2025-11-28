@@ -1,7 +1,7 @@
 """Container and Namespace classes"""
 import errno
 
-from ._compat import pickle, anydbm, unicode_text
+from ._compat import pickle, anydbm
 
 import beaker.util as util
 import logging
