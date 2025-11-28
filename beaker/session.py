@@ -1,4 +1,4 @@
-from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64decode, string_type
+from ._compat import pickle, http_cookies, unicode_text, b64encode, b64decode, string_type
 
 import os
 import time

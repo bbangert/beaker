@@ -4,7 +4,7 @@ import socket
 
 import binascii
 
-from ._compat import PY2, string_type, unicode_text, NoneType, dictkeyslist, im_class, im_func, pickle, func_signature, \
+from ._compat import string_type, unicode_text, NoneType, dictkeyslist, im_class, im_func, pickle, func_signature, \
     default_im_func
 
 try:

@@ -1,7 +1,7 @@
 """Container and Namespace classes"""
 import errno
 
-from ._compat import pickle, anydbm, add_metaclass, PYVER, unicode_text
+from ._compat import pickle, anydbm, unicode_text
 
 import beaker.util as util
 import logging
@@ -597,11 +597,6 @@ class DBMNamespaceManager(OpenResourceNamespaceManager):
         return pickle.loads(self.dbm[key])
 
     def __contains__(self, key):
-        if PYVER == (3, 2):
-            # Looks like this is a bug that got solved in PY3.3 and PY3.4
-            # http://bugs.python.org/issue19288
-            if isinstance(key, unicode_text):
-                key = key.encode('UTF-8')
         return key in self.dbm
 
     def __setitem__(self, key, value):
@@ -734,8 +729,7 @@ class ContainerMeta(type):
         return Value(key, ns, createfunc=createfunc,
                      expiretime=expiretime, starttime=starttime)
 
-@add_metaclass(ContainerMeta)
-class Container(object):
+class Container(metaclass=ContainerMeta):
     """Implements synchronization and value-creation logic
     for a 'value' stored in a :class:`.NamespaceManager`.
 

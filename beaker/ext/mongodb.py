@@ -16,7 +16,7 @@ from beaker.container import NamespaceManager
 from beaker.synchronization import SynchronizerImpl
 from beaker.util import SyncDict, machine_identifier
 from beaker.crypto.util import sha1
-from beaker._compat import string_type, PY2
+from beaker._compat import string_type
 
 
 class MongoNamespaceManager(NamespaceManager):
@@ -50,8 +50,7 @@ class MongoNamespaceManager(NamespaceManager):
         if not isinstance(key, str):
             key = key.decode('ascii')
         if len(key) > (self.MAX_KEY_LENGTH - len(self.namespace) - 1):
-            if not PY2:
-                key = key.encode('utf-8')
+            key = key.encode('utf-8')
             key = sha1(key).hexdigest()
         return '%s:%s' % (self.namespace, key)
 

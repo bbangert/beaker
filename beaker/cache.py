@@ -101,10 +101,7 @@ class _backends(object):
                     # Warn when there's a problem loading a NamespaceManager
                     if not isinstance(sys.exc_info()[1], DistributionNotFound):
                         import traceback
-                        try:
-                            from StringIO import StringIO  # Python2
-                        except ImportError:
-                            from io import StringIO        # Python3
+                        from io import StringIO
 
                         tb = StringIO()
                         traceback.print_exc(file=tb)
