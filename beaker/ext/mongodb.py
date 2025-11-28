@@ -135,7 +135,7 @@ class MongoSynchronizer(SynchronizerImpl):
         self.db = self.client.get_default_database()
 
     def _clear_expired_locks(self):
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         expired = now - datetime.timedelta(seconds=self.LOCK_EXPIRATION)
         self.db.beaker_locks.delete_many({'_id': self.identifier, 'timestamp': {'$lte': expired}})
         return now

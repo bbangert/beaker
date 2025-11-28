@@ -2,7 +2,7 @@ from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64deco
 
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from beaker.crypto import hmac as HMAC, hmac_sha1 as SHA1, sha1, get_nonce_size, DEFAULT_NONCE_BITS, get_crypto_module
 from beaker import crypto, util
 from beaker.cache import clsmap
@@ -275,7 +275,7 @@ class Session(_ConfigurableSession):
         if expires is False:
             expires_date = datetime.fromtimestamp(0x7FFFFFFF)
         elif isinstance(expires, timedelta):
-            expires_date = datetime.utcnow() + expires
+            expires_date = datetime.now(timezone.utc) + expires
         elif isinstance(expires, datetime):
             expires_date = expires
         elif expires is not True:
@@ -375,7 +375,7 @@ class Session(_ConfigurableSession):
 
     def _delete_cookie(self):
         self.request['set_cookie'] = True
-        expires = datetime.utcnow() - timedelta(365)
+        expires = datetime.now(timezone.utc) - timedelta(365)
         self._set_cookie_values(expires)
         self._update_cookie_out()
 
