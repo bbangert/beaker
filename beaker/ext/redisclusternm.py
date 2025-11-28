@@ -11,7 +11,6 @@ except ImportError:
     redis = None
 
 from beaker.ext.redisnm import RedisNamespaceManager, RedisSynchronizer
-from beaker._compat import string_type
 
 
 class RedisClusterNamespaceManager(RedisNamespaceManager):
@@ -41,7 +40,7 @@ class RedisClusterNamespaceManager(RedisNamespaceManager):
         if redis is None:
             raise RuntimeError('redis is not available')
 
-        if isinstance(urls, string_type):
+        if isinstance(urls, str):
             for url in urls.split(','):
                 url_options = redis.connection.parse_url(url)
                 if 'db' in url_options:
@@ -86,7 +85,7 @@ class RedisClusterSynchronizer(RedisSynchronizer):
     def __init__(self, identifier, urls, nodes=None, **kwargs):
         super(RedisSynchronizer, self).__init__()
         self.identifier = 'beaker_lock:%s' % identifier
-        if isinstance(urls, string_type):
+        if isinstance(urls, str):
             self.client = RedisClusterNamespaceManager.clients.get(
                 urls, redis.cluster.RedisCluster, startup_nodes=nodes, **kwargs
             )

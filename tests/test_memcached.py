@@ -1,5 +1,5 @@
 # coding: utf-8
-from beaker._compat import u_
+# Removed u_ import
 
 import unittest.mock
 
@@ -44,7 +44,7 @@ def simple_session_app(environ, start_response):
         if not session:
             start_response('200 OK', [('Content-type', 'text/plain')])
             return ["No session id of %s found." % sess_id]
-        if not session.has_key('value'):
+        if 'value' not in session:
             session['value'] = 0
         session['value'] += 1
         if not environ['PATH_INFO'].startswith('/nosave'):
@@ -77,7 +77,6 @@ def simple_app(environ, start_response):
         ('The current value is: %s' % cache.get_value('value')).encode('utf-8')
     ]
 
-
 def using_none_app(environ, start_response):
     extra_args = {}
     clear = False
@@ -99,7 +98,6 @@ def using_none_app(environ, start_response):
         ('The current value is: %s' % value).encode('utf-8')
     ]
 
-
 def cache_manager_app(environ, start_response):
     cm = environ['beaker.cache']
     cm.get_cache('test')['test_key'] = 'test value'
@@ -119,7 +117,6 @@ def cache_manager_app(environ, start_response):
             cm.get_cache('test')['test_key'],
         )).encode('utf-8')
 
-
 @util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_session():
     app = WebTestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
@@ -130,41 +127,36 @@ def test_session():
     res = app.get('/')
     assert 'current value is: 3' in res
 
-
 @util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_session_invalid():
     app = WebTestApp(SessionMiddleware(simple_session_app, data_dir='./cache', type='ext:memcached', url=mc_url))
     res = app.get('/invalid', headers=dict(Cookie='beaker.session.id=df7324911e246b70b5781c3c58328442; Path=/'))
     assert 'current value is: 2' in res
 
-
 def test_has_key():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
     assert "test" in cache
-    assert not cache.has_key("foo")
     assert "foo" not in cache
     cache.remove_value("test")
-    assert not cache.has_key("test")
+    assert "test" not in cache
 
 def test_dropping_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     cache.set_value('test', 20)
     cache.set_value('fred', 10)
-    assert cache.has_key('test')
     assert 'test' in cache
-    assert cache.has_key('fred')
+    assert 'fred' in cache
 
     # Directly nuke the actual key, to simulate it being removed by memcached
     cache.namespace.mc.delete('test_test')
-    assert not cache.has_key('test')
-    assert cache.has_key('fred')
+    assert 'test' not in cache
+    assert 'fred' in cache
 
     # Nuke the keys dict, it might die, who knows
     cache.namespace.mc.delete('test:keys')
-    assert cache.has_key('fred')
+    assert 'fred' in cache
 
     # And we still need clear to work, even if it won't work well
     cache.clear()
@@ -176,35 +168,34 @@ def test_deleting_keys():
     # Nuke the keys dict, it might die, who knows
     cache.namespace.mc.delete('test:keys')
 
-    assert cache.has_key('test')
+    assert 'test' in cache
 
     # make sure we can still delete keys even though our keys dict got nuked
     del cache['test']
 
-    assert not cache.has_key('test')
+    assert 'test' not in cache
 
 def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
     assert "test" in cache
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
-    assert cache.has_key("test")
+    assert "test" in cache
 
 def test_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
-    cache.set_value(u_('hiŏ'), o)
-    assert u_('hiŏ') in cache
-    assert u_('hŏa') not in cache
-    cache.remove_value(u_('hiŏ'))
-    assert u_('hiŏ') not in cache
+    cache.set_value('hiŏ', o)
+    assert 'hiŏ' in cache
+    assert 'hŏa' not in cache
+    cache.remove_value('hiŏ')
+    assert 'hiŏ' not in cache
 
 def test_long_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
-    long_str = u_('Очень длинная строка, которая не влезает в сто двадцать восемь байт и поэтому не проходит ограничение в check_key, что очень прискорбно, не правда ли, друзья? Давайте же скорее исправим это досадное недоразумение!')
+    long_str = 'Очень длинная строка, которая не влезает в сто двадцать восемь байт и поэтому не проходит ограничение в check_key, что очень прискорбно, не правда ли, друзья? Давайте же скорее исправим это досадное недоразумение!'
     cache.set_value(long_str, o)
     assert long_str in cache
     cache.remove_value(long_str)
@@ -213,19 +204,19 @@ def test_long_unicode_keys():
 def test_spaces_in_unicode_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     o = object()
-    cache.set_value(u_('hi ŏ'), o)
-    assert u_('hi ŏ') in cache
-    assert u_('hŏa') not in cache
-    cache.remove_value(u_('hi ŏ'))
-    assert u_('hi ŏ') not in cache
+    cache.set_value('hi ŏ', o)
+    assert 'hi ŏ' in cache
+    assert 'hŏa' not in cache
+    cache.remove_value('hi ŏ')
+    assert 'hi ŏ' not in cache
 
 def test_spaces_in_keys():
     cache = Cache('test', data_dir='./cache', url=mc_url, type='ext:memcached')
     cache.set_value("has space", 24)
-    assert cache.has_key("has space")
+    assert "has space" in cache
     assert 24 == cache.get_value("has space")
     cache.set_value("hasspace", 42)
-    assert cache.has_key("hasspace")
+    assert "hasspace" in cache
     assert 42 == cache.get_value("hasspace")
 
 @util.skip_if(lambda: WebTestApp is None, "webtest not installed")

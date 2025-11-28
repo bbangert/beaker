@@ -1,6 +1,5 @@
-from beaker._compat import pickle
-
 import logging
+import pickle
 from datetime import datetime
 
 from beaker.container import OpenResourceNamespaceManager, Container

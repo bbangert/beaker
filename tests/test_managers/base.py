@@ -6,11 +6,9 @@ import time
 
 import datetime
 
-from beaker._compat import u_
 from beaker.cache import Cache
 from beaker.middleware import SessionMiddleware, CacheMiddleware
 from webtest import TestApp as WebTestApp
-
 
 class CacheManagerBaseTests(unittest.TestCase):
     SUPPORTS_EXPIRATION = True
@@ -32,7 +30,7 @@ class CacheManagerBaseTests(unittest.TestCase):
                 if not session:
                     start_response('200 OK', [('Content-type', 'text/plain')])
                     return [("No session id of %s found." % sess_id).encode('utf-8')]
-                if not session.has_key('value'):
+                if 'value' not in session:
                     session['value'] = 0
                 session['value'] += 1
                 if not environ['PATH_INFO'].startswith('/nosave'):
@@ -132,45 +130,41 @@ class CacheManagerBaseTests(unittest.TestCase):
         cache = Cache('test', **self.CACHE_ARGS)
         o = object()
         cache.set_value("test", o)
-        assert cache.has_key("test")
         assert "test" in cache
-        assert not cache.has_key("foo")
         assert "foo" not in cache
         cache.remove_value("test")
-        assert not cache.has_key("test")
+        assert "test" not in cache
 
     def test_clear(self):
         cache = Cache('test', **self.CACHE_ARGS)
         cache.set_value('test', 20)
         cache.set_value('fred', 10)
-        assert cache.has_key('test')
         assert 'test' in cache
-        assert cache.has_key('fred')
+        assert 'fred' in cache
         cache.clear()
-        assert not cache.has_key("test")
+        assert "test" not in cache
 
     def test_has_key_multicache(self):
         cache = Cache('test', **self.CACHE_ARGS)
         o = object()
         cache.set_value("test", o)
-        assert cache.has_key("test")
         assert "test" in cache
         cache = Cache('test', **self.CACHE_ARGS)
-        assert cache.has_key("test")
+        assert "test" in cache
 
     def test_unicode_keys(self):
         cache = Cache('test', **self.CACHE_ARGS)
         o = object()
-        cache.set_value(u_('hiŏ'), o)
-        assert u_('hiŏ') in cache
-        assert u_('hŏa') not in cache
-        cache.remove_value(u_('hiŏ'))
-        assert u_('hiŏ') not in cache
+        cache.set_value('hiŏ', o)
+        assert 'hiŏ' in cache
+        assert 'hŏa' not in cache
+        cache.remove_value('hiŏ')
+        assert 'hiŏ' not in cache
 
     def test_long_unicode_keys(self):
         cache = Cache('test', **self.CACHE_ARGS)
         o = object()
-        long_str = u_(
+        long_str = (
             'Очень длинная строка, которая не влезает в сто двадцать восемь байт и поэтому не проходит ограничение в check_key, что очень прискорбно, не правда ли, друзья? Давайте же скорее исправим это досадное недоразумение!'
         )
         cache.set_value(long_str, o)
@@ -181,19 +175,19 @@ class CacheManagerBaseTests(unittest.TestCase):
     def test_spaces_in_unicode_keys(self):
         cache = Cache('test', **self.CACHE_ARGS)
         o = object()
-        cache.set_value(u_('hi ŏ'), o)
-        assert u_('hi ŏ') in cache
-        assert u_('hŏa') not in cache
-        cache.remove_value(u_('hi ŏ'))
-        assert u_('hi ŏ') not in cache
+        cache.set_value('hi ŏ', o)
+        assert 'hi ŏ' in cache
+        assert 'hŏa' not in cache
+        cache.remove_value('hi ŏ')
+        assert 'hi ŏ' not in cache
 
     def test_spaces_in_keys(self):
         cache = Cache('test', **self.CACHE_ARGS)
         cache.set_value("has space", 24)
-        assert cache.has_key("has space")
+        assert "has space" in cache
         assert 24 == cache.get_value("has space")
         cache.set_value("hasspace", 42)
-        assert cache.has_key("hasspace")
+        assert "hasspace" in cache
         assert 42 == cache.get_value("hasspace")
 
     def test_increment(self):
@@ -229,9 +223,9 @@ class CacheManagerBaseTests(unittest.TestCase):
     def test_expiretime(self):
         cache = Cache('test', **self.CACHE_ARGS)
         cache.set_value("has space", 24, expiretime=1)
-        assert cache.has_key("has space")
+        assert "has space" in cache
         time.sleep(1.1)
-        assert not cache.has_key("has space")
+        assert "has space" not in cache
 
     def test_expiretime_automatic(self):
         if not self.SUPPORTS_EXPIRATION:
@@ -239,9 +233,9 @@ class CacheManagerBaseTests(unittest.TestCase):
 
         cache = Cache('test', **self.CACHE_ARGS)
         cache.set_value("has space", 24, expiretime=1)
-        assert cache.namespace.has_key("has space")
+        assert "has space" in cache
         time.sleep(1.1)
-        assert not cache.namespace.has_key("has space")
+        assert "has space" not in cache
 
     def test_createfunc(self):
         cache = Cache('test', **self.CACHE_ARGS)

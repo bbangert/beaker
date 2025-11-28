@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Beaker"
+version = "1.13.0"
+description = "A Session and Caching library with WSGI Middleware"
+readme = "README.rst"
+requires-python = ">=3.8"
+license = {text = "BSD"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Internet :: WWW/HTTP :: WSGI",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware",
+]
+keywords = ["wsgi", "myghty", "session", "web", "cache", "middleware"]
+authors = [
+    {name = "Ben Bangert", email = "ben@groovie.org"},
+    {name = "Mike Bayer", email = "pjenvey@groovie.org"},
+    {name = "Philip Jenvey", email = "pjenvey@groovie.org"},
+    {name = "Alessandro Molina", email = "alessandro@molina.fyi"},
+]
+urls = {Homepage = "https://beaker.readthedocs.io/", Documentation = "https://beaker.readthedocs.io/"}
+dependencies = []
+
+[project.entry-points."paste.filter_factory"]
+beaker_session = "beaker.middleware:session_filter_factory"
+
+[project.entry-points."paste.filter_app_factory"]
+beaker_session = "beaker.middleware:session_filter_app_factory"
+
+[project.entry-points."beaker.backends"]
+database = "beaker.ext.database:DatabaseNamespaceManager"
+memcached = "beaker.ext.memcached:MemcachedNamespaceManager"
+google = "beaker.ext.google:GoogleNamespaceManager"
+sqla = "beaker.ext.sqla:SqlaNamespaceManager"
+
+[project.optional-dependencies]
+pycryptodome = ["pycryptodome"]
+cryptography = ["cryptography"]
+testsuite = [
+    "pytest",
+    "pycryptodome",
+    "webtest",
+    "coverage",
+    "cryptography",
+    "sqlalchemy",
+    "pymongo",
+    "redis",
+    "python-memcached",
+]
+
+[tool.setuptools]
+zip-safe = false
+platforms = ["any"]
+
+[tool.setuptools.packages.find]
+exclude = ["ez_setup*", "examples*", "tests*", "tests.*"]
+
+[tool.pytest.ini_options]
+addopts = "-v"
+testpaths = ["tests"]

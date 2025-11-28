@@ -229,7 +229,7 @@ crypto_type (**optional**, string)
     Encryption backend to use. If ``default`` is used, one of the installed
     backends is picked.
 
-    Other valid choices are ``cryptography``, ``nss``, ``pycrypto``.
+    Other valid choices are ``cryptography`` (recommended), ``pycryptodome``.
 
 .. note::
 
@@ -294,4 +294,3 @@ regions (**optional**, list, tuple)
 .. _Pylons: https://pylonsproject.org/
 .. _TurboGears2: http://turbogears.org/
 .. _SQLAlchemy: http://www.sqlalchemy.org/
-.. _pycryptopp: http://pypi.python.org/pypi/pycryptopp
