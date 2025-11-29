@@ -146,17 +146,25 @@ auto (**optional**, bool)
 
 cookie_expires (**optional**, bool, datetime, timedelta, int)
     Determines when the cookie used to track the client-side of the session
-    will expire. When set to a boolean value, it will either expire at the
-    end of the browsers session, or never expire.
+    will expire. Note that this only affects when the browser discards the
+    cookie; it does not affect server-side session validity (see ``timeout``
+    for that).
 
-    Setting to a datetime forces a hard ending time for the session (generally
-    used for setting a session to a far off date).
+    When set to ``True``, the cookie will be a session cookie that expires when
+    the user closes their browser. When set to ``False``, the cookie is set to
+    never expire (actually expires in year 2038, the maximum 32-bit timestamp).
+
+    Setting to a datetime forces a hard ending time for the cookie (generally
+    used for setting a cookie to a far off date).
+
+    Setting to a timedelta will result in the cookie expiring that duration
+    from the current time.
 
     Setting to an integer will result in the cookie being set to expire in
     that many seconds. I.e. a value of ``300`` will result in the cookie being
     set to expire in 300 seconds.
 
-    Defaults to never expiring.
+    Defaults to ``True`` (session cookie that expires when the browser closes).
 
 
 .. _cookie_domain_config:

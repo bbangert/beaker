@@ -110,7 +110,19 @@ class Session(_ConfigurableSession):
     :param save_accessed_time: Whether beaker should save the session's access
                                time (True) or only modification time (False).
                                Defaults to True.
-    :param cookie_expires: Expiration date for cookie
+    :param cookie_expires: Determines when the session cookie expires. When set
+                           to ``True`` (the default), the cookie is a session
+                           cookie that expires when the user closes their
+                           browser. When set to ``False``, the cookie is set to
+                           never expire (actually expires in year 2038). Can also
+                           be set to a ``datetime`` for a specific expiration
+                           date, a ``timedelta`` for an expiration relative to
+                           the current time, or an ``int`` specifying the number
+                           of seconds until expiration. Note that ``cookie_expires``
+                           only affects the cookie lifetime in the browser, not
+                           the session validity on the server side (see ``timeout``
+                           for server-side session expiration).
+    :type cookie_expires: bool, datetime, timedelta, or int
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
     :param data_serializer: If ``"json"`` or ``"pickle"`` should be used
@@ -555,7 +567,19 @@ class CookieSession(Session):
     :param save_accessed_time: Whether beaker should save the session's access
                                time (True) or only modification time (False).
                                Defaults to True.
-    :param cookie_expires: Expiration date for cookie
+    :param cookie_expires: Determines when the session cookie expires. When set
+                           to ``True`` (the default), the cookie is a session
+                           cookie that expires when the user closes their
+                           browser. When set to ``False``, the cookie is set to
+                           never expire (actually expires in year 2038). Can also
+                           be set to a ``datetime`` for a specific expiration
+                           date, a ``timedelta`` for an expiration relative to
+                           the current time, or an ``int`` specifying the number
+                           of seconds until expiration. Note that ``cookie_expires``
+                           only affects the cookie lifetime in the browser, not
+                           the session validity on the server side (see ``timeout``
+                           for server-side session expiration).
+    :type cookie_expires: bool, datetime, timedelta, or int
     :param cookie_domain: Domain to use for the cookie.
     :param cookie_path: Path to use for the cookie.
     :param data_serializer: If ``"json"`` or ``"pickle"`` should be used
