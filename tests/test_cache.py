@@ -1,5 +1,5 @@
 # coding: utf-8
-from beaker._compat import u_, bytes_
+from beaker._compat import bytes_
 
 import os
 import platform
@@ -146,11 +146,11 @@ def test_has_key_multicache():
 def test_unicode_keys():
     cache = Cache('test', data_dir='./cache', type='dbm')
     o = object()
-    cache.set_value(u_('hiŏ'), o)
-    assert u_('hiŏ') in cache
-    assert u_('hŏa') not in cache
-    cache.remove_value(u_('hiŏ'))
-    assert u_('hiŏ') not in cache
+    cache.set_value('hiŏ', o)
+    assert 'hiŏ' in cache
+    assert 'hŏa' not in cache
+    cache.remove_value('hiŏ')
+    assert 'hiŏ' not in cache
 
 def test_remove_stale():
     """test that remove_value() removes even if the value is expired."""

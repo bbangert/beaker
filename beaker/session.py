@@ -1,4 +1,4 @@
-from ._compat import PY2, pickle, http_cookies, unicode_text, b64encode, b64decode, string_type
+from ._compat import pickle, http_cookies, b64encode, b64decode
 
 import os
 import time
@@ -253,7 +253,7 @@ class Session(_ConfigurableSession):
             self.serializer = util.JsonSerializer()
         elif self.data_serializer == 'pickle':
             self.serializer = util.PickleSerializer()
-        elif isinstance(self.data_serializer, string_type):
+        elif isinstance(self.data_serializer, str):
             raise BeakerException('Invalid value for data_serializer: %s' % data_serializer)
         else:
             self.serializer = data_serializer

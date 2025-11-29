@@ -15,9 +15,7 @@ getKeyLength()
   Return the maximum size for keys for this crypto object, in bytes.
 
 """
-
-from .._compat import JYTHON
-
+import sys
 
 from beaker.crypto.pbkdf2 import pbkdf2
 from beaker.crypto.util import hmac, sha1, hmac_sha1, md5
@@ -28,6 +26,9 @@ keyLength = None
 DEFAULT_NONCE_BITS = 128
 
 CRYPTO_MODULES = {}
+
+# Check if we're running on Jython
+JYTHON = sys.platform.startswith('java')
 
 
 def load_default_module():

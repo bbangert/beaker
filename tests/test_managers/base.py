@@ -6,7 +6,7 @@ import time
 
 import datetime
 
-from beaker._compat import u_
+# Removed u_ import
 from beaker.cache import Cache
 from beaker.middleware import SessionMiddleware, CacheMiddleware
 from webtest import TestApp as WebTestApp
@@ -161,11 +161,11 @@ class CacheManagerBaseTests(unittest.TestCase):
     def test_unicode_keys(self):
         cache = Cache('test', **self.CACHE_ARGS)
         o = object()
-        cache.set_value(u_('hiŏ'), o)
-        assert u_('hiŏ') in cache
-        assert u_('hŏa') not in cache
-        cache.remove_value(u_('hiŏ'))
-        assert u_('hiŏ') not in cache
+        cache.set_value('hiŏ', o)
+        assert 'hiŏ' in cache
+        assert 'hŏa' not in cache
+        cache.remove_value('hiŏ')
+        assert 'hiŏ' not in cache
 
     def test_long_unicode_keys(self):
         cache = Cache('test', **self.CACHE_ARGS)
@@ -181,11 +181,11 @@ class CacheManagerBaseTests(unittest.TestCase):
     def test_spaces_in_unicode_keys(self):
         cache = Cache('test', **self.CACHE_ARGS)
         o = object()
-        cache.set_value(u_('hi ŏ'), o)
-        assert u_('hi ŏ') in cache
-        assert u_('hŏa') not in cache
-        cache.remove_value(u_('hi ŏ'))
-        assert u_('hi ŏ') not in cache
+        cache.set_value('hi ŏ', o)
+        assert 'hi ŏ' in cache
+        assert 'hŏa' not in cache
+        cache.remove_value('hi ŏ')
+        assert 'hi ŏ' not in cache
 
     def test_spaces_in_keys(self):
         cache = Cache('test', **self.CACHE_ARGS)
