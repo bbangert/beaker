@@ -6,7 +6,6 @@ import time
 
 import datetime
 
-# Removed u_ import
 from beaker.cache import Cache
 from beaker.middleware import SessionMiddleware, CacheMiddleware
 from webtest import TestApp as WebTestApp
@@ -170,7 +169,7 @@ class CacheManagerBaseTests(unittest.TestCase):
     def test_long_unicode_keys(self):
         cache = Cache('test', **self.CACHE_ARGS)
         o = object()
-        long_str = u_(
+        long_str = (
             'Очень длинная строка, которая не влезает в сто двадцать восемь байт и поэтому не проходит ограничение в check_key, что очень прискорбно, не правда ли, друзья? Давайте же скорее исправим это досадное недоразумение!'
         )
         cache.set_value(long_str, o)
