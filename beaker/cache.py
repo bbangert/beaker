@@ -7,6 +7,7 @@ as well as the function decorators :func:`.region_decorate`,
 
 """
 import importlib.metadata
+import sys
 import traceback
 import warnings
 from io import StringIO
@@ -84,7 +85,11 @@ class _backends(object):
 
     def _init(self):
         # Load up the additional entry point defined backends
-        for entry_point in importlib.metadata.entry_points(group='beaker.backends'):
+        if sys.version_info < (3, 10):
+            entry_points = importlib.metadata.entry_points()['beaker.backends']
+        else:
+            entry_points = importlib.metadata.entry_points(group='beaker.backends')
+        for entry_point in entry_points:
             try:
                 namespace_manager = entry_point.load()
                 name = entry_point.name
