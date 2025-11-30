@@ -84,7 +84,7 @@ class _backends(object):
 
     def _init(self):
         # Load up the additional entry point defined backends
-        for entry_point in importlib.metadata.entry_points(group='beaker.backends'):
+        for entry_point in importlib.metadata.entry_points().select(group='beaker.backends'):
             try:
                 namespace_manager = entry_point.load()
                 name = entry_point.name
