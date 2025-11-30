@@ -4,6 +4,7 @@ Release 1.14.0 (2025-??-??)
 * Fixed an error when using json encoder with cookie based sessions
 * Removed support for pylibmc
 * Beaker is now tested on Python 3.8+ ... 3.13
+* Load entry points with importlib.metadata instead of deprecated pkg_resources
 
 Release 1.13.0 (2024-04-11)
 ===========================
