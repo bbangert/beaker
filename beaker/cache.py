@@ -9,7 +9,7 @@ as well as the function decorators :func:`.region_decorate`,
 import warnings
 from itertools import chain
 
-from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
+from beaker._compat import func_signature, bindfuncargs
 import beaker.container as container
 import beaker.util as util
 from beaker.crypto.util import sha1
@@ -101,10 +101,7 @@ class _backends(object):
                     # Warn when there's a problem loading a NamespaceManager
                     if not isinstance(sys.exc_info()[1], DistributionNotFound):
                         import traceback
-                        try:
-                            from StringIO import StringIO  # Python2
-                        except ImportError:
-                            from io import StringIO        # Python3
+                        from io import StringIO
 
                         tb = StringIO()
                         traceback.print_exc(file=tb)
@@ -330,7 +327,7 @@ class Cache(object):
     remove = remove_value
 
     def _get_value(self, key, **kw):
-        if isinstance(key, unicode_text):
+        if isinstance(key, str):
             key = key.encode('ascii', 'backslashreplace')
 
         if 'type' in kw:
@@ -576,13 +573,13 @@ def _cache_decorate(deco_args, manager, options, region):
                 # kwargs provided, merge them in positional args
                 # to avoid having different cache keys.
                 args, kwargs = bindfuncargs(signature, args, kwargs)
-                cache_key_kwargs = [u_(':').join((u_(key), u_(value))) for key, value in kwargs.items()]
+                cache_key_kwargs = [':'.join((str(key), str(value))) for key, value in kwargs.items()]
 
             cache_key_args = args
             if skip_self:
                 cache_key_args = args[1:]
 
-            cache_key = u_(" ").join(map(u_, chain(deco_args, cache_key_args, cache_key_kwargs)))
+            cache_key = " ".join(map(str, chain(deco_args, cache_key_args, cache_key_kwargs)))
 
             if region:
                 cachereg = cache_regions[region]
@@ -611,7 +608,7 @@ def _cache_decorate(deco_args, manager, options, region):
 def _cache_decorator_invalidate(cache, key_length, args):
     """Invalidate a cache key based on function arguments."""
 
-    cache_key = u_(" ").join(map(u_, args))
+    cache_key = " ".join(map(str, args))
     if len(cache_key) + len(cache.namespace_name) > key_length:
         cache_key = sha1(cache_key.encode('utf-8')).hexdigest()
     cache.remove_value(cache_key)
