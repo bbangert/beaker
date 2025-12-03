@@ -6,7 +6,11 @@ as well as the function decorators :func:`.region_decorate`,
 :func:`.region_invalidate`.
 
 """
+import importlib.metadata
+import sys
+import traceback
 import warnings
+from io import StringIO
 from itertools import chain
 
 from beaker._compat import u_, unicode_text, func_signature, bindfuncargs
@@ -80,42 +84,32 @@ class _backends(object):
             raise e
 
     def _init(self):
-        try:
-            import pkg_resources
-
-            # Load up the additional entry point defined backends
-            for entry_point in pkg_resources.iter_entry_points('beaker.backends'):
-                try:
-                    namespace_manager = entry_point.load()
-                    name = entry_point.name
-                    if name in self._clsmap:
-                        raise BeakerException("NamespaceManager name conflict,'%s' "
-                                              "already loaded" % name)
-                    self._clsmap[name] = namespace_manager
-                except (InvalidCacheBackendError, SyntaxError):
-                    # Ignore invalid backends
-                    pass
-                except:
-                    import sys
-                    from pkg_resources import DistributionNotFound
-                    # Warn when there's a problem loading a NamespaceManager
-                    if not isinstance(sys.exc_info()[1], DistributionNotFound):
-                        import traceback
-                        try:
-                            from StringIO import StringIO  # Python2
-                        except ImportError:
-                            from io import StringIO        # Python3
-
-                        tb = StringIO()
-                        traceback.print_exc(file=tb)
-                        warnings.warn(
-                            "Unable to load NamespaceManager "
-                            "entry point: '%s': %s" % (
-                                        entry_point,
-                                        tb.getvalue()),
-                                        RuntimeWarning, 2)
-        except ImportError:
-            pass
+        # Load up the additional entry point defined backends
+        if sys.version_info < (3, 10):
+            entry_points = importlib.metadata.entry_points()['beaker.backends']
+        else:
+            entry_points = importlib.metadata.entry_points(group='beaker.backends')
+        for entry_point in entry_points:
+            try:
+                namespace_manager = entry_point.load()
+                name = entry_point.name
+                if name in self._clsmap:
+                    raise BeakerException("NamespaceManager name conflict,'%s' "
+                                          "already loaded" % name)
+                self._clsmap[name] = namespace_manager
+            except (InvalidCacheBackendError, SyntaxError):
+                # Ignore invalid backends
+                pass
+            except Exception:
+                # Warn when there's a problem loading a NamespaceManager
+                tb = StringIO()
+                traceback.print_exc(file=tb)
+                warnings.warn(
+                    "Unable to load NamespaceManager "
+                    "entry point: '%s': %s" % (
+                                entry_point,
+                                tb.getvalue()),
+                                RuntimeWarning, 2)
 
 # Initialize the basic available backends
 clsmap = _backends({
