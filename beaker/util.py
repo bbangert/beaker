@@ -233,7 +233,7 @@ def encoded_path(root, identifiers, extension=".enc", depth=3,
         else:
             ident = sha1(ident).hexdigest()
 
-    ident = os.path.basename(ident).lstrip('.')
+    ident = os.path.basename(ident).replace('.', '')
 
     tokens = []
     for d in range(1, depth):
