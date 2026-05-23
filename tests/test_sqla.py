@@ -1,5 +1,5 @@
 # coding: utf-8
-from beaker._compat import u_
+# Removed u_ import
 from beaker.cache import clsmap, Cache, util
 from beaker.exceptions import InvalidCacheBackendError
 from beaker.middleware import CacheMiddleware
@@ -68,39 +68,36 @@ def test_has_key():
     cache = make_cache()
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
     assert "test" in cache
-    assert not cache.has_key("foo")
     assert "foo" not in cache
     cache.remove_value("test")
-    assert not cache.has_key("test")
+    assert "test" not in cache
 
 def test_has_key_multicache():
     cache = make_cache()
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
     assert "test" in cache
     cache = make_cache()
-    assert cache.has_key("test")
+    assert "test" in cache
     cache.remove_value('test')
 
 def test_clear():
     cache = make_cache()
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
+    assert "test" in cache
     cache.clear()
-    assert not cache.has_key("test")
+    assert "test" not in cache
 
 def test_unicode_keys():
     cache = make_cache()
     o = object()
-    cache.set_value(u_('hiŏ'), o)
-    assert u_('hiŏ') in cache
-    assert u_('hŏa') not in cache
-    cache.remove_value(u_('hiŏ'))
-    assert u_('hiŏ') not in cache
+    cache.set_value('hiŏ', o)
+    assert 'hiŏ' in cache
+    assert 'hŏa' not in cache
+    cache.remove_value('hiŏ')
+    assert 'hiŏ' not in cache
 
 @util.skip_if(lambda: WebTestApp is None, "webtest not installed")
 def test_increment():

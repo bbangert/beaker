@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from binascii import b2a_hex, a2b_hex
 from beaker.crypto.pbkdf2 import pbkdf2
 

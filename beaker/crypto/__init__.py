@@ -15,10 +15,6 @@ getKeyLength()
   Return the maximum size for keys for this crypto object, in bytes.
 
 """
-
-from .._compat import JYTHON
-
-
 from beaker.crypto.pbkdf2 import pbkdf2
 from beaker.crypto.util import hmac, sha1, hmac_sha1, md5
 from beaker import util
@@ -36,23 +32,21 @@ def load_default_module():
     Note: if no crypto module is available, return a dummy module
     which does not encrypt at all.
 
+    The fallback chain is:
+    1. cryptography (recommended, modern, actively maintained)
+    2. pycryptodome (via pycrypto module, widely used)
+    3. noencryption (no encryption, fallback)
+
     """
-    if JYTHON:
+    try:
+        from beaker.crypto import pyca_cryptography
+        return pyca_cryptography
+    except ImportError:
         try:
-            from beaker.crypto import jcecrypto
-            return jcecrypto
+            from beaker.crypto import pycrypto
+            return pycrypto
         except ImportError:
             pass
-    else:
-        try:
-            from beaker.crypto import nsscrypto
-            return nsscrypto
-        except ImportError:
-            try:
-                from beaker.crypto import pycrypto
-                return pycrypto
-            except ImportError:
-                pass
     from beaker.crypto import noencryption
     return noencryption
 
@@ -71,10 +65,11 @@ def get_crypto_module(name):
     if name not in CRYPTO_MODULES:
         if name == 'default':
             register_crypto_module('default', load_default_module())
-        elif name == 'nss':
-            from beaker.crypto import nsscrypto
-            register_crypto_module(name, nsscrypto)
+        elif name == 'pycryptodome':
+            from beaker.crypto import pycrypto
+            register_crypto_module(name, pycrypto)
         elif name == 'pycrypto':
+            # Backward compatibility alias for pycryptodome
             from beaker.crypto import pycrypto
             register_crypto_module(name, pycrypto)
         elif name == 'cryptography':

@@ -1,5 +1,5 @@
 # coding: utf-8
-from beaker._compat import u_, bytes_
+from beaker._compat import bytes_
 
 import os
 import platform
@@ -84,36 +84,34 @@ def test_has_key():
     cache = Cache('test', data_dir='./cache', type='dbm')
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
     assert "test" in cache
-    assert not cache.has_key("foo")
     assert "foo" not in cache
     cache.remove_value("test")
-    assert not cache.has_key("test")
+    assert "test" not in cache
 
 def test_expire_changes():
     cache = Cache('test_bar', data_dir='./cache', type='dbm')
     cache.set_value('test', 10)
-    assert cache.has_key('test')
+    assert 'test' in cache
     assert cache['test'] == 10
 
     # ensure that we can change a never-expiring value
     cache.set_value('test', 20, expiretime=1)
-    assert cache.has_key('test')
+    assert 'test' in cache
     assert cache['test'] == 20
     time.sleep(1)
-    assert not cache.has_key('test')
+    assert 'test' not in cache
 
     # test that we can change it before its expired
     cache.set_value('test', 30, expiretime=50)
-    assert cache.has_key('test')
+    assert 'test' in cache
     assert cache['test'] == 30
 
     cache.set_value('test', 40, expiretime=3)
-    assert cache.has_key('test')
+    assert 'test' in cache
     assert cache['test'] == 40
     time.sleep(3)
-    assert not cache.has_key('test')
+    assert 'test' not in cache
 
 def test_fresh_createfunc():
     cache = Cache('test_foo', data_dir='./cache', type='dbm')
@@ -130,7 +128,7 @@ def test_fresh_createfunc():
     assert x == 16
 
     cache.remove_value('test')
-    assert not cache.has_key('test')
+    assert 'test' not in cache
     x = cache.get_value('test', createfunc=lambda: 20, expiretime=2)
     assert x == 20
 
@@ -138,19 +136,18 @@ def test_has_key_multicache():
     cache = Cache('test', data_dir='./cache', type='dbm')
     o = object()
     cache.set_value("test", o)
-    assert cache.has_key("test")
     assert "test" in cache
     cache = Cache('test', data_dir='./cache', type='dbm')
-    assert cache.has_key("test")
+    assert "test" in cache
 
 def test_unicode_keys():
     cache = Cache('test', data_dir='./cache', type='dbm')
     o = object()
-    cache.set_value(u_('hiŏ'), o)
-    assert u_('hiŏ') in cache
-    assert u_('hŏa') not in cache
-    cache.remove_value(u_('hiŏ'))
-    assert u_('hiŏ') not in cache
+    cache.set_value('hiŏ', o)
+    assert 'hiŏ' in cache
+    assert 'hŏa' not in cache
+    cache.remove_value('hiŏ')
+    assert 'hiŏ' not in cache
 
 def test_remove_stale():
     """test that remove_value() removes even if the value is expired."""
@@ -233,7 +230,6 @@ def test_clsmap_present():
 
     assert clsmap['memory']
 
-
 def test_legacy_cache():
     cache = Cache('newtests', data_dir='./cache', type='dbm')
 
@@ -256,7 +252,6 @@ def test_legacy_cache():
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '10', type='file', data_dir='./cache') == '10'
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '11') == '9'
     assert cache.get_value('x', expiretime=1, createfunc=lambda: '12', type='file', data_dir='./cache') == '10'
-
 
 def test_upgrade():
     # If we're on OSX, lets run this since its OSX dump files, otherwise
@@ -286,19 +281,15 @@ def test_upgrade():
 
 def _test_upgrade_has_key(dir):
     cache = Cache('test', data_dir=dir, type='dbm')
-    assert cache.has_key('foo')
-    assert cache.has_key('foo')
+    assert 'foo' in cache
 
 def _test_upgrade_in(dir):
     cache = Cache('test', data_dir=dir, type='dbm')
-    assert 'foo' in cache
     assert 'foo' in cache
 
 def _test_upgrade_setitem(dir):
     cache = Cache('test', data_dir=dir, type='dbm')
     assert cache['foo'] == 'bar'
-    assert cache['foo'] == 'bar'
-
 
 def teardown_module():
     import shutil
