@@ -1,9 +1,11 @@
-Release 1.14.0 (2025-??-??)
+Release 1.14.0 (2026-05-24)
 ===========================
 
 * Fixed an error when using json encoder with cookie based sessions
+* Removed support for nsscrypto and pycryptopp
 * Removed support for pylibmc
-* Beaker is now tested on Python 3.8+ ... 3.13
+* Jython is no longer supported
+* Beaker is now tested on Python 3.8+ ... 3.14
 * Load entry points with importlib.metadata instead of deprecated pkg_resources
 
 Release 1.13.0 (2024-04-11)
