@@ -1,4 +1,5 @@
 from beaker.util import encoded_path
+import os
 import pathlib
 
 def test_strips_leading_periods(tmp_path):
@@ -25,7 +26,9 @@ def test_strips_leading_periods(tmp_path):
     assert p.suffix == ".enc"
 
     # encoded path should be a child of input, ./po/p/poc.enc
-    assert p.is_relative_to(tmp_path)
+    # Use os.path.relpath for Python 3.8 compatibility (is_relative_to added in 3.9)
+    relpath = os.path.relpath(p, tmp_path)
+    assert not relpath.startswith('..'), f"Path {p} is not relative to {tmp_path}"
 
     # check no traversal has put the encoded directory back to the input
     assert str(p.parent) != str(tmp_path.absolute())
