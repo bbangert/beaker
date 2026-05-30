@@ -1,1 +1,3 @@
-recursive-include tests *.py
+# Exclude tests and docs from source distribution
+exclude tests/*
+exclude beaker/docs/*
