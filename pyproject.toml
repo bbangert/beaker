@@ -68,7 +68,7 @@ zip-safe = false
 platforms = ["any"]
 
 [tool.setuptools.packages.find]
-exclude = ["ez_setup*", "examples*", "tests*", "tests.*", "beaker.docs"]
+include = ["beaker", "beaker.crypto", "beaker.ext"]
 
 [tool.pytest.ini_options]
 addopts = "-v"
