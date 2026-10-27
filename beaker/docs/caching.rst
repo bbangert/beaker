@@ -248,6 +248,22 @@ Or when using the :func:`~beaker.cache.cache_region` decorator, the
 
     region_invalidate(get_results, None, 'my_search_func', 'gophers')
 
+Both forms also accept a namespace string instead of the decorated function.
+Obtain the exact string from the decorator's ``_arg_namespace`` memo while the
+function is available, and share it with the code that needs to invalidate::
+
+    results_namespace = get_results._arg_namespace
+
+    # Elsewhere, using the saved string without a reference to get_results:
+    from beaker.cache import region_invalidate
+    region_invalidate(results_namespace, 'short_term', 'my_search_func', 'gophers')
+
+With a string, the region name must be supplied explicitly rather than ``None``.
+The decorator arguments (``'my_search_func'``) and call arguments (``'gophers'``)
+are still required separately; a single combined key is not sufficient. For
+these functions, the namespace includes the source file path and function name,
+not just ``module.function``, so a different deployment path can change it.
+
 .. note::
     Both the arguments used to specify the additional namespace info to the
     cache decorator **and** the arguments sent to the function need to be
