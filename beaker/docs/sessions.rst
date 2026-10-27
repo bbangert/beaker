@@ -171,14 +171,20 @@ accessed during a request.
 Deleting
 ========
 
-Calling the :meth:`~beaker.session.Session.delete` method deletes the session
-from the back-end storage and sends an expiration on the cookie requesting the
-browser to clear it::
+Calling the :meth:`~beaker.session.Session.delete` method clears the current
+session contents and requests expiration of the browser cookie::
 
     session.delete()
 
-This should be used at the end of a request when the session should be deleted
-and will not be used further in the request.
+With :class:`~beaker.middleware.SessionMiddleware`, the cleared session is
+persisted and the expired cookie is sent when ``start_response`` is called.
+Call ``delete()`` before the response starts, when the session will not be used
+further in the request.
+
+This does not guarantee physical removal of the back-end record: depending on
+the back-end and configuration, an empty or serialized record may remain.
+Explicit deletion clears the current contents; passive cookie expiration or a
+session timeout is not a request to garbage-collect stored records.
 
 If a session should be invalidated, and a new session created and used during
 the request, the :meth:`~beaker.session.Session.invalidate` method should be
@@ -189,9 +195,10 @@ used::
 Removing Expired/Old Sessions
 -----------------------------
 
-Beaker does **not** automatically delete expired or old cookies on any of its
-back-ends. This task is left up to the developer based on how sessions are
-being used, and on what back-end.
+Browser cookie expiration does not itself remove server-side session records.
+Beaker does **not** automatically garbage-collect expired or old session records
+from persistent back-ends. Cleanup is left to the developer or the back-end's
+own expiration facilities, based on how sessions are used and stored.
 
 The database backend records the last accessed time as a column in the database
 so a script could be run to delete session rows in the database that haven't

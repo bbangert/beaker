@@ -395,8 +395,12 @@ class Session(_ConfigurableSession):
         self._update_cookie_out()
 
     def delete(self):
-        """Deletes the session from the persistent storage, and sends
-        an expired cookie out"""
+        """Clear the current session contents and expire its cookie, if enabled.
+
+        SessionMiddleware persists the cleared session and sends the expired
+        cookie at response start. Physical removal of the back-end record is
+        not guaranteed.
+        """
         if self.use_cookies:
             self._delete_cookie()
         self.clear()
