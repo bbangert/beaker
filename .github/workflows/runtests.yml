@@ -42,3 +42,35 @@ jobs:
       - name: Test with pytest
         run: |
           pytest -vv
+  docs:
+    name: Build documentation
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install documentation dependencies
+        run: |
+          python -m pip install -r beaker/docs/requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended poppler-utils
+      - name: Build HTML and PDF with strict Sphinx warnings
+        run: |
+          sphinx-build -b html -W --keep-going beaker/docs build/docs/html
+          sphinx-build -M latexpdf beaker/docs build/docs -W --keep-going
+      - name: Check rendered PDF content
+        run: |
+          pdftotext -layout build/docs/latex/Beaker.pdf build/docs/Beaker.txt
+          grep -F 'Beaker Documentation' build/docs/Beaker.txt
+          grep -F 'CacheManager' build/docs/Beaker.txt
+          grep -F 'RedisClusterNamespaceManager' build/docs/Beaker.txt
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: |
+            build/docs/html/
+            build/docs/latex/Beaker.pdf
+            build/docs/Beaker.txt
+          if-no-files-found: error

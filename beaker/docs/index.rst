@@ -24,6 +24,7 @@ ease of use with any Python based application.
    :maxdepth: 1
 
    changes
+   glossary
 
 
 Indices and tables
@@ -50,6 +51,7 @@ Module Listing
     modules/memcached
     modules/mongodb
     modules/redis
+    modules/rediscluster
     modules/google
     modules/sqla
     modules/pbkdf2
