@@ -560,6 +560,20 @@ class TestSessionObject(unittest.TestCase):
         # so we can be sure we're clearing the right state.
         MemoryNamespaceManager.namespaces.clear()
 
+    def test_len(self):
+        so = SessionObject({})
+        assert not so.accessed()
+        initial_length = len(so)
+        assert initial_length == len(so._session()) > 0
+        assert so.accessed()
+
+        so['foo'] = 'bar'
+        so['baz'] = 'qux'
+        assert len(so) == len(so._session()) == initial_length + 2
+
+        del so['foo']
+        assert len(so) == len(so._session()) == initial_length + 1
+
     def test_no_autosave_saves_atime_without_save(self):
         so = SessionObject({}, auto=False)
         so['foo'] = 'bar'

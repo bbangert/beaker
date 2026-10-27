@@ -829,6 +829,9 @@ class SessionObject(object):
         """Only works for proxying to a dict"""
         return iter(self._session().keys())
 
+    def __len__(self):
+        return len(self._session())
+
     def __contains__(self, key):
         return key in self._session()
 
