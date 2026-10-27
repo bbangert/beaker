@@ -581,6 +581,8 @@ def _cache_decorate(deco_args, manager, options, region):
 
             if region:
                 cachereg = cache_regions[region]
+                if not cachereg.get('enabled', True):
+                    return func(*args, **kwargs)
                 key_length = cachereg.get('key_length', util.DEFAULT_CACHE_KEY_LENGTH)
             else:
                 key_length = options.pop('key_length', util.DEFAULT_CACHE_KEY_LENGTH)

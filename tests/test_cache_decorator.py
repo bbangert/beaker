@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 
+import beaker.cache as cache_module
 from beaker.cache import CacheManager, cache_region, region_invalidate
 from beaker import util
 from unittest import SkipTest
@@ -93,6 +94,35 @@ def test_check_region_decorator():
     time.sleep(2)  # Now it should have expired as cache is 2secs
     result2 = func('Fred')
     assert result != result2
+
+def test_region_can_be_disabled_after_use(monkeypatch):
+    region = {'type': 'memory', 'enabled': True}
+    monkeypatch.setattr(cache_module, 'cache_regions', {'toggle': region})
+    monkeypatch.setattr(cache_module, 'cache_managers', {})
+    monkeypatch.setattr(cache_module.container.MemoryNamespaceManager,
+                        'namespaces', util.SyncDict())
+    calls = []
+
+    @cache_region('toggle')
+    def load(person, suffix='!', **kwargs):
+        calls.append((person, suffix, kwargs))
+        return person, suffix, kwargs, len(calls)
+
+    cached = load('Fred', suffix='!', style='plain')
+    assert cached == ('Fred', '!', {'style': 'plain'}, 1)
+    assert load(person='Fred', suffix='!', style='plain') == cached
+    assert len(calls) == 1
+
+    region['enabled'] = False
+    assert load(person='Fred', suffix='!', style='plain') == (
+        'Fred', '!', {'style': 'plain'}, 2)
+    assert load('Fred', '!', style='plain') == (
+        'Fred', '!', {'style': 'plain'}, 3)
+
+    region['enabled'] = True
+    assert load('Fred', suffix='!', style='plain') == cached
+    assert len(calls) == 3
+
 
 def test_different_default_names():
     result = fred(1)
