@@ -46,6 +46,21 @@ Documentation
 Documentation can be found on the `Official Beaker Docs site
 <https://beaker.readthedocs.io/en/latest/>`_.
 
+To build the documentation locally with Python 3.12::
+
+    python -m venv /tmp/beaker-docs-env
+    . /tmp/beaker-docs-env/bin/activate
+    python -m pip install -r beaker/docs/requirements.txt
+    sphinx-build -b html -W beaker/docs build/docs/html
+    sphinx-build -M latexpdf beaker/docs build/docs -W
+
+PDF builds also require LaTeX and ``latexmk``. On Ubuntu, install
+``latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended``.
+HTML output is in ``build/docs/html`` and the PDF is
+``build/docs/latex/Beaker.pdf``. The existing ``make html`` and ``make latex``
+commands in ``beaker/docs`` remain available; after ``make latex``, run
+``make -C build/latex all-pdf`` there to compile the PDF.
+
 
 Source
 ======

@@ -22,9 +22,9 @@ class RedisClusterNamespaceManager(RedisNamespaceManager):
     Unlike a StrictRedis connection string, a RedisCluster one does not support
     database indicators, it is zero by default.
 
-    Example: `redis://node-1:7001,redis://node-2:7002`
+    Example: ``redis://node-1:7001,redis://node-2:7002``
 
-    Additional options can be passed in kwargs (e.g. `username="redis", password="secure_password"`).
+    Additional options can be passed in kwargs (e.g. ``username="redis", password="secure_password"``).
 
     The data will be stored into redis keys, with their name
     starting with ``beaker_cache:``.
@@ -70,7 +70,7 @@ class RedisClusterSynchronizer(RedisSynchronizer):
     Unlike a StrictRedis connection string, a RedisCluster one does not support
     database indicators, it is zero by default.
 
-    Example: ``redis://node-1:7001,redis://node-2:7002,
+    Example: ``redis://node-1:7001,redis://node-2:7002``
 
     This Synchronizer only supports 1 reader or 1 writer at time, not concurrent readers.
     """
