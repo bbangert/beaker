@@ -104,6 +104,14 @@ jobs:
           with urlopen(request, timeout=30) as response:
               result = json.load(response)
           if result.get("build_triggered") is not True:
+              event = json.loads(body)
+              print("GitHub push metadata:", json.dumps({
+                  key: event.get(key) for key in ("ref", "created", "deleted")
+              }), flush=True)
+              print("Read the Docs receipt:", json.dumps({
+                  key: result.get(key)
+                  for key in ("project", "build_triggered", "versions", "versions_synced")
+              }), flush=True)
               raise SystemExit("Read the Docs did not trigger a build")
           print("Read the Docs build triggered:", result.get("versions", []))
           PY
