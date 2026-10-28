@@ -74,3 +74,36 @@ jobs:
             build/docs/latex/Beaker.pdf
             build/docs/Beaker.txt
           if-no-files-found: error
+      - name: Trigger Read the Docs rebuild
+        if: github.event_name == 'push' && github.repository == 'bbangert/beaker' && github.ref == 'refs/heads/master'
+        env:
+          READTHEDOCS_WEBHOOK_SECRET: ${{ secrets.READTHEDOCS_WEBHOOK_SECRET }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import hmac
+          import json
+          import os
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          secret = os.environ["READTHEDOCS_WEBHOOK_SECRET"]
+          if not secret:
+              raise SystemExit("READTHEDOCS_WEBHOOK_SECRET is not configured")
+          body = Path(os.environ["GITHUB_EVENT_PATH"]).read_bytes()
+          signature = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+          request = Request(
+              "https://app.readthedocs.org/api/v2/webhook/beaker/335255/",
+              data=body,
+              headers={
+                  "Content-Type": "application/json",
+                  "X-GitHub-Event": "push",
+                  "X-Hub-Signature-256": f"sha256={signature}",
+              },
+          )
+          with urlopen(request, timeout=30) as response:
+              result = json.load(response)
+          if result.get("build_triggered") is not True:
+              raise SystemExit("Read the Docs did not trigger a build")
+          print("Read the Docs build triggered:", result.get("versions", []))
+          PY
